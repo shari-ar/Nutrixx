@@ -1,0 +1,30 @@
+{
+  "name": "@nutrixx/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared configuration presets for the Nutrixx monorepo.",
+  "files": [
+    "environment.d.mts",
+    "environment.mjs",
+    "prettier.mjs",
+    "typescript",
+    "vitest.d.mts",
+    "vitest.mjs"
+  ],
+  "exports": {
+    "./environment": {
+      "types": "./environment.d.mts",
+      "default": "./environment.mjs"
+    },
+    "./prettier": "./prettier.mjs",
+    "./typescript/strict": "./typescript/strict.json",
+    "./typescript/node": "./typescript/node.json",
+    "./vitest": {
+      "types": "./vitest.d.mts",
+      "default": "./vitest.mjs"
+    }
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  }
+}

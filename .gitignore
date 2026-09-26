@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+out/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs and runtime files
+logs/
+*.log
+.docker-build.status
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+*.pid
+*.pid.lock
+*.seed
+report.*.json
+
+# Temporary files
+.temp/
+.tmp/
+
+# Tooling and deployment
+.pnp
+.pnp.js
+.vercel/
+.turbo/
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/README.md
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Sensitive local files
+*.pem

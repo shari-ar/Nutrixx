@@ -1,0 +1,42 @@
+{
+  "name": "nutrixx",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personalized nutrition platform monorepo.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": "24.21.0",
+    "npm": "11.19.0"
+  },
+  "packageManager": "npm@11.19.0",
+  "scripts": {
+    "dev": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up --build",
+    "docker:config": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml config --quiet",
+    "docker:verify": "docker build --target verify --progress=plain -f infra/docker/Dockerfile .",
+    "docker:build": "docker compose -f infra/compose/compose.yaml build",
+    "docker:up": "docker compose -f infra/compose/compose.yaml up --build --detach --wait",
+    "docker:dev:up": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up --build --detach --wait",
+    "docker:down": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml down --remove-orphans",
+    "docker:logs": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml logs --follow",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:check": "node scripts/check-readmes.mjs",
+    "format": "prettier . --write --ignore-unknown",
+    "format:check": "prettier . --check --ignore-unknown",
+    "contract:lint": "npm run lint --workspace=@nutrixx/contracts",
+    "contract:build": "npm run build --workspace=@nutrixx/contracts",
+    "lint": "npm run contract:lint && npm run lint --workspace=@nutrixx/api && npm run lint --workspace=@nutrixx/web",
+    "test": "npm run test --workspace=@nutrixx/api && npm run test:e2e --workspace=@nutrixx/api && npm run test --workspace=@nutrixx/web",
+    "build": "npm run contract:build && npm run build --workspace=@nutrixx/api && npm run build --workspace=@nutrixx/web",
+    "check": "npm run docs:check && npm run format:check && npm run docs:build && npm run lint && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.53.3",
+    "prettier": "3.5.3",
+    "vitepress": "1.6.4"
+  }
+}

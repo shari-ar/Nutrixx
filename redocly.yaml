@@ -1,0 +1,9 @@
+apis:
+  nutrixx@v1:
+    root: packages/contracts/openapi/nutrixx.openapi.yaml
+
+extends:
+  - recommended-strict
+
+rules:
+  no-server-example.com: off

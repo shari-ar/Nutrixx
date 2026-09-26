@@ -1,0 +1,139 @@
+# Optimizer and recommendation engine
+
+| Field         | Value                                             |
+| ------------- | ------------------------------------------------- |
+| Status        | Proposed target design                            |
+| Audience      | Optimization, nutrition science, product, quality |
+| Owner         | Nutrixx Optimization Engineering                  |
+| Last reviewed | 2026-09-22                                        |
+
+## Contract
+
+The optimizer receives one immutable, eligible planning context and returns a
+typed result. It never fetches mutable state and never publishes directly to a
+user.
+
+```text
+ContextSnapshot
+→ Eligibility
+→ CandidateSet
+→ HardConstraints
+→ Feasibility
+→ SoftObjectives
+→ Solve
+→ IndependentResultValidation
+→ Predictions
+→ Rank + Explain
+→ ClaimValidation + FreshnessGate
+→ PlanDraft
+```
+
+Possible statuses are READY, NEEDS_INPUT, INFEASIBLE, OUT_OF_SCOPE, and ERROR.
+FEASIBLE and OPTIMAL are separate solver outcomes.
+
+## Planning context
+
+The snapshot includes horizon/meal slots, nutrition state, applicable target
+and safety policy, foods/recipes and exact revisions, portions/availability,
+allergens/restrictions, preferences, culture/cuisine, budget, preparation time,
+inventory/waste when supported, prior-plan stability, and all data quality
+limitations.
+
+## Optimization model
+
+A mixed-integer linear model is the proposed baseline for discrete food choices,
+portion increments, and meal assignments. A solver adapter keeps domain
+semantics independent of a vendor.
+
+### Hard constraints
+
+- declared allergies and accepted safety exclusions;
+- intended-use and eligibility policy;
+- dimensionally valid and permitted portion bounds;
+- source availability and explicitly immutable user prohibitions;
+- scientifically approved hard limits;
+- internal consistency of servings, slots, and horizon.
+
+Hard constraints are never relaxed to improve score. When infeasible, the
+result identifies a minimal/useful conflict set where the solver permits it.
+
+### Hierarchical soft objectives
+
+1. minimize policy-defined nutrient deviation;
+2. respect strong preferences and practical schedule;
+3. minimize cost and preparation burden;
+4. improve diversity and cuisine fit;
+5. reduce waste and unnecessary change from the prior plan.
+
+Weights, normalization, priority tiers, and tie-breakers are versioned policy.
+A combined score ranks alternatives; it MUST NOT be presented as a universal
+health score or probability of success.
+
+## Predictions
+
+Predictions are independent modules with a declared outcome, horizon,
+population, baseline, model/data version, interval, and validation evidence.
+They cannot automatically modify safety limits or user goals. An unvalidated
+model runs only in evaluation/shadow mode.
+
+## Determinism and replay
+
+Each run retains:
+
+```text
+run_id
+input/context snapshot and candidate ordering
+food data + scientific rule releases
+engine/model/solver versions
+solver parameters, seed, limits, and optimality gap
+all candidates or required replay artifacts
+validation report
+output hash
+```
+
+A seed alone is insufficient. Where a solver cannot guarantee bit-for-bit
+replay, the exact accepted result and validation evidence are retained.
+
+## Independent validation
+
+The post-solve validator is implemented separately from objective construction.
+It recomputes amounts and verifies hard constraints, eligibility, food/recipe
+revisions, unit consistency, serving bounds, and plan totals.
+
+After prediction and explanation generation, a separate claims validator checks
+that every number and material claim resolves to validated typed output, that
+each model is applicable to the current request, and that language remains
+inside the intended-use boundary.
+
+Immediately before publication, the system atomically verifies that the
+eligibility, consent, allergy/restriction, context, active safety-policy, and
+dataset revisions used by the run are still current. A stale run is invalidated
+and safely recomputed or returned as NEEDS_INPUT; it is never published from
+cache. Cache reads and user substitutions pass the same validation and freshness
+gates.
+
+A failed validation quarantines the result, records diagnostics, emits an
+operational signal, and shows no plan.
+
+## Explanation
+
+Every plan exposes:
+
+- decisive constraints and reasons for selected foods/portions;
+- nutrient target distance and remaining unmet objectives;
+- meaningful trade-offs versus alternatives;
+- assumptions, missing data, and quality limitations;
+- solver status and non-optimality where material;
+- independently validated substitutions.
+
+If generative AI is introduced, it may parse user language or verbalize a
+validated trace. It may not calculate nutrient values, set targets, decide
+safety, invent a substitution, or introduce a number absent from typed output.
+
+## Evaluation
+
+Release gates cover hard-constraint violations, feasibility/infeasibility
+diagnostics, target deviation, stability, diversity, cultural/catalog coverage,
+latency p50/p95, optimality gap, explanation fidelity, user acceptance and
+correction rates, and subgroup analysis. See
+[verification and evaluation](../quality/verification-and-evaluation.md).

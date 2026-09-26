@@ -1,0 +1,115 @@
+services:
+  dev-dependencies:
+    image: nutrixx-api:local
+    user: root
+    entrypoint:
+      - /bin/sh
+      - -euc
+    command:
+      - |
+        dependency_fingerprint="$$(
+          {
+            sha256sum /workspace/.npmrc /workspace/package.json /workspace/package-lock.json /workspace/apps/api/package.json /workspace/apps/web/package.json
+            node --version
+            npm --version
+            uname -sm
+          } | sha256sum | awk '{print $$1}'
+        )"
+
+        sync_dependencies() {
+          source_dir="$$1"
+          destination="$$2"
+          marker="$$destination/.nutrixx-dependencies.sha256"
+
+          case "$$destination" in
+            /volumes/api-root|/volumes/api-workspace|/volumes/web-root|/volumes/web-workspace) ;;
+            *) echo "Refusing unsafe dependency destination: $$destination" >&2; exit 70 ;;
+          esac
+
+          test -d "$$source_dir"
+          mkdir -p "$$destination"
+
+          if [ "$$(cat "$$marker" 2>/dev/null || true)" = "$$dependency_fingerprint" ]; then
+            echo "Dependencies are current: $$destination"
+            return
+          fi
+
+          echo "Synchronizing dependencies: $$destination"
+          find "$$destination" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          cp -a "$$source_dir"/. "$$destination"/
+          printf '%s\n' "$$dependency_fingerprint" > "$$marker"
+          chown -R root:root "$$destination"
+        }
+
+        sync_dependencies /workspace/node_modules /volumes/api-root
+        sync_dependencies /workspace/apps/api/node_modules /volumes/api-workspace
+        sync_dependencies /workspace/node_modules /volumes/web-root
+        sync_dependencies /workspace/apps/web/node_modules /volumes/web-workspace
+    network_mode: none
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    volumes:
+      - api_root_node_modules:/volumes/api-root
+      - api_workspace_node_modules:/volumes/api-workspace
+      - web_root_node_modules:/volumes/web-root
+      - web_workspace_node_modules:/volumes/web-workspace
+    restart: 'no'
+
+  api:
+    build:
+      target: development
+    user: root
+    cap_add:
+      - DAC_OVERRIDE
+      - FOWNER
+    working_dir: /workspace
+    command: npm run start:dev --workspace=@nutrixx/api
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ../..:/workspace
+      - api_root_node_modules:/workspace/node_modules
+      - api_workspace_node_modules:/workspace/apps/api/node_modules
+    depends_on:
+      dev-dependencies:
+        condition: service_completed_successfully
+    restart: 'no'
+
+  web:
+    build:
+      target: development
+    user: root
+    cap_add:
+      - DAC_OVERRIDE
+      - FOWNER
+    working_dir: /workspace
+    command:
+      - npm
+      - run
+      - dev
+      - --workspace=@nutrixx/web
+      - --
+      - --hostname
+      - 0.0.0.0
+      - --port
+      - ${WEB_PORT:-3000}
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ../..:/workspace
+      - web_root_node_modules:/workspace/node_modules
+      - web_workspace_node_modules:/workspace/apps/web/node_modules
+    restart: 'no'
+
+volumes:
+  api_root_node_modules:
+  api_workspace_node_modules:
+  web_root_node_modules:
+  web_workspace_node_modules:

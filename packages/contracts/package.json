@@ -1,0 +1,10 @@
+{
+  "name": "@nutrixx/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Source-of-truth API contracts for Nutrixx.",
+  "scripts": {
+    "lint": "redocly lint --config ../../redocly.yaml nutrixx@v1",
+    "build": "redocly bundle --config ../../redocly.yaml nutrixx@v1 --output dist/openapi.yaml"
+  }
+}

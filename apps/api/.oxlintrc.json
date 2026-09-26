@@ -1,0 +1,63 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "typescript",
+    "import",
+    "node",
+    "promise",
+    "unicorn",
+    "oxc",
+    "vitest"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": [
+      "error",
+      {
+        "checkThenables": true,
+        "ignoreVoid": false
+      }
+    ],
+    "typescript/no-misused-promises": "error",
+    "typescript/no-extraneous-class": [
+      "error",
+      {
+        "allowWithDecorator": true
+      }
+    ],
+    "typescript/switch-exhaustiveness-check": "error",
+    "import/no-cycle": [
+      "error",
+      {
+        "ignoreTypes": true
+      }
+    ]
+  },
+  "env": {
+    "node": true
+  },
+  "ignorePatterns": ["dist/**", "coverage/**"],
+  "overrides": [
+    {
+      "files": ["src/**/*.spec.ts", "test/**/*.ts"],
+      "rules": {
+        "vitest/no-focused-tests": "error",
+        "vitest/no-disabled-tests": "error"
+      }
+    }
+  ],
+  "options": {
+    "typeAware": true,
+    "maxWarnings": 0
+  }
+}

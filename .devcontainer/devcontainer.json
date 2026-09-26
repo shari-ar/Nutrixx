@@ -1,0 +1,16 @@
+{
+  "name": "Nutrixx Development",
+  "dockerComposeFile": [
+    "../infra/compose/compose.yaml",
+    "../infra/compose/compose.dev.yaml"
+  ],
+  "service": "api",
+  "runServices": ["api", "web"],
+  "workspaceFolder": "/workspace",
+  "overrideCommand": false,
+  "shutdownAction": "stopCompose",
+  "postStartCommand": ["node", ".devcontainer/wait-for-api.mjs"],
+  "waitFor": "postStartCommand",
+  "remoteUser": "root",
+  "updateRemoteUserUID": false
+}

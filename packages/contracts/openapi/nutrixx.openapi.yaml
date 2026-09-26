@@ -1,0 +1,138 @@
+openapi: 3.1.0
+
+info:
+  title: Nutrixx API
+  version: 0.1.0
+  summary: Stable HTTP contract for the Nutrixx platform.
+  description: >-
+    The design-first contract shared by Nutrixx clients and services. Changes to
+    implementation code must follow this document rather than redefine it.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+
+servers:
+  - url: /api/v1
+    description: Version 1 API base path
+
+tags:
+  - name: System
+    description: Service identity and operational readiness.
+
+security: []
+
+paths:
+  /:
+    get:
+      operationId: getApiInfo
+      summary: Get API information
+      description: Returns the service identity and current contract version.
+      tags:
+        - System
+      responses:
+        '200':
+          description: API information returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInfo'
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check API health
+      description: Returns a lightweight readiness response for orchestration.
+      tags:
+        - System
+      responses:
+        '200':
+          description: The API is ready to accept requests.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+        '503':
+          description: The API is not ready to accept requests.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    ApiInfo:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - status
+        - version
+      properties:
+        name:
+          type: string
+          const: Nutrixx API
+        status:
+          type: string
+          enum:
+            - ready
+        version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+          examples:
+            - 0.1.0
+
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+
+    ProblemDetails:
+      type: object
+      additionalProperties: true
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+
+  responses:
+    ClientError:
+      description: The request could not be accepted.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    InternalServerError:
+      description: An unexpected server error occurred.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'

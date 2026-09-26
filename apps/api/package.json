@@ -1,0 +1,53 @@
+{
+  "name": "@nutrixx/api",
+  "version": "0.1.0",
+  "description": "NestJS API for the Nutrixx nutrition platform.",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "build": "npm run typecheck && nest build --builder rspack --rspackPath ./rspack.config.mjs",
+    "check": "npm run format:check && npm run lint && npm run test && npm run test:e2e && npm run build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{json,mjs,ts}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{json,mjs,ts}\"",
+    "lint": "oxlint src/ test/ vitest.config.ts vitest.config.e2e.ts rspack.config.mjs",
+    "lint:fix": "oxlint --fix src/ test/ vitest.config.ts vitest.config.e2e.ts rspack.config.mjs",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main.js",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:watch": "vitest watch --config ./vitest.config.ts",
+    "test:cov": "vitest run --config ./vitest.config.ts --coverage",
+    "test:debug": "vitest --config ./vitest.config.ts --inspect-brk --no-file-parallelism",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "test:e2e:watch": "vitest watch --config ./vitest.config.e2e.ts",
+    "typecheck": "tsc --noEmit --project ./tsconfig.json"
+  },
+  "dependencies": {
+    "@nutrixx/config": "0.1.0",
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/platform-express": "^12.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.0",
+    "@nestjs/schematics": "^12.0.0",
+    "@nestjs/testing": "^12.0.1",
+    "@rspack/core": "^2.1.10",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^7.0.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "oxlint": "^1.58.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "tsconfig-paths-webpack-plugin": "^4.2.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
