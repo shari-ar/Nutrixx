@@ -4,43 +4,60 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: quarterly
       time: '06:00'
       timezone: Asia/Tehran
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    cooldown:
+      semver-major-days: 30
+      semver-minor-days: 14
+      semver-patch-days: 7
     groups:
-      production-dependencies:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
-      development-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
+      routine-npm-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+      npm-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: quarterly
       time: '06:15'
       timezone: Asia/Tehran
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 14
     groups:
       github-actions:
+        applies-to: version-updates
         patterns:
           - '*'
+    commit-message:
+      prefix: ci
+      include: scope
 
   - package-ecosystem: docker
     directory: /infra/docker
     schedule:
-      interval: weekly
-      day: monday
+      interval: quarterly
       time: '06:30'
       timezone: Asia/Tehran
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 14
     groups:
       docker-images:
+        applies-to: version-updates
         patterns:
           - '*'
+    commit-message:
+      prefix: chore
+      include: scope
