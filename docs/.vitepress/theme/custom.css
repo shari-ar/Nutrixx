@@ -107,6 +107,12 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
 }
 
+.dark .nutrixx-mermaid .labelBkg,
+.dark .nutrixx-mermaid .edgeLabel p {
+  color: #f5f8fc !important;
+  background-color: var(--vp-c-bg-elv) !important;
+}
+
 @media (max-width: 640px) {
   .nutrixx-mermaid {
     padding: 0.75rem;
