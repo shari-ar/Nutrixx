@@ -35,8 +35,8 @@
     "check": "npm run docs:check && npm run format:check && npm run docs:build && npm run lint && npm run test && npm run build"
   },
   "devDependencies": {
-    "@redocly/cli": "2.53.3",
-    "prettier": "3.5.3",
+    "@redocly/cli": "2.54.2",
+    "prettier": "3.9.9",
     "vitepress": "1.6.4"
   }
 }
