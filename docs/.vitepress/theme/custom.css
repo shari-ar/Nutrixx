@@ -84,6 +84,35 @@
   box-shadow: inset 0 0 0 1px var(--vp-c-divider);
 }
 
+.nutrixx-mermaid {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff, var(--vp-c-bg-alt));
+  box-shadow: 0 10px 30px rgba(11, 31, 58, 0.06);
+}
+
+.nutrixx-mermaid > svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.dark .nutrixx-mermaid {
+  background: linear-gradient(145deg, var(--vp-c-bg-elv), var(--vp-c-bg-alt));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+@media (max-width: 640px) {
+  .nutrixx-mermaid {
+    padding: 0.75rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .VPFeature {
     transition: none;

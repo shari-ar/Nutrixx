@@ -4,6 +4,7 @@ import { basename, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig, type DefaultTheme } from 'vitepress';
+import { withMermaid } from 'vitepress-plugin-mermaid';
 
 const docsRoot = fileURLToPath(new URL('..', import.meta.url));
 const repository = 'https://github.com/shari-ar/Nutrixx';
@@ -163,83 +164,123 @@ function buildRewrites(): Record<string, string> {
   return rewrites;
 }
 
-export default defineConfig({
-  lang: 'en-US',
-  title: 'Nutrixx Docs',
-  titleTemplate: ':title · Nutrixx Docs',
-  description:
-    'The technical source of truth for the Nutrixx personalized nutrition platform.',
-  base,
-  cleanUrls: true,
-  srcExclude: ['public/README.md'],
-  lastUpdated: gitIsAvailable(),
-  rewrites: buildRewrites(),
-  ignoreDeadLinks: 'localhostLinks',
-  sitemap: {
-    hostname: 'https://shari-ar.github.io/Nutrixx/',
-  },
-  head: [
-    [
-      'link',
-      { rel: 'icon', type: 'image/png', href: `${base}nutrixx-mark.png` },
-    ],
-    ['meta', { name: 'theme-color', content: '#0b1f3a' }],
-    [
-      'meta',
-      { property: 'og:site_name', content: 'Nutrixx Technical Documentation' },
-    ],
-  ],
-  markdown: {
-    lineNumbers: true,
-    theme: {
-      light: 'github-light',
-      dark: 'github-dark',
+export default withMermaid(
+  defineConfig({
+    lang: 'en-US',
+    title: 'Nutrixx Docs',
+    titleTemplate: ':title · Nutrixx Docs',
+    description:
+      'The technical source of truth for the Nutrixx personalized nutrition platform.',
+    base,
+    cleanUrls: true,
+    srcExclude: ['public/README.md'],
+    lastUpdated: gitIsAvailable(),
+    rewrites: buildRewrites(),
+    ignoreDeadLinks: 'localhostLinks',
+    sitemap: {
+      hostname: 'https://shari-ar.github.io/Nutrixx/',
     },
-  },
-  themeConfig: {
-    logo: '/nutrixx-mark.png',
-    siteTitle: 'Nutrixx Docs',
-    nav: [
-      { text: 'Product', link: '/product/' },
-      { text: 'Architecture', link: '/architecture/' },
-      { text: 'Domain', link: '/domain/' },
-      {
-        text: 'Reference',
-        items: [
-          { text: 'Nutrition model', link: '/nutrition-model/' },
-          { text: 'Data', link: '/data/' },
-          { text: 'Decision engines', link: '/engines/' },
-          { text: 'API', link: '/api/' },
-          { text: 'Quality and evidence', link: '/quality/' },
-          { text: 'Security and privacy', link: '/security-privacy/' },
-          { text: 'Operations', link: '/operations/' },
-        ],
-      },
-      { text: 'Roadmap', link: '/roadmap/' },
+    head: [
+      [
+        'link',
+        { rel: 'icon', type: 'image/png', href: `${base}nutrixx-mark.png` },
+      ],
+      ['meta', { name: 'theme-color', content: '#0b1f3a' }],
+      [
+        'meta',
+        {
+          property: 'og:site_name',
+          content: 'Nutrixx Technical Documentation',
+        },
+      ],
     ],
-    sidebar: buildSidebar(),
-    search: { provider: 'local' },
-    outline: { level: [2, 3], label: 'On this page' },
-    editLink: {
-      pattern: `${repository}/edit/main/docs/:path`,
-      text: 'Edit this page on GitHub',
-    },
-    lastUpdated: {
-      text: 'Last updated',
-      formatOptions: {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+    markdown: {
+      lineNumbers: true,
+      theme: {
+        light: 'github-light',
+        dark: 'github-dark',
       },
     },
-    docFooter: {
-      prev: 'Previous',
-      next: 'Next',
+    mermaid: {
+      securityLevel: 'strict',
+      startOnLoad: false,
+      theme: 'base',
+      fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+      themeVariables: {
+        background: '#ffffff',
+        primaryColor: '#fff4ed',
+        primaryTextColor: '#0b1f3a',
+        primaryBorderColor: '#e46628',
+        lineColor: '#5c6f86',
+        secondaryColor: '#eef3f8',
+        secondaryTextColor: '#0b1f3a',
+        secondaryBorderColor: '#9aabc0',
+        tertiaryColor: '#f6f8fb',
+        tertiaryTextColor: '#0b1f3a',
+        tertiaryBorderColor: '#cbd5e1',
+        clusterBkg: '#f6f8fb',
+        clusterBorder: '#cbd5e1',
+        edgeLabelBackground: '#ffffff',
+      },
+      flowchart: {
+        curve: 'basis',
+        htmlLabels: true,
+        useMaxWidth: true,
+      },
     },
-    socialLinks: [{ icon: 'github', link: repository }],
-    externalLinkIcon: true,
-    footer: {
-      message: 'Technical source of truth for Nutrixx.',
-      copyright: 'Copyright © Nutrixx',
+    mermaidPlugin: {
+      class: 'nutrixx-mermaid',
     },
-  },
-});
+    vite: {
+      optimizeDeps: {
+        include: ['mermaid'],
+      },
+    },
+    themeConfig: {
+      logo: '/nutrixx-mark.png',
+      siteTitle: 'Nutrixx Docs',
+      nav: [
+        { text: 'Product', link: '/product/' },
+        { text: 'Architecture', link: '/architecture/' },
+        { text: 'Domain', link: '/domain/' },
+        {
+          text: 'Reference',
+          items: [
+            { text: 'Nutrition model', link: '/nutrition-model/' },
+            { text: 'Data', link: '/data/' },
+            { text: 'Decision engines', link: '/engines/' },
+            { text: 'API', link: '/api/' },
+            { text: 'Quality and evidence', link: '/quality/' },
+            { text: 'Security and privacy', link: '/security-privacy/' },
+            { text: 'Operations', link: '/operations/' },
+          ],
+        },
+        { text: 'Roadmap', link: '/roadmap/' },
+      ],
+      sidebar: buildSidebar(),
+      search: { provider: 'local' },
+      outline: { level: [2, 3], label: 'On this page' },
+      editLink: {
+        pattern: `${repository}/edit/main/docs/:path`,
+        text: 'Edit this page on GitHub',
+      },
+      lastUpdated: {
+        text: 'Last updated',
+        formatOptions: {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        },
+      },
+      docFooter: {
+        prev: 'Previous',
+        next: 'Next',
+      },
+      socialLinks: [{ icon: 'github', link: repository }],
+      externalLinkIcon: true,
+      footer: {
+        message: 'Technical source of truth for Nutrixx.',
+        copyright: 'Copyright © Nutrixx',
+      },
+    },
+  }),
+);

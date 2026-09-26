@@ -24,7 +24,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:check": "node scripts/check-readmes.mjs",
+    "docs:check": "node scripts/check-readmes.mjs && node scripts/check-mermaid.mjs",
     "format": "prettier . --write --ignore-unknown",
     "format:check": "prettier . --check --ignore-unknown",
     "contract:lint": "npm run lint --workspace=@nutrixx/contracts",
@@ -36,7 +36,9 @@
   },
   "devDependencies": {
     "@redocly/cli": "2.53.3",
+    "mermaid": "11.17.2",
     "prettier": "3.5.3",
-    "vitepress": "1.6.4"
+    "vitepress": "1.6.4",
+    "vitepress-plugin-mermaid": "2.0.17"
   }
 }
