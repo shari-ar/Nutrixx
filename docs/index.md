@@ -32,6 +32,9 @@ features:
   - icon: 🛡️
     title: Safety by design
     details: Treat explainability, privacy, reversibility, and human escalation as product capabilities.
+  - icon: 💾
+    title: Local-first ownership
+    details: Make the complete Free product browser-local and add verified cloud custody only when the user chooses it.
   - icon: ⚙️
     title: Engineering source of truth
     details: Keep contracts, quality scenarios, operating expectations, and technical constraints together.
@@ -45,7 +48,9 @@ features:
 | If you want to…                         | Start here                                                |
 | --------------------------------------- | --------------------------------------------------------- |
 | Understand what Nutrixx must become     | [Product constitution](/product/constitution)             |
+| Compare Free, Pro, and Ultimate          | [Plans and entitlements](/product/plans-and-entitlements)  |
 | See the system shape and boundaries     | [Target architecture](/architecture/target-architecture)  |
+| Follow local-to-cloud evolution          | [Local-first architecture](/architecture/local-first-evolution) |
 | Learn the core language and concepts    | [Domain model](/domain/domain-model)                      |
 | Understand nutrition computation        | [Nutrition-model foundation](/nutrition-model/foundation) |
 | Inspect recommendation behavior         | [Decision engines](/engines/)                             |

@@ -5,11 +5,12 @@
 | Status        | Target-state index                         |
 | Audience      | Engineering, product, security, operations |
 | Owner         | Nutrixx Architecture                       |
-| Last reviewed | 2026-09-22                                 |
+| Last reviewed | 2026-09-27                                 |
 
 | Document                                                | View                                                   |
 | ------------------------------------------------------- | ------------------------------------------------------ |
 | [Target architecture](target-architecture.md)           | Goals, C4 context/containers, deployment, and strategy |
+| [Local-first evolution](local-first-evolution.md)        | Authority modes, local boundary, cloud boundary, and staged evolution |
 | [Domain boundaries](domain-boundaries.md)               | Ownership and allowed dependencies                     |
 | [Quality scenarios](quality-scenarios.md)               | Measurable architectural requirements                  |
 | [Risks and technical debt](risks-and-technical-debt.md) | Material risks, mitigations, and trigger points        |

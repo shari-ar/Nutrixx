@@ -5,7 +5,7 @@
 | Status        | Target-state index           |
 | Audience      | All system owners            |
 | Owner         | Nutrixx Security and Privacy |
-| Last reviewed | 2026-09-22                   |
+| Last reviewed | 2026-09-27                   |
 
 | Document                                                                        | Purpose                                                             |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |

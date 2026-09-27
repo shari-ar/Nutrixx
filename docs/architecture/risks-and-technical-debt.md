@@ -5,7 +5,7 @@
 | Status        | Living target-state risk register                  |
 | Audience      | Product, architecture, nutrition science, security |
 | Owner         | Nutrixx Architecture                               |
-| Last reviewed | 2026-09-22                                         |
+| Last reviewed | 2026-09-27                                         |
 
 | Risk                                                       | Impact                                  | Mitigation / decision trigger                                                                 |
 | ---------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -19,6 +19,13 @@
 | Vendor lock-in                                             | Cost and migration risk                 | Ports/adapters for identity, solver, data providers, storage, notifications                   |
 | Recommendation bias by culture or catalog coverage         | Exclusion and low plan quality          | Coverage metrics by cuisine/group, representative benchmarks, reviewer escalation             |
 | Generative AI invents facts                                | Misleading or unsafe output             | No LLM authority for math/safety; explanation claims resolve to validated trace               |
+| Browser eviction, profile reset, or device loss             | Free user's only local copy is lost      | Persistence request, storage status, export reminders, versioned portable backup, truthful UX  |
+| Local/cloud migration creates split-brain authority         | Divergent or duplicated user facts       | Explicit authority state machine, immutable manifest, hash/count verification, resumable staging |
+| Browser-held provider credential is exposed by XSS          | Unauthorized AI spend or data disclosure | Prefer provider OAuth/short-lived tokens, strict CSP/Trusted Types, memory-only key option, clear risk disclosure |
+| Client tampers with plan or usage state                      | Revenue loss and inconsistent access     | Server-authoritative entitlements and append-only usage ledger; client state is advisory only  |
+| Hosted AI retry miscounts allowance                         | Unfair billing or uncontrolled cost      | Idempotent reservation IDs, consume/release terminal states, timeout reconciliation            |
+| Assistant tool call exceeds user intent                     | Unauthorized change or harmful guidance  | Allowlisted typed tools, least privilege, contextual authorization, confirmation, audit trace  |
+| Experimental model download harms constrained devices       | Poor performance, storage pressure       | Never automatic, capability check, size disclosure, cancellation, cleanup and fallback         |
 
 ## Debt policy
 

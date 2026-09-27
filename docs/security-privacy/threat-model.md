@@ -5,7 +5,7 @@
 | Status        | Initial target-state model; review at every material data-flow change |
 | Audience      | Architecture, engineering, security, operations                       |
 | Owner         | Nutrixx Security                                                      |
-| Last reviewed | 2026-09-22                                                            |
+| Last reviewed | 2026-09-27                                                            |
 
 ## Protected assets
 
@@ -16,21 +16,29 @@
   approvals;
 - provenance/audit evidence, encryption material, and operational secrets;
 - service availability and the integrity of user-visible guidance.
+- browser-local canonical data, portable exports, migration manifests,
+  entitlements/usage balances, AI drafts, and assistant tool authorization.
 
 ## Trust boundaries
 
 ```mermaid
 flowchart LR
-    USER[Untrusted client/device]
+    USER[Person]
+    WEB[Browser application]
+    LDB[(Local canonical DB or cloud cache)]
     EDGE[Internet edge]
-    APP[Web and API]
+    APP[Cloud API]
     PRIV[Private workers and stores]
     ADMIN[Privileged reviewer/operator plane]
-    EXT[External identity/data/notification providers]
+    EXT[Identity, data, payment and notification providers]
+    AI[Allowlisted or user-selected AI provider]
 
-    USER --> EDGE --> APP --> PRIV
+    USER --> WEB --> LDB
+    WEB --> EDGE --> APP --> PRIV
     ADMIN -->|separate strong auth + audit| PRIV
     APP <-->|minimized contracts| EXT
+    APP <-->|typed hosted inference| AI
+    WEB -. explicit Experimental Local Processing .-> AI
 ```
 
 Raw imports, user text, uploaded files, external callbacks, generated content,
@@ -51,6 +59,12 @@ and provider claims are untrusted until validated.
 | Availability attack         | Expensive searches or solve requests    | Edge/API rate limits, quotas, time/size budgets, async isolation, circuit breakers                           |
 | Privileged misuse           | Reviewer silently changes policy        | Least privilege, separate admin plane, step-up auth, attributable approval, immutable audit                  |
 | Inference/model leakage     | Explanations reveal sensitive facts     | Output policy, minimization, ownership filtering, adversarial evaluation                                     |
+| Local database loss         | Browser eviction, profile reset, corrupt migration | Persistence/status UX, verified export/import, migration fixtures, recovery path; never promise cloud durability in Free |
+| XSS steals BYOK/data        | Script reads local meals or provider key | Strict CSP/Trusted Types, minimized third-party script, dependency integrity, memory-only key option, no key telemetry |
+| Migration split brain       | Local and cloud both accept writes       | Authority state machine, fenced epochs, staged verification, resumable commands, exactly one writable authority |
+| Entitlement/usage fraud     | Client forges Ultimate or replays action | Server-side grants, signed provider events, idempotent ledger, nonce/replay controls, reconciliation and audit |
+| Prompt/tool injection       | Food text asks assistant to export or overwrite data | Separate data from instructions, allowlisted typed tools, contextual authorization, confirmation, output/argument validation |
+| AI cost exhaustion          | Automated capture/assistant flood        | Entitlements, quotas/budgets, per-principal concurrency, provider timeout, circuit breaker, abuse review      |
 
 ## Process
 

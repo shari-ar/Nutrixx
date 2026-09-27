@@ -5,7 +5,7 @@
 | Status        | Target-state index                                       |
 | Audience      | Product, nutrition science, engineering, quality, safety |
 | Owner         | Nutrixx Quality                                          |
-| Last reviewed | 2026-09-22                                               |
+| Last reviewed | 2026-09-27                                               |
 
 | Document                                                      | Purpose                                               |
 | ------------------------------------------------------------- | ----------------------------------------------------- |

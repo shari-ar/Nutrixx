@@ -5,7 +5,7 @@
 | Status        | Proposed target design                            |
 | Audience      | Optimization, nutrition science, product, quality |
 | Owner         | Nutrixx Optimization Engineering                  |
-| Last reviewed | 2026-09-22                                        |
+| Last reviewed | 2026-09-27                                        |
 
 ## Contract
 
@@ -30,6 +30,19 @@ ContextSnapshot
 
 Possible statuses are READY, NEEDS_INPUT, INFEASIBLE, OUT_OF_SCOPE, and ERROR.
 FEASIBLE and OPTIMAL are separate solver outcomes.
+
+## Capability profiles
+
+| Profile | Eligibility | Boundary |
+| --- | --- | --- |
+| Free local approximate | Free, on a supported device | Deterministic bounded candidate set and approved local heuristics; no hosted inference and no AI-dependent optimizer capability |
+| Pro full optimizer | Pro entitlement | Complete eligible cloud optimization contract without requiring the user's API key |
+| Ultimate full optimizer | Ultimate entitlement | Same scientific/safety contract as Pro; higher hosted-AI capture allowances and assistant access do not weaken validation |
+
+Experimental Local Processing may help parse input into a draft, but it cannot
+unlock the full paid optimizer or become an optimizer authority. Entitlement
+differences affect available compute/capabilities, never safety constraints or
+the meaning of nutrient calculations.
 
 ## Planning context
 

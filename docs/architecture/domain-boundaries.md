@@ -5,7 +5,7 @@
 | Status        | Proposed                       |
 | Audience      | Application and data engineers |
 | Owner         | Nutrixx Architecture           |
-| Last reviewed | 2026-09-22                     |
+| Last reviewed | 2026-09-27                     |
 
 ## Logical modules
 
@@ -21,6 +21,9 @@
 | planning          | requests, optimizer runs, plans, feedback           | state/user/food snapshots, active rule release       |
 | data-publication  | source batches, mappings, quality reports, releases | external source artifacts                            |
 | audit-provenance  | append-only evidence and decision traces            | domain events and run fingerprints                   |
+| commerce-entitlements | subscriptions, entitlement grants, usage reservations and ledger | billing-provider events, identity reference          |
+| portability-sync  | export bundles, migration sessions, sync cursors and conflicts | canonical snapshots, identity and entitlement decisions |
+| ai-orchestration  | capture jobs, validated drafts, assistant sessions and tool invocations | entitlements, read-only domain projections, allowlisted application tools |
 
 ## Enforced dependency direction
 
@@ -48,6 +51,14 @@ Rules:
 - Circular dependencies fail CI architecture tests.
 - Read models may join replicated/public data, but they do not create hidden
   write coupling.
+- Browser and PostgreSQL adapters implement the same canonical repository
+  contracts; adapter choice does not leak into domain rules.
+- Entitlements authorize capabilities but never alter nutrition facts or
+  scientific calculations.
+- AI orchestration can propose typed commands; the owning domain validates and
+  commits a confirmed command through its public application interface.
+- Migration/sync is the only module allowed to switch canonical authority, and
+  it does so only after manifest and content verification.
 
 ## Transaction boundaries
 

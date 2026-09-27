@@ -5,7 +5,7 @@
 | Status        | Target-state index                                            |
 | Audience      | Product, engineering, nutrition science, security, operations |
 | Owner         | Nutrixx Engineering                                           |
-| Last reviewed | 2026-09-26                                                    |
+| Last reviewed | 2026-09-27                                                    |
 
 This documentation defines the product Nutrixx is intended to become. The
 current repository scaffold is an implementation starting point, not evidence
@@ -20,9 +20,11 @@ source; the website is a generated presentation of it.
 | If you need to understand…                    | Start here                                                 |
 | --------------------------------------------- | ---------------------------------------------------------- |
 | Product promise, scope, and non-goals         | [Product constitution](product/constitution.md)            |
+| Free, Pro, Ultimate, quotas, and migration     | [Plans and entitlements](product/plans-and-entitlements.md) |
 | Required capabilities and acceptance outcomes | [Product requirements](product/requirements.md)            |
 | Domain language and lifecycle                 | [Domain documentation](domain/README.md)                   |
 | System boundaries and technical strategy      | [Target architecture](architecture/target-architecture.md) |
+| Local-first operation and cloud evolution      | [Local-first architecture](architecture/local-first-evolution.md) |
 | Canonical data, lineage, and versioning       | [Data architecture](data/architecture.md)                  |
 | Calculations and optimization                 | [Engine documentation](engines/README.md)                  |
 | API behavior                                  | [API conventions](api/conventions.md)                      |
@@ -61,6 +63,8 @@ by [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and
 ## Source-of-truth rules
 
 - OpenAPI defines HTTP schemas and operations; prose explains conventions only.
+- The plan-and-entitlement policy defines human product promises; a future
+  versioned machine-readable catalog will enforce the same values at runtime.
 - Accepted ADRs define architectural decisions; overview documents link to them.
 - Versioned scientific policy defines calculation semantics; application code
   MUST NOT invent or silently override those rules.

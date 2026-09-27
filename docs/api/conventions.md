@@ -5,7 +5,7 @@
 | Status          | Proposed target contract policy                   |
 | Audience        | API producers and consumers                       |
 | Owner           | Nutrixx API Engineering                           |
-| Last reviewed   | 2026-09-22                                        |
+| Last reviewed   | 2026-09-27                                        |
 | Source of truth | `packages/contracts/openapi/nutrixx.openapi.yaml` |
 
 ## Contract first
@@ -18,6 +18,11 @@ unless a versioned migration is approved.
 
 The latest specification is not adopted solely because it is latest. Toolchain
 support is verified and the version choice is recorded in an ADR.
+
+The OpenAPI contract describes cloud capabilities only. `LOCAL` workflows call
+storage-neutral application interfaces directly and MUST NOT add an HTTP round
+trip merely to resemble cloud mode. Shared command/result schemas belong in
+versioned contracts usable by both adapters.
 
 ## Resource and versioning model
 
@@ -56,6 +61,17 @@ support is verified and the version choice is recorded in an ADR.
 - Optimizer/recomputation requests that exceed synchronous budget return
   `202 Accepted`, a job resource, status URL, and optional retry hint.
 - Cancellation is best-effort and has an explicit terminal state.
+- Entitlement checks are server-authoritative for paid/cost-incurring work;
+  client plan labels, cached counters, or hidden controls never grant access.
+- Hosted AI creates an action resource with a stable idempotency identity and a
+  visible usage state: reserved, consumed, or released. Provider retries remain
+  inside the same action.
+- Migration/sync commands include source authority epoch, manifest/schema
+  version, stable command ID, and expected logical versions. Timestamps alone
+  never resolve conflicts or transfer authority.
+- Assistant tool calls use allowlisted typed operations and a short-lived
+  confirmation token bound to principal, arguments, policy version, expiry,
+  and intent for any write or consequential action.
 
 ## Collections
 
@@ -82,6 +98,12 @@ safe.
 Domain outcomes such as NEEDS_INPUT, INFEASIBLE, or OUT_OF_SCOPE are typed
 business results when the HTTP request itself succeeded; they are not disguised
 as server errors.
+
+Usage exhaustion is a typed entitlement outcome with reset/cycle metadata; it
+does not pretend to be a transient transport failure. A technical/provider
+failure releases a reservation according to the usage policy and returns safe
+retry semantics. A complete draft already shown to the user remains consumed
+even when later rejected.
 
 ## Security and privacy
 

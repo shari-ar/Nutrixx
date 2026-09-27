@@ -5,7 +5,7 @@
 | Status        | Target state             |
 | Audience      | Product and architecture |
 | Owner         | Nutrixx Product          |
-| Last reviewed | 2026-09-22               |
+| Last reviewed | 2026-09-27               |
 
 | Capability                | User value                                           | Owning domain             | Key output                              |
 | ------------------------- | ---------------------------------------------------- | ------------------------- | --------------------------------------- |
@@ -23,12 +23,19 @@
 | Scientific governance     | Keep policies reviewable and current                 | Nutrition Science         | Approved rule-set release               |
 | Audit and replay          | Reproduce important outcomes                         | Audit & Provenance        | Run fingerprint and trace               |
 | Operations and support    | Keep the service trustworthy                         | Platform Operations       | SLOs, alerts, runbooks, evidence        |
+| Local data ownership      | Use the complete free product without cloud custody  | Data Portability & Sync   | Local canonical store and export bundle |
+| Cloud promotion and sync  | Recover and use data across devices                  | Data Portability & Sync   | Verified migration and sync protocol    |
+| Subscription entitlements | Receive clear, consistently enforced plan benefits   | Commerce & Entitlements   | Versioned entitlement grant             |
+| AI-assisted capture       | Convert a short description into an editable draft   | AI Orchestration          | Validated capture draft                 |
+| Conversational guidance   | Ask grounded questions about an existing plan        | AI Orchestration          | Evidence-linked response and tool trace |
 
 ## Capability dependencies
 
 ```mermaid
 flowchart TD
-    IC[Identity & Consent] --> UC[User Context]
+    LD[Local Data Ownership] --> UC[User Context]
+    IC[Identity & Consent] --> EN[Entitlements]
+    IC --> UC
     FK[Food Knowledge] --> RK[Recipe Knowledge]
     FK --> CO[Consumption]
     RK --> CO
@@ -43,6 +50,15 @@ flowchart TD
     DP --> SC
     PL --> AU[Audit & Replay]
     NS --> AU
+    LD --> SY[Cloud Promotion & Sync]
+    IC --> SY
+    EN --> SY
+    CO --> AI[AI-assisted Capture]
+    AI --> CO
+    EN --> AI
+    PL --> CA[Conversational Guidance]
+    EN --> CA
+    CA --> AU
 ```
 
 Dependencies indicate information flow, not permission for one domain to write

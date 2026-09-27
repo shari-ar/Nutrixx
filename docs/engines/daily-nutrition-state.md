@@ -5,7 +5,7 @@
 | Status        | Proposed; scientific semantics require approval |
 | Audience      | Nutrition science, engine, product, quality     |
 | Owner         | Nutrixx Nutrition Science                       |
-| Last reviewed | 2026-09-22                                      |
+| Last reviewed | 2026-09-27                                      |
 
 ## Definition
 
@@ -16,7 +16,7 @@ unlogged meal was not consumed.
 
 ## Inputs
 
-- user ID and local period with IANA timezone/day-boundary policy;
+- subject/profile ID and local period with IANA timezone/day-boundary policy;
 - accepted meal/item revisions within the period;
 - exact food/recipe and composition release references;
 - applicable target-policy snapshot;

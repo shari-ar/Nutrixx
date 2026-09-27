@@ -5,7 +5,7 @@
 | Status        | Proposed; provider-specific details deferred            |
 | Audience      | Platform engineering, service owners, security, support |
 | Owner         | Nutrixx Operations                                      |
-| Last reviewed | 2026-09-22                                              |
+| Last reviewed | 2026-09-27                                              |
 
 ## Environments
 
@@ -15,6 +15,11 @@
 | Ephemeral preview   | Pull-request integration/UI review                        | Synthetic seeded data           | Built from immutable candidate           |
 | Staging             | Production-like release, migration, resilience validation | Synthetic or formally sanitized | Same artifact/config shape as production |
 | Production          | User service                                              | Real purpose-approved data      | Approved staged promotion                |
+
+Browser-local persistence is a production data plane for Free even though it
+is not Nutrixx-operated infrastructure. It therefore receives versioned schema
+migrations, compatibility fixtures, storage diagnostics, export/recovery UX,
+and client-side health signals that contain no nutrition payload.
 
 Production data MUST NOT be copied to lower environments. The same immutable
 artifacts move forward; they are not rebuilt per environment.
@@ -49,6 +54,11 @@ indicators and proposed objectives:
 | Planning jobs          | Valid terminal result within documented budget       | 99% excluding correct NEEDS_INPUT/OUT_OF_SCOPE   |
 | State freshness        | Meal changes reflected in accepted state             | p95 within agreed freshness window               |
 | Data publication       | Active release freshness and integrity               | Per provider cadence; zero unapproved activation |
+| Local core             | Successful eligible local commands/calculations       | Objective set per supported browser/device class |
+| Migration/sync         | Verified authority transition and acknowledged sync   | Zero unverified authority switches; latency after benchmark |
+| Hosted AI capture      | Valid terminal draft or truthful failure within budget | Objective per plan/action after provider benchmark |
+| Usage accounting       | Reservations reaching correct terminal state          | 100% reconciliation within approved window       |
+| Assistant tools        | Authorized, validated, correctly confirmed invocation | Zero confirmation/ownership bypass in release gates |
 
 Safety/integrity is a release invariant, not an error budget. Error budgets guide
 reliability work and release pace; they never permit hard safety violations or
@@ -73,6 +83,11 @@ Key signals:
 - calculation failures, version/fingerprint coverage, state freshness;
 - dataset quality, publication status, source freshness, rollback;
 - authorization denials/anomalies and privacy-workflow completion;
+- entitlement decisions, reservation age, reconciliation drift, provider cost
+  and budget exhaustion without user prompts or nutrition content;
+- migration stage/duration/failure class, manifest verification, sync lag and
+  conflict rate without record payloads;
+- assistant tool refusal/confirmation/error class and policy-version coverage;
 - business-quality signals such as correction burden and plan rejection,
   separated from operational health.
 
@@ -93,6 +108,13 @@ tested.
   merely that files exist.
 - Dependency and worker outages degrade honestly; no cached or generated plan
   bypasses current validation.
+- Browser schema upgrades are rehearsed against retained historical fixtures;
+  failure leaves the prior local authority recoverable.
+- Usage reservations have a bounded lease and reconciliation worker; an
+  uncertain provider outcome is investigated rather than guessed or silently
+  charged.
+- Provider cost and concurrency budgets can disable hosted AI independently
+  without blocking manual logging, export, or deterministic state.
 
 ## Incident management
 
@@ -123,6 +145,17 @@ Production launch requires:
 - backup/restore evidence and incident exercises;
 - deployment/rollback, migration, dataset/rule rollback tests;
 - vendor/licence, secrets, capacity, and support readiness.
+
+Plan-specific launch gates are cumulative:
+
+| Plan | Additional gate |
+| --- | --- |
+| Free | Supported-browser matrix, local schema recovery, export/import, offline core, storage-risk UX, deterministic local planning evidence |
+| Pro | Payment/entitlement reconciliation, verified cloud promotion/demotion, backup/restore, multi-device conflict tests, hosted capture quotas, full optimizer SLO/cost/runbooks |
+| Ultimate | Pro gates plus higher-limit capacity/budget, assistant grounding and adversarial evaluation, tool confirmation/kill switch, support escalation and retention policy |
+
+A plan is not publicly sold until its whole advertised contract passes. Internal
+incremental delivery uses flags/cohorts and must not imply a partial paid plan.
 
 ## References
 

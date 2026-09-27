@@ -5,7 +5,7 @@
 | Status        | Proposed target state                 |
 | Audience      | All contributors and decision-makers  |
 | Owner         | Nutrixx Product and Nutrition Science |
-| Last reviewed | 2026-09-22                            |
+| Last reviewed | 2026-09-27                            |
 
 ## Mission
 
@@ -40,6 +40,8 @@ validation evidence.
 | P-08 | User agency           | Users can correct facts, control optional data, inspect important assumptions, export data, and request deletion.               |
 | P-09 | Privacy by design     | Collect the minimum needed, isolate sensitive data, protect it in transit and at rest, and prohibit it from telemetry.          |
 | P-10 | Cultural practicality | Food availability, cuisine, budget, preparation time, and preference are first-class planning inputs.                           |
+| P-11 | Local-first ownership | Free users receive a complete useful product whose nutrition data is locally authoritative, portable, and usable without a Nutrixx cloud dependency. |
+| P-12 | Customer sovereignty  | Corrections, exports, plan changes, upgrades, downgrades, and consequential AI actions are transparent, reversible where possible, and never designed as lock-in. |
 
 ## Product loop
 
@@ -55,6 +57,10 @@ flowchart LR
 The loop improves data quality and relevance without pretending that repeated
 use alone proves health causality.
 
+The same canonical facts and deterministic engines power both local and cloud
+modes. A subscription changes storage, synchronization, hosted-compute, and
+service allowances; it does not change the scientific meaning of a fact.
+
 ## What success means
 
 Nutrixx succeeds when users can log reality quickly, see which conclusions are
@@ -62,6 +68,11 @@ well-supported, receive feasible recommendations, and understand trade-offs.
 Product success is evaluated through correction burden, recommendation
 acceptance, sustained logging, constraint violations, data completeness, and
 scientifically defined outcome metrics—not engagement alone.
+
+“The customer is always right” is implemented as customer sovereignty:
+respectful support, clear limits, correction rights, portability, recovery,
+and fair failure handling. It never overrides scientific evidence, safety,
+law, another person's rights, or proportionate abuse controls.
 
 ## Non-goals
 
@@ -72,6 +83,9 @@ scientifically defined outcome metrics—not engagement alone.
 - Maximizing the number of tracked nutrients without evidence that they change
   a decision.
 - Locking the domain model to one food database, country, solver, or cloud.
+- Making essential manual tracking conditional on a paid subscription.
+- Using deliberately difficult export, cancellation, or downgrade flows to
+  retain a customer.
 
 ## External policy anchors
 

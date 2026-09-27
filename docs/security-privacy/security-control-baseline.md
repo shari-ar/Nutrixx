@@ -5,7 +5,7 @@
 | Status        | Proposed                          |
 | Audience      | Engineering, security, operations |
 | Owner         | Nutrixx Security                  |
-| Last reviewed | 2026-09-22                        |
+| Last reviewed | 2026-09-27                        |
 
 Internet-facing releases target OWASP ASVS 5.0 Level 2, supplemented by
 risk-selected controls and the threat model. A checklist is not proof of
@@ -24,6 +24,11 @@ security; each applicable control maps to implemented evidence.
 | Logging/detection     | Structured allowlisted events, tamper resistance, correlation, actionable alerts, protected retention        |
 | Resilience            | Rate/budget limits, timeouts, circuit breakers, backups/PITR, restore and incident exercises                 |
 | Secure delivery       | Threat-model delta, code review, SAST/dependency/container/IaC scans, security regression gate               |
+| Browser-local data    | Origin isolation, strict CSP, Trusted Types where supported, dependency integrity, schema migration tests, explicit clear/export, no sensitive service-worker cache |
+| Provider credentials  | Prefer OAuth/short-lived scoped tokens; never proxy or persist BYOK without a separate explicit contract; memory-only option and redacted diagnostics |
+| Entitlements/usage    | Server-authoritative grants, signed/validated billing events, idempotent reservation ledger, replay protection, reconciliation |
+| Migration/sync        | Authenticated encrypted transfer, per-chunk and manifest hashes, ownership binding, single-authority switch, resumability, cleanup audit |
+| Generative AI/tools   | Treat output as untrusted, typed schemas, allowlisted tools, least privilege, prompt-injection defenses, confirmation and immutable trace for consequential actions |
 
 ## Release evidence
 

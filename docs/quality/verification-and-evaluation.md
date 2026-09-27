@@ -5,7 +5,7 @@
 | Status        | Proposed target strategy                                 |
 | Audience      | Engineering, quality, nutrition science, product, safety |
 | Owner         | Nutrixx Quality                                          |
-| Last reviewed | 2026-09-22                                               |
+| Last reviewed | 2026-09-27                                               |
 
 ## Test layers
 
@@ -16,11 +16,38 @@
 | Property/metamorphic   | Unit conversion round trips, portion scaling, order invariance, non-negative valid quantities, monotonic cases where scientifically valid |
 | Golden scientific      | Expert-approved food, recipe, target, state, and plan fixtures with defined tolerances                                                    |
 | Contract               | OpenAPI lint/bundle, schema compatibility, generated-client/provider tests, problem semantics                                             |
-| Integration            | Database transactions/outbox, queue idempotency, authz, import quarantine, version activation/rollback                                    |
-| End to end             | Critical user journeys including correction, offline/failure states, accessibility                                                        |
+| Integration            | Browser/PostgreSQL repository conformance, transactions/outbox, queue idempotency, authz, usage ledger, import quarantine, version activation/rollback |
+| End to end             | Critical local and cloud journeys including correction, offline/failure, export, upgrade/downgrade, quota UX, accessibility                |
 | Differential           | Compare engine/data/rule releases and investigate material change                                                                         |
 | Performance/resilience | Reference load, solve budgets, retry/timeout/circuit behavior, dependency and restore failure drills                                      |
 | Security/privacy       | ASVS evidence, threat-based tests, access isolation, log/telemetry scans, export/deletion                                                 |
+
+## Local-first and migration gates
+
+- Every canonical repository adapter passes the same behavioral contract and
+  engine golden fixtures.
+- Historical browser databases migrate through every supported schema path;
+  interruption and storage-pressure fixtures retain the prior recoverable copy.
+- Export/import proves schema compatibility, record counts, per-part hashes,
+  referential integrity, and deterministic result equivalence.
+- Upgrade/downgrade fault injection at every transition proves that exactly one
+  authority remains writable and accepted facts are recoverable.
+- Supported browsers cover storage persistence, eviction messaging, worker
+  interruption, offline reload, quota exhaustion, and explicit clear-data UX.
+
+## Entitlement and AI gates
+
+| Area | Release evidence |
+| --- | --- |
+| Entitlements | Plan-catalog fixtures, billing-event authenticity, effective-period boundaries, downgrade/grace behavior, client-tamper denial |
+| Usage accounting | Concurrent reserve/consume/release, timeout reconciliation, duplicate provider callback, idempotent retry, timezone/billing-cycle boundary |
+| AI capture | Schema validity, material ambiguity escalation, hallucinated-food rejection, user edit/confirm/reject, no unconfirmed canonical write |
+| Experimental Local Processing | Explicit activation, compatibility/size disclosure, cancellation/cleanup, provider credential non-disclosure, safe fallback |
+| Assistant | Grounding fidelity, ownership isolation, prompt/tool injection, allowlist/argument validation, required confirmation, refusal and audit completeness |
+
+Generative-model evaluation is versioned by provider/model/configuration and
+uses adversarial as well as representative multilingual inputs. A model change
+does not bypass contract, privacy, safety, cost, or regression gates.
 
 ## Nutrition engine gates
 

@@ -5,7 +5,7 @@
 | Status        | Target-state index                                      |
 | Audience      | Platform engineering, security, support, service owners |
 | Owner         | Nutrixx Operations                                      |
-| Last reviewed | 2026-09-22                                              |
+| Last reviewed | 2026-09-27                                              |
 
 [Target operating model](target-operating-model.md) defines environments,
 delivery, SLOs, observability, resilience, incident response, and launch gates.

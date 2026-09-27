@@ -5,7 +5,7 @@
 | Status        | Proposed                              |
 | Audience      | Data, API, engine engineers           |
 | Owner         | Nutrixx Data and Domain Working Group |
-| Last reviewed | 2026-09-22                            |
+| Last reviewed | 2026-09-27                            |
 
 ## Foundational value types
 
@@ -53,6 +53,37 @@ Recommended interoperability:
 - BCP 47 locale tags and IANA timezone identifiers.
 
 Mappings are versioned claims with provenance and review state.
+
+## Storage-neutral envelope
+
+Canonical user records are serializable without browser or PostgreSQL-specific
+fields. Each record carries a stable ID, schema version, subject ID, owning
+context, logical version, timestamps required by its domain, and integrity
+metadata. Storage adapters may add physical indexes but cannot change domain
+meaning.
+
+```text
+CanonicalRecord<T>
+├── record_id + subject_id + owning_context
+├── schema_version + logical_version
+├── payload: T
+├── created_at + updated_at/effective time as applicable
+├── provenance / correction reference
+└── content hash for export and migration verification
+```
+
+A portable bundle contains a versioned manifest, canonical records grouped by
+owning context, reference/version dependencies, per-part hashes, total counts,
+and compatibility metadata. It never contains provider credentials or server
+secrets.
+
+## Service-control records
+
+Entitlement grants, hosted-usage reservations, migration sessions, AI drafts,
+and assistant tool traces are operational/domain control records—not nutrition
+facts. They reference stable subjects/actions but cannot modify calculation
+meaning. AI drafts remain transient until transformed into a confirmed owning-
+domain command.
 
 ## Quantity basis
 

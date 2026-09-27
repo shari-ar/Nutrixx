@@ -5,19 +5,31 @@
 | Status        | Proposed target state                    |
 | Audience      | Architecture, data, application, privacy |
 | Owner         | Nutrixx Data                             |
-| Last reviewed | 2026-09-22                               |
+| Last reviewed | 2026-09-27                               |
 
 ## Store roles
 
 | Store                        | Durable authority                                                                                                 | Lifecycle                                                        |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| PostgreSQL                   | Accounts, consent, user facts, food/recipe canonical records, policies, state/plan snapshots, outbox, audit index | Backed up, point-in-time recoverable, schema-migrated            |
+| Browser database            | Canonical user nutrition facts and local snapshots in `LOCAL`; bounded cache/outbox in `CLOUD`                    | Origin-scoped, schema-migrated, exportable; persistence/eviction risk is visible |
+| PostgreSQL                   | Accounts, consent, entitlements/usage; user facts and snapshots only in `CLOUD`; policies, outbox, audit index    | Backed up, point-in-time recoverable, schema-migrated            |
 | Object storage               | Raw licensed artifacts, quarantined imports, release manifests, evaluation artifacts, large audit exports         | Encrypted, versioned/immutable where required, retention-classed |
 | Redis                        | Cache, rate limits, leases, and queue coordination                                                                | Disposable; reconstructed from durable sources                   |
 | Analytics warehouse (future) | De-identified or purpose-approved analytical projections                                                          | Separate consent/purpose, no production read dependency          |
 
-PostgreSQL remains the source of truth for operational identity and references.
-No cache or search index is authoritative.
+A user's profile is in exactly one authority mode. PostgreSQL remains the
+authority for cloud identity, entitlements, usage accounting, and cloud-mode
+facts. The browser database is authoritative for Free local nutrition content.
+In cloud mode it is only a cache/outbox. No cache or search index is
+authoritative.
+
+| Concern | `LOCAL` authority | `CLOUD` authority |
+| --- | --- | --- |
+| Meals, recipes, profile, preferences | Browser database | PostgreSQL |
+| Derived nutrition state and local plan | Browser database, reproducible from local facts | PostgreSQL/object artifact as defined by output class |
+| Account, subscription, entitlement, hosted usage | Not required for ordinary local use | PostgreSQL |
+| Reference food/science release | Signed immutable release cached locally | Signed immutable release with cloud index/cache |
+| Export/import manifest | User-controlled portable artifact | User-controlled artifact generated from canonical cloud snapshot |
 
 ## Data categories
 
@@ -28,6 +40,8 @@ No cache or search index is authoritative.
 | Derived snapshots   | Recipe nutrition, daily state, health context, plans | Immutable output plus fingerprint         |
 | Operational state   | Job status, idempotency, delivery attempts           | Mutable but auditable where consequential |
 | Evidence artifacts  | Source files, mapping reports, evaluation results    | Content-addressed/immutable               |
+| Entitlement state   | Grants, reservations, consumption, adjustments       | Append/transition with attributable audit |
+| Migration state     | Manifest, chunks, verification, authority decision   | Resumable state machine; immutable evidence |
 
 ## Temporal model
 
@@ -69,10 +83,19 @@ and identify what it corrects. Target/rule activation is effective-dated.
   are projections, not shared write ownership.
 - Data migrations use expand/migrate/contract and remain compatible during
   rolling deployment.
+- Local schema migrations are transactional where supported, version-gated,
+  fixture-tested against historical databases, and retain a recoverable export
+  or prior store until validation succeeds.
+- Free local nutrition content is never uploaded by ordinary telemetry,
+  authentication, entitlement checks, or static/reference delivery.
+- Authority promotion/demotion follows the verified protocol in
+  [Storage-mode lifecycle](../domain/storage-mode-lifecycle.md).
 
 ## Consistency
 
-Aggregate writes and outbox messages commit in one database transaction.
+Aggregate writes and event envelopes commit in one authority-local transaction.
+Cloud mode uses the PostgreSQL outbox; local mode uses a durable browser event
+log.
 Cross-context state is eventually consistent and exposes its watermark/version
 where staleness matters. Commands are idempotent; derived snapshots are keyed
 by input fingerprint to prevent accidental duplication.

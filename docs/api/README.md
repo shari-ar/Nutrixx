@@ -5,12 +5,15 @@
 | Status        | Target-state index          |
 | Audience      | API producers and consumers |
 | Owner         | Nutrixx API Engineering     |
-| Last reviewed | 2026-09-22                  |
+| Last reviewed | 2026-09-27                  |
 
 The machine-readable source of truth remains
 `packages/contracts/openapi/nutrixx.openapi.yaml`. The
 [API conventions](conventions.md) define behavior that spans operations without
 copying schemas from OpenAPI.
+
+Local workflows do not require HTTP. The contract covers cloud capabilities;
+storage-neutral domain commands and result types are shared separately.
 
 ## Rules
 

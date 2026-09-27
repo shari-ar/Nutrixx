@@ -5,7 +5,7 @@
 | Status        | Proposed; numeric objectives require benchmark approval |
 | Audience      | Architecture, engineering, quality, operations          |
 | Owner         | Nutrixx Architecture                                    |
-| Last reviewed | 2026-09-22                                              |
+| Last reviewed | 2026-09-27                                              |
 
 Each scenario follows source → stimulus → environment → artifact → response →
 measurable response.
@@ -24,6 +24,10 @@ measurable response.
 | QS-10 | Recoverability       | An operator restores the production database and object references into an isolated environment within approved RTO/RPO and verifies integrity through a scheduled drill.                         |
 | QS-11 | Explainability       | Every user-visible numeric explanation resolves to a typed engine output and provenance trace; automated fixtures find zero untraceable numbers.                                                  |
 | QS-12 | Accessibility        | Keyboard and assistive-technology users complete onboarding, meal logging, state review, and plan selection against WCAG 2.2 AA acceptance checks.                                                |
+| QS-13 | Local resilience     | During a cloud outage, a supported Free browser with installed assets can manually log and edit facts, recalculate state, and export data without an account or silent network upload.             |
+| QS-14 | Migration integrity  | If upload, verification, activation, or cleanup fails during a storage-mode transition, exactly one prior authority remains writable and all accepted source records remain recoverable.          |
+| QS-15 | Usage accounting     | Concurrent submission, timeout, provider failure, and retry fixtures produce exactly one final consume or release decision for each hosted-AI action ID.                                          |
+| QS-16 | AI action control    | Prompt-injection and malformed-output suites cannot bypass typed tool authorization, ownership checks, policy validation, or required confirmation for writes and consequential actions.           |
 
 ## Priority
 
