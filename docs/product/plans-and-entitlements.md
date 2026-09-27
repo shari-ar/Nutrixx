@@ -1,11 +1,11 @@
 # Plans and entitlements
 
-| Field         | Value                                      |
-| ------------- | ------------------------------------------ |
-| Status        | Proposed target product policy             |
-| Audience      | Product, engineering, support, operations  |
-| Owner         | Nutrixx Product                             |
-| Last reviewed | 2026-09-27                                 |
+| Field         | Value                                     |
+| ------------- | ----------------------------------------- |
+| Status        | Proposed target product policy            |
+| Audience      | Product, engineering, support, operations |
+| Owner         | Nutrixx Product                           |
+| Last reviewed | 2026-09-27                                |
 
 This document is the human-readable authority for plan capabilities. Prices,
 taxes, promotions, and market-specific packaging are commercial configuration,
@@ -14,17 +14,17 @@ validated against a versioned machine-readable catalog before paid plans launch.
 
 ## Product plans
 
-| Capability | Free | Pro | Ultimate |
-| --- | --- | --- | --- |
-| Nutrition-data authority | Browser-local database | Nutrixx cloud | Nutrixx cloud |
-| Devices | One browser profile at a time | Multi-device | Multi-device |
-| Manual meal capture | Unlimited | Unlimited | Unlimited |
-| Manual recipe authoring | Unlimited | Unlimited | Unlimited |
-| Hosted AI meal capture | Not included | 5 successful actions per local day | 50 successful actions per local day |
-| Hosted AI recipe creation | Not included | 2 successful actions per billing cycle | 20 successful actions per billing cycle |
-| Optimizer | Local approximate profile; no AI-dependent capability | Full eligible optimizer without a user API key | Full eligible optimizer without a user API key |
-| Cloud persistence, backup, and recovery | Not included | Included | Included |
-| Conversational plan assistant | Not included | Not included | Included |
+| Capability                              | Free                                                  | Pro                                            | Ultimate                                       |
+| --------------------------------------- | ----------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| Nutrition-data authority                | Browser-local database                                | Nutrixx cloud                                  | Nutrixx cloud                                  |
+| Devices                                 | One browser profile at a time                         | Multi-device                                   | Multi-device                                   |
+| Manual meal capture                     | Unlimited                                             | Unlimited                                      | Unlimited                                      |
+| Manual recipe authoring                 | Unlimited                                             | Unlimited                                      | Unlimited                                      |
+| Hosted AI meal capture                  | Not included                                          | 5 successful actions per local day             | 50 successful actions per local day            |
+| Hosted AI recipe creation               | Not included                                          | 2 successful actions per billing cycle         | 20 successful actions per billing cycle        |
+| Optimizer                               | Local approximate profile; no AI-dependent capability | Full eligible optimizer without a user API key | Full eligible optimizer without a user API key |
+| Cloud persistence, backup, and recovery | Not included                                          | Included                                       | Included                                       |
+| Conversational plan assistant           | Not included                                          | Not included                                   | Included                                       |
 
 All plans receive the same scientific definitions, deterministic nutrient
 arithmetic, safety rules, correction rights, and manual data portability. A
@@ -142,4 +142,3 @@ charges, and accessible recovery. This posture cannot authorize an unsafe
 recommendation, falsify scientific evidence, break law, harm another user, or
 bypass abuse controls. When a requested outcome is unsafe or unsupported, the
 system explains the boundary and offers the closest safe alternative.
-

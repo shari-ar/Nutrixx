@@ -28,19 +28,19 @@ validation evidence.
 
 ## Constitutional principles
 
-| ID   | Principle             | Non-negotiable consequence                                                                                                      |
-| ---- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| P-01 | Minimum effort        | Ask only for information that can materially change the next useful result; progressively request missing critical facts.       |
-| P-02 | Scientific humility   | Guidance expresses evidence, applicability, uncertainty, and limitations; it never converts a weak signal into a medical claim. |
-| P-03 | Unknown is not zero   | Missing, measured-zero, estimated, imputed, and not-applicable values remain distinct throughout the system.                    |
-| P-04 | Deterministic core    | Units, nutrient arithmetic, target evaluation, and safety constraints are executed by versioned deterministic engines.          |
-| P-05 | Reproducibility       | Every derived state and plan can be replayed from immutable input, data, policy, engine, and solver versions.                   |
-| P-06 | Safety before score   | A preference or business objective can never compensate for a violated hard safety rule.                                        |
-| P-07 | Explainability        | A recommendation states why it was made, what assumptions were used, what remains unmet, and how reliable the inputs are.       |
-| P-08 | User agency           | Users can correct facts, control optional data, inspect important assumptions, export data, and request deletion.               |
-| P-09 | Privacy by design     | Collect the minimum needed, isolate sensitive data, protect it in transit and at rest, and prohibit it from telemetry.          |
-| P-10 | Cultural practicality | Food availability, cuisine, budget, preparation time, and preference are first-class planning inputs.                           |
-| P-11 | Local-first ownership | Free users receive a complete useful product whose nutrition data is locally authoritative, portable, and usable without a Nutrixx cloud dependency. |
+| ID   | Principle             | Non-negotiable consequence                                                                                                                                        |
+| ---- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P-01 | Minimum effort        | Ask only for information that can materially change the next useful result; progressively request missing critical facts.                                         |
+| P-02 | Scientific humility   | Guidance expresses evidence, applicability, uncertainty, and limitations; it never converts a weak signal into a medical claim.                                   |
+| P-03 | Unknown is not zero   | Missing, measured-zero, estimated, imputed, and not-applicable values remain distinct throughout the system.                                                      |
+| P-04 | Deterministic core    | Units, nutrient arithmetic, target evaluation, and safety constraints are executed by versioned deterministic engines.                                            |
+| P-05 | Reproducibility       | Every derived state and plan can be replayed from immutable input, data, policy, engine, and solver versions.                                                     |
+| P-06 | Safety before score   | A preference or business objective can never compensate for a violated hard safety rule.                                                                          |
+| P-07 | Explainability        | A recommendation states why it was made, what assumptions were used, what remains unmet, and how reliable the inputs are.                                         |
+| P-08 | User agency           | Users can correct facts, control optional data, inspect important assumptions, export data, and request deletion.                                                 |
+| P-09 | Privacy by design     | Collect the minimum needed, isolate sensitive data, protect it in transit and at rest, and prohibit it from telemetry.                                            |
+| P-10 | Cultural practicality | Food availability, cuisine, budget, preparation time, and preference are first-class planning inputs.                                                             |
+| P-11 | Local-first ownership | Free users receive a complete useful product whose nutrition data is locally authoritative, portable, and usable without a Nutrixx cloud dependency.              |
 | P-12 | Customer sovereignty  | Corrections, exports, plan changes, upgrades, downgrades, and consequential AI actions are transparent, reversible where possible, and never designed as lock-in. |
 
 ## Product loop

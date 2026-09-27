@@ -10,6 +10,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_UPDATE_NOTIFIER=false
 
 COPY .npmrc package.json package-lock.json ./
+COPY scripts/install-git-hooks.mjs scripts/install-git-hooks.mjs
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/config/package.json packages/config/package.json

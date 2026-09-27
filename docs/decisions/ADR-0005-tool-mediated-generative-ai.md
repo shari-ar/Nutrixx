@@ -1,13 +1,13 @@
 # ADR-0005: Generative AI is tool-mediated and non-authoritative
 
-| Field                      | Value                                             |
-| -------------------------- | ------------------------------------------------- |
-| Status                     | Proposed                                          |
-| Date                       | 2026-09-27                                        |
+| Field                      | Value                                              |
+| -------------------------- | -------------------------------------------------- |
+| Status                     | Proposed                                           |
+| Date                       | 2026-09-27                                         |
 | Deciders                   | Product, Architecture, Nutrition Science, Security |
-| Owner                      | Nutrixx AI Engineering                            |
-| Related requirements       | FR-018–FR-020; QR-003, QR-016; QS-01, QS-16       |
-| Supersedes / superseded by | None                                              |
+| Owner                      | Nutrixx AI Engineering                             |
+| Related requirements       | FR-018–FR-020; QR-003, QR-016; QS-01, QS-16        |
+| Supersedes / superseded by | None                                               |
 
 ## Context and problem
 
@@ -60,4 +60,3 @@ Release blocks on unauthorized access, confirmation bypass, unsupported numeric
 claims, safety-policy override, unbounded tool loops/cost, sensitive telemetry,
 or unsafe prompt-injection success. Any proposal for autonomous consequential
 actions requires a superseding ADR and separate safety/privacy approval.
-

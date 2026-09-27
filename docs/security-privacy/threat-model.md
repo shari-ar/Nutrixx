@@ -46,25 +46,25 @@ and provider claims are untrusted until validated.
 
 ## Priority threats and controls
 
-| Threat                      | Example                                 | Required design response                                                                                     |
-| --------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Account/session compromise  | Credential stuffing, token theft        | Provider-grade auth, MFA support, PKCE, secure cookie/token handling, session revocation, rate/risk controls |
-| Broken object authorization | Reading another user's meals or plan    | Deny-by-default ownership checks in application layer, opaque IDs, negative integration tests                |
-| Sensitive data disclosure   | Health/intake data in logs or analytics | Data classification, allowlisted telemetry, redaction, encryption, least privilege, egress review            |
-| Scientific/data tampering   | Altered target policy or food source    | Signed/checksummed artifacts, immutable releases, dual approval for high-risk policy, audit trail            |
-| Optimizer manipulation      | Prompt/input causes unsafe plan         | Typed bounded inputs, eligibility gate, hard constraints, independent validator, no LLM safety authority     |
-| Supply-chain compromise     | Malicious dependency/image/action       | Lockfiles, reviewed updates, pinned actions/images, SBOM, provenance/signing, vulnerability and secret scans |
-| Import/parser abuse         | Malformed large source artifact         | Quarantine, size/type limits, malware scan, isolated parsing, schema/range checks                            |
-| Queue/replay abuse          | Duplicate planning jobs                 | Idempotency, authenticated messages, leases, bounded retry, deduplication                                    |
-| Availability attack         | Expensive searches or solve requests    | Edge/API rate limits, quotas, time/size budgets, async isolation, circuit breakers                           |
-| Privileged misuse           | Reviewer silently changes policy        | Least privilege, separate admin plane, step-up auth, attributable approval, immutable audit                  |
-| Inference/model leakage     | Explanations reveal sensitive facts     | Output policy, minimization, ownership filtering, adversarial evaluation                                     |
-| Local database loss         | Browser eviction, profile reset, corrupt migration | Persistence/status UX, verified export/import, migration fixtures, recovery path; never promise cloud durability in Free |
-| XSS steals BYOK/data        | Script reads local meals or provider key | Strict CSP/Trusted Types, minimized third-party script, dependency integrity, memory-only key option, no key telemetry |
-| Migration split brain       | Local and cloud both accept writes       | Authority state machine, fenced epochs, staged verification, resumable commands, exactly one writable authority |
-| Entitlement/usage fraud     | Client forges Ultimate or replays action | Server-side grants, signed provider events, idempotent ledger, nonce/replay controls, reconciliation and audit |
+| Threat                      | Example                                              | Required design response                                                                                                     |
+| --------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Account/session compromise  | Credential stuffing, token theft                     | Provider-grade auth, MFA support, PKCE, secure cookie/token handling, session revocation, rate/risk controls                 |
+| Broken object authorization | Reading another user's meals or plan                 | Deny-by-default ownership checks in application layer, opaque IDs, negative integration tests                                |
+| Sensitive data disclosure   | Health/intake data in logs or analytics              | Data classification, allowlisted telemetry, redaction, encryption, least privilege, egress review                            |
+| Scientific/data tampering   | Altered target policy or food source                 | Signed/checksummed artifacts, immutable releases, dual approval for high-risk policy, audit trail                            |
+| Optimizer manipulation      | Prompt/input causes unsafe plan                      | Typed bounded inputs, eligibility gate, hard constraints, independent validator, no LLM safety authority                     |
+| Supply-chain compromise     | Malicious dependency/image/action                    | Lockfiles, reviewed updates, pinned actions/images, SBOM, provenance/signing, vulnerability and secret scans                 |
+| Import/parser abuse         | Malformed large source artifact                      | Quarantine, size/type limits, malware scan, isolated parsing, schema/range checks                                            |
+| Queue/replay abuse          | Duplicate planning jobs                              | Idempotency, authenticated messages, leases, bounded retry, deduplication                                                    |
+| Availability attack         | Expensive searches or solve requests                 | Edge/API rate limits, quotas, time/size budgets, async isolation, circuit breakers                                           |
+| Privileged misuse           | Reviewer silently changes policy                     | Least privilege, separate admin plane, step-up auth, attributable approval, immutable audit                                  |
+| Inference/model leakage     | Explanations reveal sensitive facts                  | Output policy, minimization, ownership filtering, adversarial evaluation                                                     |
+| Local database loss         | Browser eviction, profile reset, corrupt migration   | Persistence/status UX, verified export/import, migration fixtures, recovery path; never promise cloud durability in Free     |
+| XSS steals BYOK/data        | Script reads local meals or provider key             | Strict CSP/Trusted Types, minimized third-party script, dependency integrity, memory-only key option, no key telemetry       |
+| Migration split brain       | Local and cloud both accept writes                   | Authority state machine, fenced epochs, staged verification, resumable commands, exactly one writable authority              |
+| Entitlement/usage fraud     | Client forges Ultimate or replays action             | Server-side grants, signed provider events, idempotent ledger, nonce/replay controls, reconciliation and audit               |
 | Prompt/tool injection       | Food text asks assistant to export or overwrite data | Separate data from instructions, allowlisted typed tools, contextual authorization, confirmation, output/argument validation |
-| AI cost exhaustion          | Automated capture/assistant flood        | Entitlements, quotas/budgets, per-principal concurrency, provider timeout, circuit breaker, abuse review      |
+| AI cost exhaustion          | Automated capture/assistant flood                    | Entitlements, quotas/budgets, per-principal concurrency, provider timeout, circuit breaker, abuse review                     |
 
 ## Process
 

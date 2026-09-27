@@ -64,4 +64,3 @@ Concurrency, retry, timeout, cancellation, provider-failure, timezone-change,
 upgrade/downgrade, refund, and reconciliation fixtures must prove no double
 consumption or unauthorized execution. Support adjustments are attributable,
 reason-coded, reversible, and cannot alter nutrition facts.
-

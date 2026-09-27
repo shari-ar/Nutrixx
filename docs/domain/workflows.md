@@ -13,8 +13,8 @@
 | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Reporting foods, quantities, corrections, preferences, and optional observations as honestly as practical | Search, normalization, unit conversion, nutrient math, provenance, uncertainty, target selection, validation, and explanation |
 | Confirming ambiguous matches when the distinction materially changes a result                             | Avoiding unnecessary questions and explaining why a critical question is needed                                               |
-| Choosing whether to create a cloud account or share optional health/integration data                       | Local use without account, informed consent, isolation, retention, deletion, and safe handling                                 |
-| Keeping a local export when browser-only data is important to them                                         | Visible storage status, export/import, persistence guidance, and verified cloud migration                                      |
+| Choosing whether to create a cloud account or share optional health/integration data                      | Local use without account, informed consent, isolation, retention, deletion, and safe handling                                |
+| Keeping a local export when browser-only data is important to them                                        | Visible storage status, export/import, persistence guidance, and verified cloud migration                                     |
 | Choosing among safe alternatives and seeking professional care when directed                              | Staying inside intended use and refusing unsafe or unsupported conclusions                                                    |
 
 ## Progressive onboarding

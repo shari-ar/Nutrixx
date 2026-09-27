@@ -46,19 +46,19 @@ and supports immediate rollback.
 Final objectives require an approved reference load and product tier. Initial
 indicators and proposed objectives:
 
-| User journey / service | SLI                                                  | Proposed objective                               |
-| ---------------------- | ---------------------------------------------------- | ------------------------------------------------ |
-| Authenticated API      | Good non-user-error responses / eligible requests    | 99.9% monthly                                    |
-| Meal logging           | Successful durable writes within 500 ms server time  | 99% monthly                                      |
-| Food search            | Successful eligible searches within accepted latency | 99% monthly; latency target after benchmark      |
-| Planning jobs          | Valid terminal result within documented budget       | 99% excluding correct NEEDS_INPUT/OUT_OF_SCOPE   |
-| State freshness        | Meal changes reflected in accepted state             | p95 within agreed freshness window               |
-| Data publication       | Active release freshness and integrity               | Per provider cadence; zero unapproved activation |
-| Local core             | Successful eligible local commands/calculations       | Objective set per supported browser/device class |
-| Migration/sync         | Verified authority transition and acknowledged sync   | Zero unverified authority switches; latency after benchmark |
-| Hosted AI capture      | Valid terminal draft or truthful failure within budget | Objective per plan/action after provider benchmark |
-| Usage accounting       | Reservations reaching correct terminal state          | 100% reconciliation within approved window       |
-| Assistant tools        | Authorized, validated, correctly confirmed invocation | Zero confirmation/ownership bypass in release gates |
+| User journey / service | SLI                                                    | Proposed objective                                          |
+| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| Authenticated API      | Good non-user-error responses / eligible requests      | 99.9% monthly                                               |
+| Meal logging           | Successful durable writes within 500 ms server time    | 99% monthly                                                 |
+| Food search            | Successful eligible searches within accepted latency   | 99% monthly; latency target after benchmark                 |
+| Planning jobs          | Valid terminal result within documented budget         | 99% excluding correct NEEDS_INPUT/OUT_OF_SCOPE              |
+| State freshness        | Meal changes reflected in accepted state               | p95 within agreed freshness window                          |
+| Data publication       | Active release freshness and integrity                 | Per provider cadence; zero unapproved activation            |
+| Local core             | Successful eligible local commands/calculations        | Objective set per supported browser/device class            |
+| Migration/sync         | Verified authority transition and acknowledged sync    | Zero unverified authority switches; latency after benchmark |
+| Hosted AI capture      | Valid terminal draft or truthful failure within budget | Objective per plan/action after provider benchmark          |
+| Usage accounting       | Reservations reaching correct terminal state           | 100% reconciliation within approved window                  |
+| Assistant tools        | Authorized, validated, correctly confirmed invocation  | Zero confirmation/ownership bypass in release gates         |
 
 Safety/integrity is a release invariant, not an error budget. Error budgets guide
 reliability work and release pace; they never permit hard safety violations or
@@ -148,11 +148,11 @@ Production launch requires:
 
 Plan-specific launch gates are cumulative:
 
-| Plan | Additional gate |
-| --- | --- |
-| Free | Supported-browser matrix, local schema recovery, export/import, offline core, storage-risk UX, deterministic local planning evidence |
-| Pro | Payment/entitlement reconciliation, verified cloud promotion/demotion, backup/restore, multi-device conflict tests, hosted capture quotas, full optimizer SLO/cost/runbooks |
-| Ultimate | Pro gates plus higher-limit capacity/budget, assistant grounding and adversarial evaluation, tool confirmation/kill switch, support escalation and retention policy |
+| Plan     | Additional gate                                                                                                                                                             |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Free     | Supported-browser matrix, local schema recovery, export/import, offline core, storage-risk UX, deterministic local planning evidence                                        |
+| Pro      | Payment/entitlement reconciliation, verified cloud promotion/demotion, backup/restore, multi-device conflict tests, hosted capture quotas, full optimizer SLO/cost/runbooks |
+| Ultimate | Pro gates plus higher-limit capacity/budget, assistant grounding and adversarial evaluation, tool confirmation/kill switch, support escalation and retention policy         |
 
 A plan is not publicly sold until its whole advertised contract passes. Internal
 incremental delivery uses flags/cohorts and must not imply a partial paid plan.

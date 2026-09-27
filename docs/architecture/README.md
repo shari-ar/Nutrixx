@@ -7,14 +7,14 @@
 | Owner         | Nutrixx Architecture                       |
 | Last reviewed | 2026-09-27                                 |
 
-| Document                                                | View                                                   |
-| ------------------------------------------------------- | ------------------------------------------------------ |
-| [Target architecture](target-architecture.md)           | Goals, C4 context/containers, deployment, and strategy |
-| [Local-first evolution](local-first-evolution.md)        | Authority modes, local boundary, cloud boundary, and staged evolution |
-| [Domain boundaries](domain-boundaries.md)               | Ownership and allowed dependencies                     |
-| [Quality scenarios](quality-scenarios.md)               | Measurable architectural requirements                  |
-| [Risks and technical debt](risks-and-technical-debt.md) | Material risks, mitigations, and trigger points        |
-| [Decision records](../decisions/README.md)              | Immutable architectural decisions                      |
+| Document                                                | View                                                                  |
+| ------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Target architecture](target-architecture.md)           | Goals, C4 context/containers, deployment, and strategy                |
+| [Local-first evolution](local-first-evolution.md)       | Authority modes, local boundary, cloud boundary, and staged evolution |
+| [Domain boundaries](domain-boundaries.md)               | Ownership and allowed dependencies                                    |
+| [Quality scenarios](quality-scenarios.md)               | Measurable architectural requirements                                 |
+| [Risks and technical debt](risks-and-technical-debt.md) | Material risks, mitigations, and trigger points                       |
+| [Decision records](../decisions/README.md)              | Immutable architectural decisions                                     |
 
 Architecture follows [arc42](https://docs.arc42.org/) concerns and uses the
 [C4 model](https://c4model.com/diagrams) for views. Context and Container views

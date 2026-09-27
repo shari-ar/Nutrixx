@@ -9,13 +9,13 @@
 
 ## Store roles
 
-| Store                        | Durable authority                                                                                                 | Lifecycle                                                        |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Browser database            | Canonical user nutrition facts and local snapshots in `LOCAL`; bounded cache/outbox in `CLOUD`                    | Origin-scoped, schema-migrated, exportable; persistence/eviction risk is visible |
-| PostgreSQL                   | Accounts, consent, entitlements/usage; user facts and snapshots only in `CLOUD`; policies, outbox, audit index    | Backed up, point-in-time recoverable, schema-migrated            |
-| Object storage               | Raw licensed artifacts, quarantined imports, release manifests, evaluation artifacts, large audit exports         | Encrypted, versioned/immutable where required, retention-classed |
-| Redis                        | Cache, rate limits, leases, and queue coordination                                                                | Disposable; reconstructed from durable sources                   |
-| Analytics warehouse (future) | De-identified or purpose-approved analytical projections                                                          | Separate consent/purpose, no production read dependency          |
+| Store                        | Durable authority                                                                                              | Lifecycle                                                                        |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Browser database             | Canonical user nutrition facts and local snapshots in `LOCAL`; bounded cache/outbox in `CLOUD`                 | Origin-scoped, schema-migrated, exportable; persistence/eviction risk is visible |
+| PostgreSQL                   | Accounts, consent, entitlements/usage; user facts and snapshots only in `CLOUD`; policies, outbox, audit index | Backed up, point-in-time recoverable, schema-migrated                            |
+| Object storage               | Raw licensed artifacts, quarantined imports, release manifests, evaluation artifacts, large audit exports      | Encrypted, versioned/immutable where required, retention-classed                 |
+| Redis                        | Cache, rate limits, leases, and queue coordination                                                             | Disposable; reconstructed from durable sources                                   |
+| Analytics warehouse (future) | De-identified or purpose-approved analytical projections                                                       | Separate consent/purpose, no production read dependency                          |
 
 A user's profile is in exactly one authority mode. PostgreSQL remains the
 authority for cloud identity, entitlements, usage accounting, and cloud-mode
@@ -23,24 +23,24 @@ facts. The browser database is authoritative for Free local nutrition content.
 In cloud mode it is only a cache/outbox. No cache or search index is
 authoritative.
 
-| Concern | `LOCAL` authority | `CLOUD` authority |
-| --- | --- | --- |
-| Meals, recipes, profile, preferences | Browser database | PostgreSQL |
-| Derived nutrition state and local plan | Browser database, reproducible from local facts | PostgreSQL/object artifact as defined by output class |
-| Account, subscription, entitlement, hosted usage | Not required for ordinary local use | PostgreSQL |
-| Reference food/science release | Signed immutable release cached locally | Signed immutable release with cloud index/cache |
-| Export/import manifest | User-controlled portable artifact | User-controlled artifact generated from canonical cloud snapshot |
+| Concern                                          | `LOCAL` authority                               | `CLOUD` authority                                                |
+| ------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
+| Meals, recipes, profile, preferences             | Browser database                                | PostgreSQL                                                       |
+| Derived nutrition state and local plan           | Browser database, reproducible from local facts | PostgreSQL/object artifact as defined by output class            |
+| Account, subscription, entitlement, hosted usage | Not required for ordinary local use             | PostgreSQL                                                       |
+| Reference food/science release                   | Signed immutable release cached locally         | Signed immutable release with cloud index/cache                  |
+| Export/import manifest                           | User-controlled portable artifact               | User-controlled artifact generated from canonical cloud snapshot |
 
 ## Data categories
 
-| Category            | Examples                                             | Mutation model                            |
-| ------------------- | ---------------------------------------------------- | ----------------------------------------- |
-| User-entered facts  | Meals, preferences, observations                     | Append/correct with audit history         |
-| Reference knowledge | Nutrients, foods, portions, target policies          | Immutable published versions              |
-| Derived snapshots   | Recipe nutrition, daily state, health context, plans | Immutable output plus fingerprint         |
-| Operational state   | Job status, idempotency, delivery attempts           | Mutable but auditable where consequential |
-| Evidence artifacts  | Source files, mapping reports, evaluation results    | Content-addressed/immutable               |
-| Entitlement state   | Grants, reservations, consumption, adjustments       | Append/transition with attributable audit |
+| Category            | Examples                                             | Mutation model                              |
+| ------------------- | ---------------------------------------------------- | ------------------------------------------- |
+| User-entered facts  | Meals, preferences, observations                     | Append/correct with audit history           |
+| Reference knowledge | Nutrients, foods, portions, target policies          | Immutable published versions                |
+| Derived snapshots   | Recipe nutrition, daily state, health context, plans | Immutable output plus fingerprint           |
+| Operational state   | Job status, idempotency, delivery attempts           | Mutable but auditable where consequential   |
+| Evidence artifacts  | Source files, mapping reports, evaluation results    | Content-addressed/immutable                 |
+| Entitlement state   | Grants, reservations, consumption, adjustments       | Append/transition with attributable audit   |
 | Migration state     | Manifest, chunks, verification, authority decision   | Resumable state machine; immutable evidence |
 
 ## Temporal model

@@ -1,11 +1,11 @@
 # Target architecture
 
-| Field            | Value                                                       |
-| ---------------- | ----------------------------------------------------------- |
-| Status           | Proposed target state                                       |
-| Audience         | Engineering, product, security, operations                  |
-| Owner            | Nutrixx Architecture                                        |
-| Last reviewed    | 2026-09-27                                                  |
+| Field            | Value                                                                                                                                                                                                                                                                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status           | Proposed target state                                                                                                                                                                                                                                                                                                               |
+| Audience         | Engineering, product, security, operations                                                                                                                                                                                                                                                                                          |
+| Owner            | Nutrixx Architecture                                                                                                                                                                                                                                                                                                                |
+| Last reviewed    | 2026-09-27                                                                                                                                                                                                                                                                                                                          |
 | Related decision | [ADR-0001](../decisions/ADR-0001-modular-monolith-first.md), [ADR-0002](../decisions/ADR-0002-local-first-cloud-promotion.md), [ADR-0003](../decisions/ADR-0003-shared-canonical-model.md), [ADR-0004](../decisions/ADR-0004-entitlement-and-usage-accounting.md), [ADR-0005](../decisions/ADR-0005-tool-mediated-generative-ai.md) |
 
 ## Architecture goals
@@ -101,20 +101,20 @@ flowchart TB
 
 ### Container responsibilities
 
-| Container        | Owns                                                                                      | Must not own                                                                  |
-| ---------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Web              | Accessible interaction, local canonical persistence in `LOCAL` mode, cloud cache/outbox in `CLOUD` mode, rendering, safe presentation | Invented scientific formulas, hidden cloud upload, server entitlement authority |
-| API              | Authentication/authorization, use-case orchestration, transactions, synchronous contracts | Solver internals, vendor-specific identity logic, cross-context data mutation |
-| Worker           | Durable asynchronous orchestration, retries, progress, recomputation                      | Unversioned formulas or hidden policy                                         |
-| Nutrition engine | Units, composition aggregation, targets, uncertainty, fingerprints                        | Network, database, framework, UI                                              |
-| Optimizer engine | Feasibility, objective model, diagnostics, deterministic result structure                 | Fetching mutable user/data state, direct publication to users                 |
-| PostgreSQL       | Cloud-mode canonical facts, accounts, entitlements, usage ledger, versioned policies, snapshots, outbox | Free local nutrition content, large raw source blobs, queue-only ephemeral state |
-| Redis            | Short-lived cache, rate limits, leases, queue coordination                                | Sole copy of user facts or scientific evidence                                |
-| Object storage   | Immutable imports, evaluation corpora, large reports                                      | Query-time canonical identity                                                 |
-| Data pipeline    | Untrusted ingestion, mapping, validation, release assembly                                | Direct mutation of an active release                                          |
-| Entitlements     | Plan grants, effective periods, usage reservations, consumption and reconciliation         | Client pricing copy, nutrition decisions, payment-card data                    |
-| AI orchestration | Provider policy, typed draft/tool schemas, safety boundaries, usage lifecycle              | Canonical nutrition math, direct unconfirmed writes                            |
-| Migration/sync   | Authority-mode transition, manifests, integrity verification, cursor/conflict protocol      | Two writable masters or silent last-write-wins                                |
+| Container        | Owns                                                                                                                                  | Must not own                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Web              | Accessible interaction, local canonical persistence in `LOCAL` mode, cloud cache/outbox in `CLOUD` mode, rendering, safe presentation | Invented scientific formulas, hidden cloud upload, server entitlement authority  |
+| API              | Authentication/authorization, use-case orchestration, transactions, synchronous contracts                                             | Solver internals, vendor-specific identity logic, cross-context data mutation    |
+| Worker           | Durable asynchronous orchestration, retries, progress, recomputation                                                                  | Unversioned formulas or hidden policy                                            |
+| Nutrition engine | Units, composition aggregation, targets, uncertainty, fingerprints                                                                    | Network, database, framework, UI                                                 |
+| Optimizer engine | Feasibility, objective model, diagnostics, deterministic result structure                                                             | Fetching mutable user/data state, direct publication to users                    |
+| PostgreSQL       | Cloud-mode canonical facts, accounts, entitlements, usage ledger, versioned policies, snapshots, outbox                               | Free local nutrition content, large raw source blobs, queue-only ephemeral state |
+| Redis            | Short-lived cache, rate limits, leases, queue coordination                                                                            | Sole copy of user facts or scientific evidence                                   |
+| Object storage   | Immutable imports, evaluation corpora, large reports                                                                                  | Query-time canonical identity                                                    |
+| Data pipeline    | Untrusted ingestion, mapping, validation, release assembly                                                                            | Direct mutation of an active release                                             |
+| Entitlements     | Plan grants, effective periods, usage reservations, consumption and reconciliation                                                    | Client pricing copy, nutrition decisions, payment-card data                      |
+| AI orchestration | Provider policy, typed draft/tool schemas, safety boundaries, usage lifecycle                                                         | Canonical nutrition math, direct unconfirmed writes                              |
+| Migration/sync   | Authority-mode transition, manifests, integrity verification, cursor/conflict protocol                                                | Two writable masters or silent last-write-wins                                   |
 
 ## Architectural style
 
@@ -168,21 +168,21 @@ deployment platform remains an open decision.
 
 ## Cross-cutting decisions
 
-| Concern       | Target policy                                                                                                |
-| ------------- | ------------------------------------------------------------------------------------------------------------ |
-| Identity      | OIDC/OAuth 2.0 Authorization Code with PKCE through a provider adapter                                       |
-| Authorization | Deny-by-default policies at API/application boundaries; user ownership plus explicit reviewer/operator roles |
-| Contracts     | Design-first OpenAPI; generated/validated client types; RFC 9457 problem details                             |
+| Concern       | Target policy                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Identity      | OIDC/OAuth 2.0 Authorization Code with PKCE through a provider adapter                                                   |
+| Authorization | Deny-by-default policies at API/application boundaries; user ownership plus explicit reviewer/operator roles             |
+| Contracts     | Design-first OpenAPI; generated/validated client types; RFC 9457 problem details                                         |
 | Persistence   | Storage-neutral canonical contracts; IndexedDB/OPFS adapter in `LOCAL`, PostgreSQL owned schemas/repositories in `CLOUD` |
-| Asynchrony    | Durable jobs with idempotency keys, bounded retry, dead-letter handling, and observable status               |
-| Events        | Transactional outbox; versioned envelopes; idempotent consumers                                              |
-| Caching       | Derived and disposable; keys include tenant/user scope and relevant data/rule versions                       |
-| Observability | Vendor-neutral OpenTelemetry traces, metrics, and structured logs; no sensitive payloads                     |
-| Configuration | Typed startup validation; secrets from a secret manager; no environment branching in domain logic            |
-| Delivery      | Immutable signed images, SBOM/provenance, staged promotion, automated rollback evidence                      |
-| Entitlements  | Server-authoritative versioned grants; reserve/consume/release ledger; idempotent reconciliation              |
-| Generative AI | Candidate generation only; typed validation; no arithmetic/safety authority; confirmation before canonical writes |
-| Data mobility | Versioned portable bundles and verified single-authority promotion/demotion                              |
+| Asynchrony    | Durable jobs with idempotency keys, bounded retry, dead-letter handling, and observable status                           |
+| Events        | Transactional outbox; versioned envelopes; idempotent consumers                                                          |
+| Caching       | Derived and disposable; keys include tenant/user scope and relevant data/rule versions                                   |
+| Observability | Vendor-neutral OpenTelemetry traces, metrics, and structured logs; no sensitive payloads                                 |
+| Configuration | Typed startup validation; secrets from a secret manager; no environment branching in domain logic                        |
+| Delivery      | Immutable signed images, SBOM/provenance, staged promotion, automated rollback evidence                                  |
+| Entitlements  | Server-authoritative versioned grants; reserve/consume/release ledger; idempotent reconciliation                         |
+| Generative AI | Candidate generation only; typed validation; no arithmetic/safety authority; confirmation before canonical writes        |
+| Data mobility | Versioned portable bundles and verified single-authority promotion/demotion                                              |
 
 ## Deliberately deferred
 

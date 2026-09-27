@@ -25,6 +25,8 @@ const excludedDirectoryNames = new Set([
   'out',
 ]);
 
+const excludedDirectoryPaths = new Set([path.normalize('.husky/_')]);
+
 const missingReadmes = [];
 
 async function hasReadme(directory) {
@@ -45,12 +47,20 @@ async function inspectDirectory(directory) {
 
   await Promise.all(
     entries
-      .filter(
-        (entry) =>
+      .filter((entry) => {
+        const childDirectory = path.join(directory, entry.name);
+        const relativeChildDirectory = path.relative(
+          repositoryRoot,
+          childDirectory,
+        );
+
+        return (
           entry.isDirectory() &&
           !entry.isSymbolicLink() &&
-          !excludedDirectoryNames.has(entry.name),
-      )
+          !excludedDirectoryNames.has(entry.name) &&
+          !excludedDirectoryPaths.has(relativeChildDirectory)
+        );
+      })
       .map((entry) => inspectDirectory(path.join(directory, entry.name))),
   );
 }

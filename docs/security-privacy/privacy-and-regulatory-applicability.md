@@ -27,13 +27,13 @@ the documented legal/operational policy.
 
 ## Storage-mode privacy
 
-| Mode or action | Required privacy behavior |
-| --- | --- |
-| Free `LOCAL` | User nutrition content stays within the browser origin. Static/reference delivery, telemetry, and optional account creation MUST NOT upload it. Browser persistence limits and loss risks are explained truthfully. |
-| Pro/Ultimate `CLOUD` | Cloud purposes, recipients, region, retention, backup expiry, and rights are disclosed before authority promotion. Access is authenticated, authorized, encrypted, and audited. |
-| Upgrade | Upload enters isolated staging; authority changes only after integrity verification and user-visible success. Local canonical content is removed only after verified activation and recovery readiness. |
-| Downgrade/cancellation | A local portable copy is generated and verified before cloud authority retires. A disclosed read-only recovery period precedes policy-driven deletion. Payment failure never causes immediate irreversible deletion. |
-| Experimental Local Processing | The user explicitly enables each provider/device processing mode after seeing data destination, credential model, model/download size, retention, and known limitations. It is off by default. |
+| Mode or action                | Required privacy behavior                                                                                                                                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Free `LOCAL`                  | User nutrition content stays within the browser origin. Static/reference delivery, telemetry, and optional account creation MUST NOT upload it. Browser persistence limits and loss risks are explained truthfully.  |
+| Pro/Ultimate `CLOUD`          | Cloud purposes, recipients, region, retention, backup expiry, and rights are disclosed before authority promotion. Access is authenticated, authorized, encrypted, and audited.                                      |
+| Upgrade                       | Upload enters isolated staging; authority changes only after integrity verification and user-visible success. Local canonical content is removed only after verified activation and recovery readiness.              |
+| Downgrade/cancellation        | A local portable copy is generated and verified before cloud authority retires. A disclosed read-only recovery period precedes policy-driven deletion. Payment failure never causes immediate irreversible deletion. |
+| Experimental Local Processing | The user explicitly enables each provider/device processing mode after seeing data destination, credential model, model/download size, retention, and known limitations. It is off by default.                       |
 
 Direct browser-to-provider AI does not make Nutrixx the custodian of the
 provider credential, but it does not make the flow risk-free. The UI MUST name

@@ -9,21 +9,21 @@
 
 ## Logical modules
 
-| Module            | Owns writes to                                      | May consume                                          |
-| ----------------- | --------------------------------------------------- | ---------------------------------------------------- |
-| identity-consent  | accounts, grants, sessions, privacy requests        | identity provider claims                             |
-| user-context      | profile, goals, preferences, observations           | identity reference, consent decisions                |
-| food-knowledge    | foods, portions, composition, classifications       | published dataset releases                           |
-| recipe-knowledge  | recipes, immutable versions, yield, method          | public food references                               |
-| consumption       | meals, items, corrections                           | food/recipe snapshots, user locale/timezone          |
-| nutrition-science | nutrient ontology, target and rule-set releases     | approved scientific evidence                         |
-| nutrition-state   | immutable state snapshots                           | consumption events, user context, rule/data releases |
-| planning          | requests, optimizer runs, plans, feedback           | state/user/food snapshots, active rule release       |
-| data-publication  | source batches, mappings, quality reports, releases | external source artifacts                            |
-| audit-provenance  | append-only evidence and decision traces            | domain events and run fingerprints                   |
-| commerce-entitlements | subscriptions, entitlement grants, usage reservations and ledger | billing-provider events, identity reference          |
-| portability-sync  | export bundles, migration sessions, sync cursors and conflicts | canonical snapshots, identity and entitlement decisions |
-| ai-orchestration  | capture jobs, validated drafts, assistant sessions and tool invocations | entitlements, read-only domain projections, allowlisted application tools |
+| Module                | Owns writes to                                                          | May consume                                                               |
+| --------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| identity-consent      | accounts, grants, sessions, privacy requests                            | identity provider claims                                                  |
+| user-context          | profile, goals, preferences, observations                               | identity reference, consent decisions                                     |
+| food-knowledge        | foods, portions, composition, classifications                           | published dataset releases                                                |
+| recipe-knowledge      | recipes, immutable versions, yield, method                              | public food references                                                    |
+| consumption           | meals, items, corrections                                               | food/recipe snapshots, user locale/timezone                               |
+| nutrition-science     | nutrient ontology, target and rule-set releases                         | approved scientific evidence                                              |
+| nutrition-state       | immutable state snapshots                                               | consumption events, user context, rule/data releases                      |
+| planning              | requests, optimizer runs, plans, feedback                               | state/user/food snapshots, active rule release                            |
+| data-publication      | source batches, mappings, quality reports, releases                     | external source artifacts                                                 |
+| audit-provenance      | append-only evidence and decision traces                                | domain events and run fingerprints                                        |
+| commerce-entitlements | subscriptions, entitlement grants, usage reservations and ledger        | billing-provider events, identity reference                               |
+| portability-sync      | export bundles, migration sessions, sync cursors and conflicts          | canonical snapshots, identity and entitlement decisions                   |
+| ai-orchestration      | capture jobs, validated drafts, assistant sessions and tool invocations | entitlements, read-only domain projections, allowlisted application tools |
 
 ## Enforced dependency direction
 

@@ -1,13 +1,13 @@
 # ADR-0002: Local-first product with explicit cloud promotion
 
-| Field                      | Value                                                    |
-| -------------------------- | -------------------------------------------------------- |
-| Status                     | Proposed                                                 |
-| Date                       | 2026-09-27                                               |
-| Deciders                   | Product, Architecture, Security, Privacy, Data           |
-| Owner                      | Nutrixx Architecture                                     |
-| Related requirements       | FR-015–FR-021; QR-014–QR-016; QS-13–QS-16               |
-| Supersedes / superseded by | None                                                     |
+| Field                      | Value                                          |
+| -------------------------- | ---------------------------------------------- |
+| Status                     | Proposed                                       |
+| Date                       | 2026-09-27                                     |
+| Deciders                   | Product, Architecture, Security, Privacy, Data |
+| Owner                      | Nutrixx Architecture                           |
+| Related requirements       | FR-015–FR-021; QR-014–QR-016; QS-13–QS-16      |
+| Supersedes / superseded by | None                                           |
 
 ## Context and problem
 
@@ -63,4 +63,3 @@ state, count/hash mismatch, schema evolution, insufficient downgrade space,
 conflicts, multi-device convergence, deletion evidence, and deterministic
 cross-adapter output. Reconsider only if a replacement preserves local privacy,
 portability, single authority, and zero-loss transitions with stronger evidence.
-

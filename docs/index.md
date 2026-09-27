@@ -45,17 +45,17 @@ features:
 
 ## Read by intent
 
-| If you want to…                         | Start here                                                |
-| --------------------------------------- | --------------------------------------------------------- |
-| Understand what Nutrixx must become     | [Product constitution](/product/constitution)             |
-| Compare Free, Pro, and Ultimate          | [Plans and entitlements](/product/plans-and-entitlements)  |
-| See the system shape and boundaries     | [Target architecture](/architecture/target-architecture)  |
-| Follow local-to-cloud evolution          | [Local-first architecture](/architecture/local-first-evolution) |
-| Learn the core language and concepts    | [Domain model](/domain/domain-model)                      |
-| Understand nutrition computation        | [Nutrition-model foundation](/nutrition-model/foundation) |
-| Inspect recommendation behavior         | [Decision engines](/engines/)                             |
-| Review safety, evidence, and validation | [Quality and evidence](/quality/)                         |
-| Contribute or govern documentation      | [Documentation governance](/documentation-governance)     |
+| If you want to…                         | Start here                                                      |
+| --------------------------------------- | --------------------------------------------------------------- |
+| Understand what Nutrixx must become     | [Product constitution](/product/constitution)                   |
+| Compare Free, Pro, and Ultimate         | [Plans and entitlements](/product/plans-and-entitlements)       |
+| See the system shape and boundaries     | [Target architecture](/architecture/target-architecture)        |
+| Follow local-to-cloud evolution         | [Local-first architecture](/architecture/local-first-evolution) |
+| Learn the core language and concepts    | [Domain model](/domain/domain-model)                            |
+| Understand nutrition computation        | [Nutrition-model foundation](/nutrition-model/foundation)       |
+| Inspect recommendation behavior         | [Decision engines](/engines/)                                   |
+| Review safety, evidence, and validation | [Quality and evidence](/quality/)                               |
+| Contribute or govern documentation      | [Documentation governance](/documentation-governance)           |
 
 > [!IMPORTANT]
 > These documents describe the intended production system—not merely the initial

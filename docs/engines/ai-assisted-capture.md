@@ -1,11 +1,11 @@
 # AI-assisted capture
 
-| Field         | Value                                               |
-| ------------- | --------------------------------------------------- |
-| Status        | Proposed target design                              |
+| Field         | Value                                                |
+| ------------- | ---------------------------------------------------- |
+| Status        | Proposed target design                               |
 | Audience      | Product, AI, application, security, privacy, quality |
-| Owner         | Nutrixx AI and Application Engineering              |
-| Last reviewed | 2026-09-27                                          |
+| Owner         | Nutrixx AI and Application Engineering               |
+| Last reviewed | 2026-09-27                                           |
 
 ## Purpose and boundary
 
@@ -50,11 +50,11 @@ never initialized in the background.
 
 Supported adapters may include:
 
-| Adapter | Secret/data path | Required disclosure |
-| --- | --- | --- |
-| Provider OAuth + PKCE | Browser directly to provider using scoped token | Provider, scopes, data sent, revocation |
-| BYOK direct request | Bearer key and selected input remain in browser/provider path | Website-code access risk, provider terms, session/persistence choice |
-| WebGPU/WASM | Model and inference stay on device | Exact download/storage size, hardware support, cache removal, fallback |
+| Adapter               | Secret/data path                                              | Required disclosure                                                    |
+| --------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Provider OAuth + PKCE | Browser directly to provider using scoped token               | Provider, scopes, data sent, revocation                                |
+| BYOK direct request   | Bearer key and selected input remain in browser/provider path | Website-code access risk, provider terms, session/persistence choice   |
+| WebGPU/WASM           | Model and inference stay on device                            | Exact download/storage size, hardware support, cache removal, fallback |
 
 Local processing receives no Nutrixx hosted-AI entitlement and cannot unlock
 AI-dependent optimizer functions. It produces the same untrusted draft schema
@@ -109,4 +109,3 @@ include exact/partial entity match, quantity/unit error, unsafe auto-resolution,
 question burden, correction rate, latency, failure/refund correctness, cost per
 successful action, and confirmation/rejection. No aggregate score may hide an
 unsafe resolution subgroup.
-

@@ -17,23 +17,23 @@ source; the website is a generated presentation of it.
 
 ## Reading paths
 
-| If you need to understand…                    | Start here                                                 |
-| --------------------------------------------- | ---------------------------------------------------------- |
-| Product promise, scope, and non-goals         | [Product constitution](product/constitution.md)            |
-| Free, Pro, Ultimate, quotas, and migration     | [Plans and entitlements](product/plans-and-entitlements.md) |
-| Required capabilities and acceptance outcomes | [Product requirements](product/requirements.md)            |
-| Domain language and lifecycle                 | [Domain documentation](domain/README.md)                   |
-| System boundaries and technical strategy      | [Target architecture](architecture/target-architecture.md) |
-| Local-first operation and cloud evolution      | [Local-first architecture](architecture/local-first-evolution.md) |
-| Canonical data, lineage, and versioning       | [Data architecture](data/architecture.md)                  |
-| Calculations and optimization                 | [Engine documentation](engines/README.md)                  |
-| API behavior                                  | [API conventions](api/conventions.md)                      |
-| Security, privacy, and safety                 | [Security and privacy](security-privacy/README.md)         |
-| Verification and scientific governance        | [Quality](quality/README.md)                               |
-| Production operation                          | [Operations](operations/target-operating-model.md)         |
-| Delivery sequence and unresolved choices      | [Roadmap](roadmap/README.md)                               |
-| Why an architectural choice was made          | [Decision records](decisions/README.md)                    |
-| Current repository automation                 | [DevOps baseline](devops.md)                               |
+| If you need to understand…                    | Start here                                                        |
+| --------------------------------------------- | ----------------------------------------------------------------- |
+| Product promise, scope, and non-goals         | [Product constitution](product/constitution.md)                   |
+| Free, Pro, Ultimate, quotas, and migration    | [Plans and entitlements](product/plans-and-entitlements.md)       |
+| Required capabilities and acceptance outcomes | [Product requirements](product/requirements.md)                   |
+| Domain language and lifecycle                 | [Domain documentation](domain/README.md)                          |
+| System boundaries and technical strategy      | [Target architecture](architecture/target-architecture.md)        |
+| Local-first operation and cloud evolution     | [Local-first architecture](architecture/local-first-evolution.md) |
+| Canonical data, lineage, and versioning       | [Data architecture](data/architecture.md)                         |
+| Calculations and optimization                 | [Engine documentation](engines/README.md)                         |
+| API behavior                                  | [API conventions](api/conventions.md)                             |
+| Security, privacy, and safety                 | [Security and privacy](security-privacy/README.md)                |
+| Verification and scientific governance        | [Quality](quality/README.md)                                      |
+| Production operation                          | [Operations](operations/target-operating-model.md)                |
+| Delivery sequence and unresolved choices      | [Roadmap](roadmap/README.md)                                      |
+| Why an architectural choice was made          | [Decision records](decisions/README.md)                           |
+| Current repository automation                 | [DevOps baseline](devops.md)                                      |
 
 ## Document model
 

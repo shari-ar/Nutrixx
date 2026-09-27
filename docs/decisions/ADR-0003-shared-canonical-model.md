@@ -61,4 +61,3 @@ CI runs shared repository contracts, serialization round trips, golden
 calculations, migration fixtures, and export/import equivalence across both
 adapters. Any mode-specific semantic exception requires a new ADR and explicit
 user-visible consequence.
-

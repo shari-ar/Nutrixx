@@ -1,11 +1,11 @@
 # Conversational plan assistant
 
-| Field         | Value                                              |
-| ------------- | -------------------------------------------------- |
-| Status        | Proposed target design                             |
+| Field         | Value                                               |
+| ------------- | --------------------------------------------------- |
+| Status        | Proposed target design                              |
 | Audience      | Product, AI, application, security, quality, safety |
-| Owner         | Nutrixx AI Engineering                             |
-| Last reviewed | 2026-09-27                                         |
+| Owner         | Nutrixx AI Engineering                              |
+| Last reviewed | 2026-09-27                                          |
 
 ## Purpose
 
@@ -44,12 +44,12 @@ name, schema, scope, ownership, purpose, freshness, cost budget, and result.
 
 ## Tool classes
 
-| Class | Examples | Policy |
-| --- | --- | --- |
-| Read | Current plan, nutrient contributors, approved alternatives, calculation trace | Least data necessary; no hidden cross-user or privileged access |
-| Analysis | Compare validated plans, request deterministic recomputation, explain trade-offs | Result must reference typed output and versions |
-| Preview write | Prepare meal correction, preference change, substitution, or new optimizer request | Returns diff, consequences, and required confirmation |
-| Prohibited | Diagnose disease, change medication, override safety, raw database query, arbitrary URL fetch | Never exposed to the model |
+| Class         | Examples                                                                                      | Policy                                                          |
+| ------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Read          | Current plan, nutrient contributors, approved alternatives, calculation trace                 | Least data necessary; no hidden cross-user or privileged access |
+| Analysis      | Compare validated plans, request deterministic recomputation, explain trade-offs              | Result must reference typed output and versions                 |
+| Preview write | Prepare meal correction, preference change, substitution, or new optimizer request            | Returns diff, consequences, and required confirmation           |
+| Prohibited    | Diagnose disease, change medication, override safety, raw database query, arbitrary URL fetch | Never exposed to the model                                      |
 
 Confirmation is bound to the exact preview hash, tool parameters, user,
 authority version, and expiry. Any material change requires a new preview.
@@ -103,4 +103,3 @@ rate, refusal correctness, tool-selection and argument accuracy, authorization
 isolation, prompt-injection resistance, confirmation bypass, loop/cost bounds,
 latency, and user correction. Safety and authorization failures are
 release-blocking regardless of average assistant quality.
-

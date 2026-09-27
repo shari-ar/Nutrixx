@@ -1,11 +1,11 @@
 # Local-first architecture and cloud evolution
 
-| Field            | Value                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------- |
-| Status           | Proposed target state                                                                 |
-| Audience         | Product, architecture, web, API, security, data, operations                           |
-| Owner            | Nutrixx Architecture                                                                  |
-| Last reviewed    | 2026-09-27                                                                            |
+| Field             | Value                                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Status            | Proposed target state                                                                                                         |
+| Audience          | Product, architecture, web, API, security, data, operations                                                                   |
+| Owner             | Nutrixx Architecture                                                                                                          |
+| Last reviewed     | 2026-09-27                                                                                                                    |
 | Related decisions | [ADR-0002](../decisions/ADR-0002-local-first-cloud-promotion.md), [ADR-0003](../decisions/ADR-0003-shared-canonical-model.md) |
 
 ## Architectural intent
@@ -17,10 +17,10 @@ content through Nutrixx servers.
 
 The product has two explicit authority modes:
 
-| Mode | Canonical user-data authority | Network dependency | Recovery model |
-| --- | --- | --- | --- |
-| `LOCAL` | Browser database for that browser profile | Reference assets and optional user-enabled AI only | Manual export/import; browser persistence remains best-effort |
-| `CLOUD` | Nutrixx cloud database | Required for canonical writes and sync; bounded offline cache is allowed | Encrypted backup, tested restore, multi-device sync |
+| Mode    | Canonical user-data authority             | Network dependency                                                       | Recovery model                                                |
+| ------- | ----------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `LOCAL` | Browser database for that browser profile | Reference assets and optional user-enabled AI only                       | Manual export/import; browser persistence remains best-effort |
+| `CLOUD` | Nutrixx cloud database                    | Required for canonical writes and sync; bounded offline cache is allowed | Encrypted backup, tested restore, multi-device sync           |
 
 A profile is in exactly one authority mode. Temporary migration states never
 create two writable masters.
@@ -150,4 +150,3 @@ observable, reversible, and covered by migration/rollback evidence.
   export, account access, or downgrade.
 - Entitlement-service uncertainty fails closed for cost-incurring premium work
   but does not hide already-owned data.
-
