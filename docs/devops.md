@@ -11,6 +11,10 @@ This document describes the repository as it operates today. The
 [target operating model](operations/target-operating-model.md) describes the
 production capabilities required before launch.
 
+The concise inventory of directly selected technologies is maintained in the
+[technology stack](technology-stack.md). Transitive dependencies and framework
+internals are intentionally excluded from that catalog.
+
 ## Operating contract
 
 | Concern               | Source of truth                                      |

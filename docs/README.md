@@ -34,6 +34,7 @@ source; the website is a generated presentation of it.
 | Delivery sequence and unresolved choices      | [Roadmap](roadmap/README.md)                                      |
 | Why an architectural choice was made          | [Decision records](decisions/README.md)                           |
 | Current repository automation                 | [DevOps baseline](devops.md)                                      |
+| Technologies currently used                   | [Technology stack](technology-stack.md)                           |
 
 ## Document model
 

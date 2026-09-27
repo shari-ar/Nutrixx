@@ -91,7 +91,12 @@ function pageItem(absolutePath: string): DefaultTheme.SidebarItem {
 }
 
 function buildSidebar(): DefaultTheme.SidebarItem[] {
-  const overviewOrder = ['index.md', 'README.md', 'devops.md'];
+  const overviewOrder = [
+    'index.md',
+    'README.md',
+    'technology-stack.md',
+    'devops.md',
+  ];
   const rootFiles = markdownFiles(docsRoot)
     .filter((absolutePath) => !relativeSource(absolutePath).includes('/'))
     .sort((left, right) => {

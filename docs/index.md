@@ -55,6 +55,7 @@ features:
 | Understand nutrition computation        | [Nutrition-model foundation](/nutrition-model/foundation)       |
 | Inspect recommendation behavior         | [Decision engines](/engines/)                                   |
 | Review safety, evidence, and validation | [Quality and evidence](/quality/)                               |
+| See the technologies currently in use   | [Technology stack](/technology-stack)                           |
 | Contribute or govern documentation      | [Documentation governance](/documentation-governance)           |
 
 > [!IMPORTANT]
