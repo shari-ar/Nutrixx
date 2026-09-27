@@ -21,7 +21,7 @@ EvidenceFact<T>
 ├── subject and semantic identifier
 ├── valid interval + recorded_at
 ├── method: observed | user_entered | imported | calculated | estimated | default
-├── source record + source version + licence
+├── source record + source version + license
 ├── quality dimensions
 ├── uncertainty representation
 ├── unknown reason

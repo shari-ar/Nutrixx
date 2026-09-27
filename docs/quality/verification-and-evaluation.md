@@ -87,7 +87,7 @@ Govern–Map–Measure–Manage is used when AI/ML materially affects user outco
 
 ## Evaluation data governance
 
-Datasets have provenance, licence, purpose, version, inclusion/exclusion logic,
+Datasets have provenance, license, purpose, version, inclusion/exclusion logic,
 quality analysis, sensitive-data controls, contamination prevention, and an
 owner. Release benchmarks are immutable and access-controlled. User data is not
 used for model training or unrelated evaluation without an approved purpose

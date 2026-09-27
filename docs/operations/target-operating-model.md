@@ -144,7 +144,7 @@ Production launch requires:
 - SLOs, dashboards, actionable alerts, on-call ownership, and runbooks;
 - backup/restore evidence and incident exercises;
 - deployment/rollback, migration, dataset/rule rollback tests;
-- vendor/licence, secrets, capacity, and support readiness.
+- vendor/license, secrets, capacity, and support readiness.
 
 Plan-specific launch gates are cumulative:
 

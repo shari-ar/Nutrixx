@@ -50,6 +50,11 @@ date. Normative terms **MUST**, **SHOULD**, and **MAY** use the meanings defined
 by [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and
 [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174).
 
+All documentation, diagrams, examples, filenames, and generated site copy MUST
+use US English. Quotations, official external names, standardized codes, and
+user-provided data retain their authoritative spelling when accuracy requires
+it.
+
 ## Status model
 
 | Status        | Meaning                                                      |

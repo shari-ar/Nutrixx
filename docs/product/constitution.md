@@ -15,16 +15,28 @@ actionable nutrition guidance across macro- and micronutrients.
 
 ## Intended use
 
-The first product is a general-wellness nutrition assistant for consenting
-adults. It helps users record consumption, understand nutritional patterns, and
-generate practical meal plans. It does not diagnose, treat, cure, or prevent
-disease and does not replace a qualified clinician.
+### Initial market and supported population
 
-The default release scope excludes children, pregnancy or lactation, eating
-disorders, therapeutic diets, medication changes, acute illness, and clinical
-decision-making. Supporting any excluded population requires an accepted
-clinical policy, qualified ownership, jurisdiction review, and separate
-validation evidence.
+The initial product is a direct-to-consumer general-wellness nutrition
+assistant for consenting adults aged 18 or older, designed first for Persian-
+and English-speaking users and released only in jurisdictions cleared in the
+regulatory-applicability matrix. It supports food and activity recording,
+nutrition-pattern education, and practical meal planning for generally healthy
+adults; it does not diagnose, treat, cure, or prevent disease, and its wording,
+recommendations, and marketing must remain within that boundary.
+
+### Clinical and higher-risk contexts
+
+Nutrixx may let users record conditions, medications, laboratory observations,
+pregnancy or lactation, age-related context, eating-disorder concerns, or other
+higher-risk facts to make data entry easier, identify missing or contradictory
+inputs, show conservative warnings, and prepare information for discussion
+with a physician. These safeguards reduce avoidable mistakes but provide no
+guarantee of safety, correctness, or clinical suitability: the product must
+not recommend medication changes or act as the decision authority, and a user
+in any such context must obtain their physician's approval before acting on a
+Nutrixx result rather than treating the site as medical guidance. Children and
+therapeutic or acute-care use remain outside the supported planning population.
 
 ## Constitutional principles
 

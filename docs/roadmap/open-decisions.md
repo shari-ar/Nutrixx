@@ -9,11 +9,8 @@
 
 | ID     | Priority | Decision                                                                                                           | Accountable owner            | Must resolve before       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------- | ------------------------- |
-| OD-001 | P0       | Launch market, intended-use wording, supported adult population, and excluded conditions                           | Product + Legal/Clinical     | Stage 0 exit              |
-| OD-002 | P0       | Authoritative target/UL policies by jurisdiction/population and qualified scientific approver                      | Nutrition Science            | Stage 0 exit              |
-| OD-003 | P0       | Food data sources/licences, Iranian/regional food coverage, update cadence, and quality threshold                  | Data + Legal                 | Stage 2 build             |
+| OD-003 | P0       | Food data sources/licenses, Iranian/regional food coverage, update cadence, and quality threshold                  | Data + Legal                 | Stage 2 build             |
 | OD-004 | P0       | Formal meaning/horizon of Nutrition State and user-safe terminology                                                | Nutrition Science + Product  | Stage 3 design            |
-| OD-005 | P0       | Medication, condition, lab, eating-disorder, pregnancy/child, and referral policies                                | Clinical/Safety              | Stage 0 exit              |
 | OD-006 | P0       | Privacy roles, purposes/legal bases, consent, retention, export/deletion, and launch-jurisdiction obligations      | Privacy + Legal              | Any user-data launch      |
 | OD-007 | P1       | Day boundary, timezone/travel, late correction, and rolling-window semantics                                       | Product + Domain             | Stage 3 build             |
 | OD-008 | P1       | Hard versus soft planner constraints and priority/relaxation/infeasibility policy                                  | Science + Product            | Stage 4 build             |
@@ -30,6 +27,14 @@
 | OD-019 | P0       | Exact boundary, algorithm, device budget, and quality floor of the Free local approximate optimizer                | Product + Optimization       | Stage 4 build             |
 | OD-020 | P1       | Supported AI providers/models, browser OAuth versus BYOK modes, WebGPU model size, languages, and support boundary | AI + Security + Product      | Stage 5 build             |
 | OD-021 | P1       | Entitlement catalog versioning, billing-cycle timezone, manual support adjustment, and commercial price policy     | Product + Finance + Platform | Stage 6 build             |
+
+## Resolved Stage 0 decisions
+
+| ID     | Resolution                                                                                       | Authoritative record                                                                       |
+| ------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| OD-001 | General-wellness product for consenting adults, Persian/English first, jurisdiction-gated launch | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
+| OD-002 | Versioned DRI/NIH baseline with typed targets, no silent blending, and qualified approval        | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
+| OD-005 | Error-reduction assistance without guarantee; physician approval required for higher-risk use    | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
 
 An open decision is not permission to choose implicitly in code. The owner
 creates an ADR, scientific policy, or product-policy record with alternatives,

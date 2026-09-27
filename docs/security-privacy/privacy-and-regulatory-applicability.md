@@ -52,9 +52,9 @@ conversation memory is opt-in and independently deletable.
 | ------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Restricted                | Credentials, tokens, encryption keys                            | Dedicated secret systems; never application-readable beyond need |
 | Sensitive health/personal | Intake, measurements, goals, labs, medications, inferred states | Encryption, strict purpose/role controls, no telemetry payloads  |
-| Confidential product      | Algorithms, licensed datasets, evaluation corpora               | Role controls, licence enforcement, integrity checks             |
+| Confidential product      | Algorithms, licensed datasets, evaluation corpora               | Role controls, license enforcement, integrity checks             |
 | Internal operational      | Non-sensitive job IDs, deployment metadata                      | Authenticated access and retention                               |
-| Public                    | Published documentation and approved catalog content            | Integrity and licence controls                                   |
+| Public                    | Published documentation and approved catalog content            | Integrity and license controls                                   |
 
 Customer sovereignty requires usable export, correction, cancellation,
 downgrade, and recovery paths. These rights remain subject to legal retention,

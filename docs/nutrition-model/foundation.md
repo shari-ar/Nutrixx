@@ -73,6 +73,18 @@ Targets are versioned policies with:
   another defined subset;
 - evidence/approval state and limitations.
 
+The initial authoritative baseline uses National Academies Dietary Reference
+Intakes as presented and cross-checked through NIH Office of Dietary
+Supplements sources: RDA is preferred when applicable, AI is used only when no
+RDA exists, EAR supports population/uncertainty reasoning rather than an
+individual goal, UL is enforced only for its defined source and population,
+and AMDR expresses macronutrient ranges. Label Daily Value is display context,
+not a personalized target. Every activated target records authority, edition,
+population, jurisdiction applicability, and effective date and requires
+independent approval from a qualified nutrition-science professional; when
+sources conflict or applicability is unknown, the engine abstains instead of
+silently selecting or averaging values.
+
 RDA, AI, UL, and label Daily Value are not interchangeable. A daily intake gap
 does not diagnose deficiency, and a single-day comparison MUST NOT be
 described as physiological nutrient status.

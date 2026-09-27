@@ -11,7 +11,7 @@
 
 ```mermaid
 flowchart LR
-    A[Acquire + licence manifest] --> B[Immutable raw artifact]
+    A[Acquire + license manifest] --> B[Immutable raw artifact]
     B --> C[Quarantine and malware/schema checks]
     C --> D[Map identities, units, bases]
     D --> E[Validate and deduplicate]
@@ -32,7 +32,7 @@ version pointer; rollback selects the previous accepted release.
 
 Each release contains:
 
-- source artifacts, checksums, provider revisions, and licence/use constraints;
+- source artifacts, checksums, provider revisions, and license/use constraints;
 - canonical schema and mapping versions;
 - included/excluded record counts and rejection reasons;
 - identity merge/split decisions;
@@ -47,7 +47,7 @@ A release cannot activate with:
 
 - an unknown or incompatible unit/basis in a published quantity;
 - a canonical ID collision or unresolved merge;
-- missing source version or incompatible licence;
+- missing source version or incompatible license;
 - an impossible/unsafe range according to an accepted validation rule;
 - a regression beyond the approved threshold;
 - a missing lineage path for a calculated value;

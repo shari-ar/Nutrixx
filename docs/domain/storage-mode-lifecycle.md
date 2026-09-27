@@ -62,7 +62,7 @@ is verifiably removed.
    release identifiers.
 3. Import into browser staging, run schema/relationship checks and deterministic
    replay samples, then show required storage and limitations.
-4. Commit Local authority only after verification and user acknowledgement.
+4. Commit Local authority only after verification and user acknowledgment.
 5. Make the cloud copy read-only, then delete it according to the approved
    retention and backup-expiry schedule. Produce deletion evidence without
    retaining sensitive payloads.
@@ -73,7 +73,7 @@ device or destination. Nutrixx MUST NOT destroy the only valid copy.
 
 ## Synchronization in cloud mode
 
-Cloud synchronization uses versioned commands and acknowledgements:
+Cloud synchronization uses versioned commands and acknowledgments:
 
 ```text
 client_id + command_id + aggregate_id + expected_version + payload_version

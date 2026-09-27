@@ -26,7 +26,7 @@ flowchart LR
 ## Stage 0 — Product, science, privacy, and canonical contract
 
 Deliver intended use/exclusions, glossary, storage-neutral canonical model,
-scientific governance, source/licence strategy, golden fixtures, plan policy,
+scientific governance, source/license strategy, golden fixtures, plan policy,
 privacy lifecycle, threat model, ADRs, and contract conventions.
 
 Exit: all P0 decisions required by the first local slice are approved, and one
