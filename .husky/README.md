@@ -1,14 +1,18 @@
 # Git hooks
 
-| Field         | Value                                 |
-| ------------- | ------------------------------------- |
-| Purpose       | Fail-closed local commit quality gate |
-| Owner         | Nutrixx Engineering                   |
-| Last reviewed | 2026-09-27                            |
+| Field         | Value                                     |
+| ------------- | ----------------------------------------- |
+| Purpose       | Fail-closed commit and push quality gates |
+| Owner         | Nutrixx Engineering                       |
+| Last reviewed | 2026-09-27                                |
 
 `pre-commit` formats every supported staged file with the repository-locked
 Prettier version and restages the result safely. Filenames are passed as a
 null-delimited stream, so spaces and Unicode paths remain safe.
+
+`pre-push` runs the repository's complete `npm run check` quality gate. A push
+is blocked unless documentation policy, formatting, documentation build,
+linting, tests, contract build, API build, and Web build all succeed.
 
 Execution order:
 
@@ -23,6 +27,5 @@ contexts without `.git` skip hook installation; CI independently enforces
 The generated, ignored `.husky/_` runtime is excluded from the project-owned
 directory README policy.
 
-Do not place secrets, network authentication, destructive commands, or the
-full test suite in a Git hook. Keep it fast, deterministic, and limited to
-staged content.
+Do not place secrets, network authentication, or destructive commands in a Git
+hook. Keep hook behavior deterministic and aligned with CI.

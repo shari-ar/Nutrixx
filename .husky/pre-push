@@ -1,0 +1,12 @@
+if command -v npm >/dev/null 2>&1; then
+  npm run check
+elif command -v docker >/dev/null 2>&1; then
+  docker compose \
+    -f infra/compose/compose.yaml \
+    -f infra/compose/compose.dev.yaml \
+    exec -T api npm run check
+else
+  echo 'Nutrixx pre-push quality gate could not run.' >&2
+  echo 'Start the DevContainer or install the locked Node.js/npm toolchain.' >&2
+  exit 1
+fi

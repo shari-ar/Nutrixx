@@ -7,6 +7,17 @@
   "service": "api",
   "runServices": ["api", "web"],
   "workspaceFolder": "/workspace",
+  "forwardPorts": [3000, 3001],
+  "portsAttributes": {
+    "3000": {
+      "label": "Nutrixx Web",
+      "onAutoForward": "openBrowser"
+    },
+    "3001": {
+      "label": "Nutrixx API",
+      "onAutoForward": "silent"
+    }
+  },
   "overrideCommand": false,
   "shutdownAction": "stopCompose",
   "postStartCommand": ["node", ".devcontainer/wait-for-api.mjs"],

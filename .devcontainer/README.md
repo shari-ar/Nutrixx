@@ -5,10 +5,10 @@ stack instead of maintaining a second container definition.
 
 ## Contents
 
-| File                | Responsibility                                              |
-| ------------------- | ----------------------------------------------------------- |
-| `devcontainer.json` | VS Code attachment, workspace, user, and lifecycle settings |
-| `wait-for-api.mjs`  | Bounded readiness check after the container starts          |
+| File                | Responsibility                                                |
+| ------------------- | ------------------------------------------------------------- |
+| `devcontainer.json` | VS Code, Codespaces, ports, workspace, and lifecycle settings |
+| `wait-for-api.mjs`  | Bounded readiness check after the container starts            |
 
 ## Operating rules
 
@@ -26,3 +26,13 @@ run as the non-root `node` user.
 
 Rebuild the Dev Container after changing its configuration, Docker stages, or
 the dependency lockfile.
+
+## GitHub Codespaces
+
+The repository's default Codespaces configuration is this same Dev Container.
+It builds and runs the canonical development Compose stack, forwards the Web
+application on port `3000`, forwards the API on port `3001`, and keeps both
+ports private unless the codespace owner explicitly changes their visibility.
+
+Create a codespace from the default branch at
+<https://codespaces.new/shari-ar/Nutrixx?quickstart=1>.

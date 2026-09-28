@@ -9,6 +9,8 @@ gates, operations, and delivery roadmap.
 The published documentation site is available at
 <https://shari-ar.github.io/Nutrixx/>.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/shari-ar/Nutrixx?quickstart=1)
+
 ## Repository map
 
 | Path             | Responsibility                                                |
@@ -22,6 +24,10 @@ The published documentation site is available at
 | `.devcontainer/` | Reproducible VS Code development environment                  |
 
 ## Environment setup
+
+Use the Codespaces badge above for a hosted development environment, or open
+the repository in its Dev Container locally. Both paths reuse the canonical
+development Compose stack.
 
 ```powershell
 Copy-Item .env.example .env
