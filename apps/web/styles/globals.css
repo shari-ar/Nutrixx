@@ -11,3 +11,22 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
 }
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+}
+
+body {
+  background-image:
+    radial-gradient(
+      circle at 10% 0%,
+      color-mix(in srgb, var(--color-accent) 8%, transparent),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      color-mix(in srgb, #10b981 7%, transparent),
+      transparent 28rem
+    );
+  background-attachment: fixed;
+}

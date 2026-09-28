@@ -2,6 +2,18 @@
 
 Reusable, application-local React components shared by multiple routes.
 
+## Current shared components
+
+| Component       | Responsibility                         |
+| --------------- | -------------------------------------- |
+| `Navbar`        | Responsive global navigation           |
+| `StarterForm`   | Shared minimum-input onboarding form   |
+| `PageHeader`    | Consistent route introduction          |
+| `DashboardCard` | Accessible domain entry card           |
+| `ProductIcon`   | Small product-specific icon vocabulary |
+| `BrandLogo`     | Canonical brand asset rendering        |
+| `ThemeSwitch`   | Light and dark appearance control      |
+
 ## Conventions
 
 - Build on HeroUI and shared design tokens before creating custom primitives.

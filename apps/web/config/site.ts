@@ -4,4 +4,10 @@ export const siteConfig = {
   name: 'Nutrixx',
   description:
     'Personalized nutrition guidance built from food, activity, and optional health data.',
+  navigation: [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/meals', label: 'Meals' },
+    { href: '/nutrition', label: 'Nutrition' },
+    { href: '/activity', label: 'Activity' },
+  ] as const,
 };

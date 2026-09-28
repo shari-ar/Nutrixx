@@ -57,7 +57,7 @@ export default function RootLayout({
             </main>
             <footer className="w-full border-t border-separator py-5">
               <p className="mx-auto max-w-7xl px-6 text-sm text-muted">
-                Nutrixx · Initial application foundation
+                Nutrixx · Personal nutrition, designed around real life
               </p>
             </footer>
           </div>

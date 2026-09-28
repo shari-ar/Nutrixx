@@ -8,10 +8,23 @@ boundaries, and route-level metadata.
 | File            | Responsibility                                   |
 | --------------- | ------------------------------------------------ |
 | `layout.tsx`    | Root document, metadata, fonts, and shared shell |
-| `page.tsx`      | Initial landing route                            |
+| `page.tsx`      | Product landing route and shared starter form    |
 | `providers.tsx` | Client-side provider boundary                    |
 | `error.tsx`     | Route error recovery UI                          |
 | `page.test.tsx` | User-visible landing-page behavior               |
+
+## Route map
+
+| Route             | Responsibility                                     |
+| ----------------- | -------------------------------------------------- |
+| `/start`          | Dedicated starting-profile form                    |
+| `/dashboard`      | Daily overview and domain entry points             |
+| `/meals`          | Previous and upcoming meal timeline                |
+| `/meals/[mealId]` | Recipe and nutrition detail for one meal           |
+| `/nutrition`      | Action-oriented nutrient coverage                  |
+| `/activity`       | Activity, sleep, and recovery context              |
+| `/hydration`      | Water intake and target detail                     |
+| `/settings`       | Profile, local data, backup, and advanced controls |
 
 ## Conventions
 
