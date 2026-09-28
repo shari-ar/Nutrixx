@@ -1,9 +1,8 @@
 import Link from 'next/link';
 
 import { ProductIcon } from '@/components/product-icons';
-import { StarterForm } from '@/components/starter-form';
-
 import type { ProductIconName } from '@/components/product-icons';
+import { StarterForm } from '@/components/starter-form';
 
 export default function Home() {
   return (

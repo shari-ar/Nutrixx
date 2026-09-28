@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { ProductIcon } from '@/components/product-icons';
-
 import type { ProductIconName } from '@/components/product-icons';
+
 import type { Route } from 'next';
 import type { ReactNode } from 'react';
 

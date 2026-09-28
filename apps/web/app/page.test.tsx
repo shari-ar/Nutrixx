@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import Home from './page';
+
 vi.mock('@/components/starter-form', () => ({
   StarterForm: () => (
     <form aria-label="Nutrition starting profile">
@@ -8,8 +10,6 @@ vi.mock('@/components/starter-form', () => ({
     </form>
   ),
 }));
-
-import Home from './page';
 
 describe('Home', () => {
   it('introduces the Nutrixx product', () => {
