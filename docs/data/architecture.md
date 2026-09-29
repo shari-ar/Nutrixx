@@ -5,7 +5,7 @@
 | Status        | Proposed target state                    |
 | Audience      | Architecture, data, application, privacy |
 | Owner         | Nutrixx Data                             |
-| Last reviewed | 2026-09-27                               |
+| Last reviewed | 2026-09-29                               |
 
 ## Store roles
 
@@ -90,6 +90,8 @@ and identify what it corrects. Target/rule activation is effective-dated.
   authentication, entitlement checks, or static/reference delivery.
 - Authority promotion/demotion follows the verified protocol in
   [Storage-mode lifecycle](../domain/storage-mode-lifecycle.md).
+- Browser support, operational headroom, persistence UX, and export reminders
+  follow [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md).
 
 ## Consistency
 

@@ -1,12 +1,12 @@
 # Local-first architecture and cloud evolution
 
-| Field             | Value                                                                                                                         |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Status            | Proposed target state                                                                                                         |
-| Audience          | Product, architecture, web, API, security, data, operations                                                                   |
-| Owner             | Nutrixx Architecture                                                                                                          |
-| Last reviewed     | 2026-09-27                                                                                                                    |
-| Related decisions | [ADR-0002](../decisions/ADR-0002-local-first-cloud-promotion.md), [ADR-0003](../decisions/ADR-0003-shared-canonical-model.md) |
+| Field             | Value                                                                                                                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status            | Proposed target state                                                                                                                                                                                            |
+| Audience          | Product, architecture, web, API, security, data, operations                                                                                                                                                      |
+| Owner             | Nutrixx Architecture                                                                                                                                                                                             |
+| Last reviewed     | 2026-09-29                                                                                                                                                                                                       |
+| Related decisions | [ADR-0002](../decisions/ADR-0002-local-first-cloud-promotion.md), [ADR-0003](../decisions/ADR-0003-shared-canonical-model.md), [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md) |
 
 ## Architectural intent
 
@@ -67,6 +67,9 @@ Local mode requirements:
   facts remain distinct from disposable reference caches;
 - deterministic engines run against immutable input snapshots regardless of
   storage mode.
+
+The supported browser matrix, dynamic capacity thresholds, persistence prompt,
+and export-reminder policy are defined by [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md).
 
 ## Cloud product boundary
 

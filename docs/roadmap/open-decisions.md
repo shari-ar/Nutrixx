@@ -5,7 +5,7 @@
 | Status        | Living decision register                    |
 | Audience      | Product and all technical/scientific owners |
 | Owner         | Nutrixx Product                             |
-| Last reviewed | 2026-09-27                                  |
+| Last reviewed | 2026-09-29                                  |
 
 | ID     | Priority | Decision                                                                                                           | Accountable owner            | Must resolve before       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------- | ------------------------- |
@@ -21,20 +21,20 @@
 | OD-013 | P1       | OpenAPI version after complete tooling compatibility test                                                          | API Architecture             | Public contract expansion |
 | OD-014 | P2       | Predictive model necessity, outcome, dataset, baseline, calibration, and activation gate                           | Product + ML + Science       | Stage 11 candidate        |
 | OD-015 | P2       | Household/shared recipes, inventory, availability, and commerce boundaries                                         | Product                      | Stage 11 candidate        |
-| OD-016 | P0       | Supported browsers/devices, local storage budget, persistence UX, minimum free disk, and export reminder policy    | Web + Product + Quality      | Stage 1 exit              |
 | OD-017 | P1       | Upgrade recovery, downgrade read-only grace, payment-failure grace, cloud deletion, and backup-expiry periods      | Product + Privacy + Support  | Stage 6 build             |
 | OD-018 | P1       | Ultimate assistant allowance, text/voice scope, conversation memory, and fair-use/cost policy                      | Product + AI + Privacy       | Stage 10 design           |
 | OD-019 | P0       | Exact boundary, algorithm, device budget, and quality floor of the Free local approximate optimizer                | Product + Optimization       | Stage 4 build             |
 | OD-020 | P1       | Supported AI providers/models, browser OAuth versus BYOK modes, WebGPU model size, languages, and support boundary | AI + Security + Product      | Stage 5 build             |
 | OD-021 | P1       | Entitlement catalog versioning, billing-cycle timezone, manual support adjustment, and commercial price policy     | Product + Finance + Platform | Stage 6 build             |
 
-## Resolved Stage 0 decisions
+## Resolved decisions
 
-| ID     | Resolution                                                                                       | Authoritative record                                                                       |
-| ------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| OD-001 | General-wellness product for consenting adults, Persian/English first, jurisdiction-gated launch | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
-| OD-002 | Versioned DRI/NIH baseline with typed targets, no silent blending, and qualified approval        | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
-| OD-005 | Error-reduction assistance without guarantee; physician approval required for higher-risk use    | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
+| ID     | Resolution                                                                                                                         | Authoritative record                                                                       |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| OD-001 | General-wellness product for consenting adults, Persian/English first, jurisdiction-gated launch                                   | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
+| OD-002 | Versioned DRI/NIH baseline with typed targets, no silent blending, and qualified approval                                          | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
+| OD-005 | Error-reduction assistance without guarantee; physician approval required for higher-risk use                                      | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
+| OD-016 | Baseline-aligned support matrix, IndexedDB authority, dynamic headroom, explicit persistence UX, and change-aware export reminders | [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md)          |
 
 An open decision is not permission to choose implicitly in code. The owner
 creates an ADR, scientific policy, or product-policy record with alternatives,
