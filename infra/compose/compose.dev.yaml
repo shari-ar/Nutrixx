@@ -9,7 +9,7 @@ services:
       - |
         dependency_fingerprint="$$(
           {
-            sha256sum /workspace/.npmrc /workspace/package.json /workspace/package-lock.json /workspace/apps/api/package.json /workspace/apps/web/package.json
+            sha256sum /workspace/.npmrc /workspace/package.json /workspace/package-lock.json /workspace/apps/api/package.json /workspace/apps/web/package.json /workspace/packages/canonical-schema/package.json /workspace/packages/config/package.json /workspace/packages/contracts/package.json
             node --version
             npm --version
             uname -sm

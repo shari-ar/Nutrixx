@@ -2,7 +2,7 @@
 
 | Field                      | Value                                         |
 | -------------------------- | --------------------------------------------- |
-| Status                     | Proposed                                      |
+| Status                     | Accepted                                      |
 | Date                       | 2026-09-27                                    |
 | Deciders                   | Architecture, Domain, Data, Web, API          |
 | Owner                      | Nutrixx Architecture                          |
@@ -35,6 +35,11 @@ contracts, serialization rules, schema versions, and migration semantics are
 shared. IndexedDB/OPFS and PostgreSQL use independent physical layouts behind
 conforming repositories. Framework, transport, and database types cannot leak
 into canonical domain contracts.
+
+Canonical Schema version `1` is implemented in `@nutrixx/canonical-schema`.
+Zod is its runtime source of truth, JSON Schema Draft 2020-12 is its portable
+schema representation, and RFC 8785 canonical JSON encoded as UTF-8 is the
+input to SHA-256 record integrity hashes.
 
 Decimals, units, timestamps/timezones, unknown reasons, provenance, immutable
 versions, and fingerprints have one normative serialization. Every migration

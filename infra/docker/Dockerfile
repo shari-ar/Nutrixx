@@ -13,6 +13,7 @@ COPY .npmrc package.json package-lock.json ./
 COPY scripts/install-git-hooks.mjs scripts/install-git-hooks.mjs
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY packages/canonical-schema/package.json packages/canonical-schema/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 

@@ -2,10 +2,10 @@
 
 | Field         | Value                                 |
 | ------------- | ------------------------------------- |
-| Status        | Proposed                              |
+| Status        | Accepted                              |
 | Audience      | Data, API, engine engineers           |
 | Owner         | Nutrixx Data and Domain Working Group |
-| Last reviewed | 2026-09-27                            |
+| Last reviewed | 2026-09-29                            |
 
 ## Foundational value types
 
@@ -77,6 +77,26 @@ owning context, reference/version dependencies, per-part hashes, total counts,
 and compatibility metadata. It never contains provider credentials or server
 secrets.
 
+## Normative schema version 1
+
+The executable contract lives in
+`packages/canonical-schema`. Zod is the runtime source of truth and emits a
+JSON Schema Draft 2020-12 artifact with the stable identifier
+`urn:nutrixx:schema:canonical-record:1`.
+
+| Concern          | Version 1 rule                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| Physical storage | No IndexedDB, OPFS, PostgreSQL, ORM, or transport fields                                           |
+| Exact decimals   | Canonical base-10 strings; no exponent, negative zero, or insignificant trailing fractional zero   |
+| Instants         | UTC RFC 3339 with exactly millisecond precision                                                    |
+| Unknown values   | Explicit tagged value with a reason; never encoded as zero or null                                 |
+| Payloads         | Bound to a registered `recordType` and `recordVersion` schema before acceptance                    |
+| Integrity        | SHA-256 over UTF-8 RFC 8785 canonical JSON excluding the `integrity` object                        |
+| Evolution        | Envelope uses `schemaVersion`; payload uses `recordVersion`; domain revision uses `logicalVersion` |
+
+Schema `1` is replaceable until the first public release under ADR-0006. After
+release, a published schema and its migration fixtures are immutable.
+
 ## Service-control records
 
 Entitlement grants, hosted-usage reservations, migration sessions, AI drafts,
@@ -134,3 +154,6 @@ Do not collapse quality into one unexplained score. Track at least:
 - [UCUM specification](https://ucum.org/ucum)
 - [LOINC](https://loinc.org/)
 - [IANA Time Zone Database](https://www.iana.org/time-zones)
+- [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12)
+- [RFC 3339: Date and Time on the Internet](https://www.rfc-editor.org/rfc/rfc3339)
+- [RFC 8785: JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785)

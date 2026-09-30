@@ -4,12 +4,13 @@ Reusable, independently testable building blocks consumed by applications.
 
 ## Workspaces
 
-| Path                | Responsibility                                  |
-| ------------------- | ----------------------------------------------- |
-| `config/`           | Shared tool and runtime configuration contracts |
-| `contracts/`        | Public machine-readable API contracts           |
-| `nutrition-engine/` | Deterministic nutrition-domain calculations     |
-| `optimizer-engine/` | Constraint-based recommendation optimization    |
+| Path                | Responsibility                                      |
+| ------------------- | --------------------------------------------------- |
+| `canonical-schema/` | Storage-neutral canonical records and serialization |
+| `config/`           | Shared tool and runtime configuration contracts     |
+| `contracts/`        | Public machine-readable API contracts               |
+| `nutrition-engine/` | Deterministic nutrition-domain calculations         |
+| `optimizer-engine/` | Constraint-based recommendation optimization        |
 
 ## Dependency rules
 
