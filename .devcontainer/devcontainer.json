@@ -7,6 +7,17 @@
   "service": "api",
   "runServices": ["api", "web"],
   "workspaceFolder": "/workspace",
+  "initializeCommand": [
+    "docker",
+    "compose",
+    "-f",
+    "${localWorkspaceFolder}/infra/compose/compose.yaml",
+    "-f",
+    "${localWorkspaceFolder}/infra/compose/compose.dev.yaml",
+    "build",
+    "api",
+    "web"
+  ],
   "forwardPorts": [3000, 3001],
   "portsAttributes": {
     "3000": {

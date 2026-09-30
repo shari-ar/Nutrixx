@@ -21,6 +21,8 @@
     "docker:dev:up": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up --build --detach --wait",
     "docker:down": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml down --remove-orphans",
     "docker:logs": "docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml logs --follow",
+    "docker:test:postgres:up": "docker compose -f infra/compose/compose.test.yaml up --detach --wait",
+    "docker:test:postgres:down": "docker compose -f infra/compose/compose.test.yaml down --volumes --remove-orphans",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
@@ -30,9 +32,10 @@
     "format:check": "prettier . --check --ignore-unknown",
     "contract:lint": "npm run lint --workspace=@nutrixx/contracts",
     "contract:build": "npm run build --workspace=@nutrixx/contracts",
-    "lint": "npm run contract:lint && npm run lint --workspace=@nutrixx/canonical-schema && npm run lint --workspace=@nutrixx/api && npm run lint --workspace=@nutrixx/web",
-    "test": "npm run test --workspace=@nutrixx/canonical-schema && npm run test --workspace=@nutrixx/api && npm run test:e2e --workspace=@nutrixx/api && npm run test --workspace=@nutrixx/web",
-    "build": "npm run contract:build && npm run build --workspace=@nutrixx/canonical-schema && npm run build --workspace=@nutrixx/api && npm run build --workspace=@nutrixx/web",
+    "lint": "npm run contract:lint && npm run lint --workspace=@nutrixx/canonical-schema && npm run lint --workspace=@nutrixx/persistence && npm run lint --workspace=@nutrixx/persistence-indexeddb && npm run lint --workspace=@nutrixx/persistence-postgresql && npm run lint --workspace=@nutrixx/api && npm run lint --workspace=@nutrixx/web",
+    "test": "npm run build --workspace=@nutrixx/canonical-schema && npm run build --workspace=@nutrixx/persistence && npm run test --workspace=@nutrixx/canonical-schema && npm run test --workspace=@nutrixx/persistence-indexeddb && npm run test --workspace=@nutrixx/api && npm run test:e2e --workspace=@nutrixx/api && npm run test --workspace=@nutrixx/web",
+    "test:contract:postgres": "npm run build --workspace=@nutrixx/canonical-schema && npm run build --workspace=@nutrixx/persistence && npm run test:contract --workspace=@nutrixx/persistence-postgresql",
+    "build": "npm run contract:build && npm run build --workspace=@nutrixx/canonical-schema && npm run build --workspace=@nutrixx/persistence && npm run build --workspace=@nutrixx/persistence-indexeddb && npm run build --workspace=@nutrixx/persistence-postgresql && npm run build --workspace=@nutrixx/api && npm run build --workspace=@nutrixx/web",
     "check": "npm run docs:check && npm run format:check && npm run docs:build && npm run lint && npm run test && npm run build"
   },
   "devDependencies": {

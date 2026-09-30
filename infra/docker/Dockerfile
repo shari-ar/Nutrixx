@@ -16,14 +16,15 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/canonical-schema/package.json packages/canonical-schema/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/persistence/package.json packages/persistence/package.json
+COPY packages/persistence-indexeddb/package.json packages/persistence-indexeddb/package.json
+COPY packages/persistence-postgresql/package.json packages/persistence-postgresql/package.json
 
 FROM base AS dependencies
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci
 
 FROM dependencies AS development
-RUN chown -R node:node /workspace
-USER node
 
 FROM dependencies AS source
 COPY . .

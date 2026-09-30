@@ -101,3 +101,12 @@ log.
 Cross-context state is eventually consistent and exposes its watermark/version
 where staleness matters. Commands are idempotent; derived snapshots are keyed
 by input fingerprint to prevent accidental duplication.
+
+## Adapter conformance
+
+IndexedDB and PostgreSQL implement one storage-neutral canonical-record port
+and must pass the same executable contract suite. The suite fixes observable
+semantics for validation, cloning, deterministic subject queries, idempotence,
+version conflicts, stable identity, deletion, and concurrent writes. The
+PostgreSQL adapter remains a Stage 1 conformance probe; passing the suite does
+not promote local data to cloud authority or enable hosted product behavior.

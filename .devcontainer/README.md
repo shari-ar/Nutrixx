@@ -24,8 +24,13 @@ Compose except for the development-only `DAC_OVERRIDE` and `FOWNER` file
 capabilities, `no-new-privileges` remains enabled, and production images still
 run as the non-root `node` user.
 
-Rebuild the Dev Container after changing its configuration, Docker stages, or
-the dependency lockfile.
+Opening or rebuilding the Dev Container first builds the canonical development
+targets from the Compose files. Docker reuses its cache when dependency inputs
+are unchanged; a changed lockfile or workspace manifest invalidates the
+dependency layer and runs the locked `npm ci` automatically. The one-shot
+`dev-dependencies` service then synchronizes those exact dependencies into the
+named volumes used by API and Web. No lifecycle hook performs an unlocked
+install.
 
 ## GitHub Codespaces
 
