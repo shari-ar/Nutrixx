@@ -62,7 +62,10 @@ FROM source AS web-build
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ENV CI=true \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-RUN npm run build --workspace=@nutrixx/web
+RUN npm run build --workspace=@nutrixx/canonical-schema \
+    && npm run build --workspace=@nutrixx/persistence \
+    && npm run build --workspace=@nutrixx/persistence-indexeddb \
+    && npm run build --workspace=@nutrixx/web
 
 FROM ${NODE_IMAGE} AS web
 WORKDIR /workspace
