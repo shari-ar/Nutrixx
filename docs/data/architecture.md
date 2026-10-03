@@ -154,6 +154,33 @@ pinned while inactive releases may be pruned in deterministic least-recently-
 used order. Clearing the cache resets its active pointer and removes only
 re-downloadable reference content; it cannot clear canonical user records.
 
+### Local storage control surface
+
+The Settings storage page reads the browser estimate and persistence state at
+runtime. It displays Local authority and browser-profile scope, approximate
+usage and quota, pressure state, schema versions, active reference release, and
+the last verified export handoff. Unknown or unavailable browser capabilities
+remain explicit instead of being inferred from user-agent strings.
+
+The application calls `persist()` only from the user-initiated **Protect data**
+action and explains that persistence reduces eviction risk without becoming a
+backup. Export generates and validates format version `1` before handing a JSON
+artifact to the browser. Clear Data requires a destructive preview, offers an
+export first, then removes the disposable reference database before deleting
+the user-authority database and local export metadata. A blocked deletion fails
+visibly rather than reporting success while another tab retains the database.
+
+### Stage 1 browser resilience evidence
+
+Executable fixtures verify that accepted facts and their log survive repository
+close/reopen, and that local read/export operations require no network request.
+Quota exhaustion is injected before log append and must roll back both record
+and log. An interrupted version-change transaction must leave no partial schema
+and allow a clean baseline installation. A committed format-version `1` export
+fixture must remain importable, while malformed, tampered, or unsupported
+artifacts fail before replacement. Explicit database deletion must recreate an
+empty, valid baseline on the next open.
+
 ## Adapter conformance
 
 IndexedDB and PostgreSQL implement one storage-neutral canonical-record port

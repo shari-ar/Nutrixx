@@ -8,12 +8,34 @@ import {
 import { defineConfig } from 'vitest/config';
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
+const workspaceDirectory = path.resolve(appDirectory, '../..');
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@': appDirectory,
-    },
+    alias: [
+      { find: '@', replacement: appDirectory },
+      {
+        find: /^react$/,
+        replacement: path.join(
+          workspaceDirectory,
+          'node_modules/react/index.js',
+        ),
+      },
+      {
+        find: /^react\/jsx-dev-runtime$/,
+        replacement: path.join(
+          workspaceDirectory,
+          'node_modules/react/jsx-dev-runtime.js',
+        ),
+      },
+      {
+        find: /^react\/jsx-runtime$/,
+        replacement: path.join(
+          workspaceDirectory,
+          'node_modules/react/jsx-runtime.js',
+        ),
+      },
+    ],
   },
   test: {
     ...baseVitestTestConfig,
@@ -31,7 +53,11 @@ export default defineConfig({
       provider: 'v8',
       reportsDirectory: './coverage/unit',
       reporter: ['text', 'json-summary', 'html', 'lcov'],
-      include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+      include: [
+        'app/**/*.{ts,tsx}',
+        'components/**/*.{ts,tsx}',
+        'lib/**/*.{ts,tsx}',
+      ],
       exclude: ['**/*.test.{ts,tsx}'],
       reportOnFailure: true,
       excludeAfterRemap: true,

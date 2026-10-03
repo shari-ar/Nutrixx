@@ -10,6 +10,7 @@ routing, presentation, accessibility, and interaction with the public API.
 | `app/`        | App Router routes, layouts, providers, and route boundaries |
 | `components/` | Reusable application UI components                          |
 | `config/`     | Web-only static metadata and navigation configuration       |
+| `lib/`        | Browser runtime services and adapter coordination           |
 | `public/`     | Static assets served without transformation                 |
 | `styles/`     | Global CSS entry points and design-system integration       |
 | `types/`      | Web-only TypeScript types                                   |
@@ -41,3 +42,5 @@ npm run check --workspace=@nutrixx/web
 - Keep environment validation in `@nutrixx/config`.
 - Do not duplicate API schemas as handwritten frontend types.
 - Keep domain calculations outside React components.
+- Keep local-authority data inside browser adapters unless the user explicitly
+  exports it or approves a named external-processing action.
