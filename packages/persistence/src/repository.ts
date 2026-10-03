@@ -15,10 +15,13 @@ export type CanonicalRecordVerifier = (
 ) => Promise<boolean>;
 
 export type PersistenceErrorCode =
+  | 'command-conflict'
   | 'closed'
   | 'identity-conflict'
+  | 'invalid-command'
   | 'invalid-record'
   | 'stale-write'
+  | 'unsupported-schema'
   | 'version-conflict';
 
 export class PersistenceError extends Error {

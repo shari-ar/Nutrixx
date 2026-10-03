@@ -5,7 +5,7 @@
 | Status        | Proposed target state                    |
 | Audience      | Architecture, data, application, privacy |
 | Owner         | Nutrixx Data                             |
-| Last reviewed | 2026-09-29                               |
+| Last reviewed | 2026-10-03                               |
 
 ## Store roles
 
@@ -101,6 +101,27 @@ log.
 Cross-context state is eventually consistent and exposes its watermark/version
 where staleness matters. Commands are idempotent; derived snapshots are keyed
 by input fingerprint to prevent accidental duplication.
+
+### Local atomic command protocol
+
+The version `1` IndexedDB adapter commits canonical record mutations, one
+monotonic transaction-log entry, and one command receipt in the same strict
+read-write transaction. A repeated `commandId` with identical canonical command
+content returns the original receipt without another write; divergent reuse
+fails. If validation, a record mutation, log append, or receipt write fails, the
+whole transaction aborts. Log entries retain the resulting record snapshots or
+deletion tombstones so later projections and recovery checks can replay accepted
+local changes in sequence order.
+
+### Pre-release browser schema lifecycle
+
+The IndexedDB schema runner currently recognizes only a fresh database to
+baseline version `1`. It atomically installs canonical records, transaction log,
+command receipts, and schema metadata. Reopening version `1` is a no-op; any
+other transition fails closed. Until the first public release, development may
+replace this baseline rather than accumulate disposable migrations. After a
+release can contain user data, new immutable upgrade steps and historical
+fixtures are required before the database version can advance.
 
 ## Adapter conformance
 

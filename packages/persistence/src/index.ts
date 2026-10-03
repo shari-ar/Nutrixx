@@ -9,3 +9,15 @@ export {
   classifyCanonicalWrite,
   validateCanonicalRecord,
 } from './write-policy.js';
+export type {
+  AtomicCanonicalRecordRepository,
+  CanonicalRecordMutation,
+  CanonicalRecordMutationResult,
+  CanonicalTransactionCommand,
+  CanonicalTransactionLogEntryV1,
+  CanonicalTransactionResult,
+  DeleteCanonicalRecordMutation,
+  DeleteCanonicalRecordMutationResult,
+  PutCanonicalRecordMutation,
+  PutCanonicalRecordMutationResult,
+} from './transaction-log.js';
