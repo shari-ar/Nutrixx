@@ -123,6 +123,37 @@ replace this baseline rather than accumulate disposable migrations. After a
 release can contain user data, new immutable upgrade steps and historical
 fixtures are required before the database version can advance.
 
+### Verified local export and import
+
+Local export format version `1` contains canonical records, the complete local
+transaction log, and a strict manifest. The manifest declares export,
+canonical-schema, and database-schema versions; UTC creation time; record and
+transaction counts; last sequence; subject identifiers; and the canonical
+payload SHA-256 digest. Reference releases are excluded because they are
+disposable and can be fetched again.
+
+Before import, Nutrixx rejects unknown structure or versions, malformed or
+duplicate identities, invalid record seals, count or hash mismatches,
+non-monotonic log order, incorrect mutation outcomes, and any final state that
+cannot be reproduced by replaying the log. Only a fully validated artifact may
+replace local authority data. Records, log entries, and reconstructed command
+receipts replace the prior state in one strict IndexedDB transaction; any
+interruption restores the complete prior state.
+
+SHA-256 detects accidental corruption and inconsistent artifacts. It does not
+claim publisher authenticity or make a user export secret; transport,
+encryption, and trusted-reference-release signing are separate controls.
+
+### Reference dataset cache isolation
+
+Reference datasets live in a dedicated IndexedDB database, never in the user
+authority database or its exports. Each immutable release has a unique release
+identifier, publication time, size, manifest digest, and payload digest. A
+conflicting reuse of a release identifier fails closed. The active release is
+pinned while inactive releases may be pruned in deterministic least-recently-
+used order. Clearing the cache resets its active pointer and removes only
+re-downloadable reference content; it cannot clear canonical user records.
+
 ## Adapter conformance
 
 IndexedDB and PostgreSQL implement one storage-neutral canonical-record port

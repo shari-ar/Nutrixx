@@ -19,7 +19,10 @@ export type PersistenceErrorCode =
   | 'closed'
   | 'identity-conflict'
   | 'invalid-command'
+  | 'invalid-export'
   | 'invalid-record'
+  | 'reference-conflict'
+  | 'invalid-reference-release'
   | 'stale-write'
   | 'unsupported-schema'
   | 'version-conflict';

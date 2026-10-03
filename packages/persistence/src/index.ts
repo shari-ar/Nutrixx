@@ -9,6 +9,18 @@ export {
   classifyCanonicalWrite,
   validateCanonicalRecord,
 } from './write-policy.js';
+export {
+  LOCAL_EXPORT_VERSION,
+  commandFromTransactionEntry,
+  createLocalDataExportV1,
+  validateLocalDataExportV1,
+  type CanonicalPayloadHasher,
+  type CreateLocalDataExportV1Options,
+  type LocalDataExportArtifactV1,
+  type LocalDataExportImportRepository,
+  type LocalDataExportManifestV1,
+  type ValidateLocalDataExportV1Options,
+} from './local-export.js';
 export type {
   AtomicCanonicalRecordRepository,
   CanonicalRecordMutation,
@@ -21,3 +33,11 @@ export type {
   PutCanonicalRecordMutation,
   PutCanonicalRecordMutationResult,
 } from './transaction-log.js';
+export type {
+  CachedReferenceReleaseV1,
+  ReferenceCachePruneResult,
+  ReferenceCacheWriteResult,
+  ReferenceDatasetCache,
+  ReferenceReleaseInputV1,
+  ReferenceReleaseSummaryV1,
+} from './reference-cache.js';

@@ -7,20 +7,28 @@ import {
 } from '@nutrixx/canonical-schema';
 import {
   PersistenceError,
+  commandFromTransactionEntry,
   classifyCanonicalWrite,
+  createLocalDataExportV1,
+  validateLocalDataExportV1,
   validateCanonicalRecord,
   type AtomicCanonicalRecordRepository,
   type CanonicalRecordMutationResult,
   type CanonicalRecordVerifier,
+  type CanonicalPayloadHasher,
   type CanonicalTransactionCommand,
   type CanonicalTransactionLogEntryV1,
   type CanonicalTransactionResult,
   type CanonicalWriteResult,
+  type LocalDataExportArtifactV1,
+  type LocalDataExportImportRepository,
 } from '@nutrixx/persistence';
 
+import { sha256Canonical } from './crypto.js';
 import {
   CANONICAL_RECORD_STORE,
   COMMAND_RECEIPT_STORE,
+  INDEXED_DB_SCHEMA_VERSION,
   SUBJECT_INDEX,
   TRANSACTION_LOG_STORE,
   openIndexedDb,
@@ -45,14 +53,7 @@ export interface IndexedDbRepositoryOptions {
   readonly now?: () => string;
   readonly beforeLogAppend?: () => void;
   readonly fingerprint?: (canonicalCommand: string) => Promise<string>;
-}
-
-async function sha256(input: string): Promise<string> {
-  const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
+  readonly beforeImportCommit?: () => void;
 }
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
@@ -130,12 +131,12 @@ function abortTransaction(transaction: IDBTransaction): void {
 }
 
 export class IndexedDbCanonicalRecordRepository
-  implements AtomicCanonicalRecordRepository
+  implements AtomicCanonicalRecordRepository, LocalDataExportImportRepository
 {
   readonly #database: IDBDatabase;
   readonly #options: IndexedDbRepositoryOptions;
   readonly #createId: () => string;
-  readonly #fingerprint: (canonicalCommand: string) => Promise<string>;
+  readonly #fingerprint: CanonicalPayloadHasher;
   readonly #keyRange: typeof IDBKeyRange;
   readonly #now: () => string;
   #closed = false;
@@ -147,7 +148,7 @@ export class IndexedDbCanonicalRecordRepository
     this.#database = database;
     this.#options = options;
     this.#createId = options.createId ?? (() => crypto.randomUUID());
-    this.#fingerprint = options.fingerprint ?? sha256;
+    this.#fingerprint = options.fingerprint ?? sha256Canonical;
     this.#keyRange = options.keyRange ?? IDBKeyRange;
     this.#now = options.now ?? (() => new Date().toISOString());
   }
@@ -387,6 +388,90 @@ export class IndexedDbCanonicalRecordRepository
     )) as CanonicalTransactionLogEntryV1[];
     await completion;
     return structuredClone(entries);
+  }
+
+  public async exportLocalData(
+    exportedAt = this.#now(),
+  ): Promise<LocalDataExportArtifactV1> {
+    this.#assertOpen();
+    const transaction = this.#database.transaction(
+      [CANONICAL_RECORD_STORE, TRANSACTION_LOG_STORE],
+      'readonly',
+    );
+    const completion = transactionComplete(transaction);
+    const [records, transactions] = await Promise.all([
+      requestResult(transaction.objectStore(CANONICAL_RECORD_STORE).getAll()),
+      requestResult(transaction.objectStore(TRANSACTION_LOG_STORE).getAll()),
+    ]);
+    await completion;
+    const artifact = await createLocalDataExportV1({
+      exportedAt,
+      databaseSchemaVersion: INDEXED_DB_SCHEMA_VERSION,
+      records: records as CanonicalRecordV1[],
+      transactions: transactions as CanonicalTransactionLogEntryV1[],
+      hash: this.#fingerprint,
+    });
+    return validateLocalDataExportV1(artifact, {
+      hash: this.#fingerprint,
+      verifyRecord: this.#options.verifyRecord,
+    });
+  }
+
+  public async importLocalData(
+    input: unknown,
+  ): Promise<LocalDataExportArtifactV1['manifest']> {
+    this.#assertOpen();
+    const artifact = await validateLocalDataExportV1(input, {
+      hash: this.#fingerprint,
+      verifyRecord: this.#options.verifyRecord,
+    });
+    const receiptsToImport = await Promise.all(
+      artifact.transactions.map(async (entry) => ({
+        commandId: entry.commandId,
+        fingerprint: await this.#fingerprint(
+          canonicalizeJson(
+            commandFromTransactionEntry(entry) as unknown as JsonValue,
+          ),
+        ),
+        sequence: entry.sequence,
+      })),
+    );
+
+    const transaction = this.#database.transaction(
+      [CANONICAL_RECORD_STORE, TRANSACTION_LOG_STORE, COMMAND_RECEIPT_STORE],
+      'readwrite',
+      { durability: 'strict' },
+    );
+    const completion = transactionComplete(transaction);
+    const records = transaction.objectStore(CANONICAL_RECORD_STORE);
+    const log = transaction.objectStore(TRANSACTION_LOG_STORE);
+    const receipts = transaction.objectStore(COMMAND_RECEIPT_STORE);
+
+    try {
+      await Promise.all([
+        requestResult(records.clear()),
+        requestResult(log.clear()),
+        requestResult(receipts.clear()),
+      ]);
+      for (const record of artifact.records) {
+        await requestResult(records.add(structuredClone(record)));
+      }
+      for (const entry of artifact.transactions) {
+        await requestResult(log.add(structuredClone(entry)));
+      }
+      for (const receipt of receiptsToImport) {
+        await requestResult(
+          receipts.add(receipt satisfies StoredCommandReceipt),
+        );
+      }
+      this.#options.beforeImportCommit?.();
+      await completion;
+      return structuredClone(artifact.manifest);
+    } catch (error) {
+      abortTransaction(transaction);
+      await completion.catch(() => undefined);
+      throw error;
+    }
   }
 
   public async close(): Promise<void> {
