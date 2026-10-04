@@ -12,13 +12,13 @@
 | Bounded context         | Aggregate roots                                            | Principal invariants                                                                                                               |
 | ----------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Identity & Consent      | Account, ConsentGrant                                      | Consent is purpose-specific, revocable, time-bound where required, and auditable.                                                  |
-| User Context            | Profile, GoalSet, ObservationSeries                        | Facts keep effective time, source, unit, and correction history. Eligibility-critical facts cannot be guessed silently.            |
+| User Context            | Profile, GoalSet, ObservationSeries                        | Facts keep effective time, source, unit, and correction history. Eligibility-critical facts require explicit evidence.             |
 | Food Knowledge          | Food, PortionSet, CompositionRecord                        | Every amount has an explicit basis and provenance. Missing is distinct from measured zero.                                         |
 | Recipe Knowledge        | Recipe, RecipeVersion                                      | Published versions are immutable; ingredients resolve to exact versions; yield and edible basis are explicit.                      |
 | Consumption             | Meal                                                       | Items preserve the consumed quantity and referenced version known at the event time. User corrections append audit history.        |
 | Nutrition Science       | NutrientDefinition, TargetPolicy, RuleSet                  | Definitions and policies are versioned, reviewed, applicable to named populations, and effective-dated.                            |
 | Nutrition State         | StateSnapshot                                              | A snapshot records its period, input watermark, engine/rule/data versions, completeness, and uncertainty.                          |
-| Planning                | PlanningRequest, OptimizerRun, Plan                        | Only eligible, independently validated results become user-visible. Hard constraints are never silently relaxed.                   |
+| Planning                | PlanningRequest, OptimizerRun, Plan                        | Eligible, independently validated results become user-visible. Hard constraints retain absolute precedence.                        |
 | Data Publication        | ImportBatch, DatasetRelease                                | Untrusted source records remain quarantined until mapped, validated, licensed, and approved. Published releases are immutable.     |
 | Audit & Provenance      | EvidenceTrace                                              | Important decisions can be reconstructed without reading mutable operational tables.                                               |
 | Commerce & Entitlements | Subscription, EntitlementGrant, UsageReservation           | Grants are effective-dated and server-authoritative; one action reaches exactly one consumed or released terminal state.           |
@@ -56,7 +56,7 @@ erDiagram
 
 The diagram is conceptual: storage may normalize or partition differently.
 Cross-context references are opaque identifiers or published value snapshots,
-not foreign-key permission to mutate another context.
+and mutation authority remains with the owning context.
 
 ## Domain events
 

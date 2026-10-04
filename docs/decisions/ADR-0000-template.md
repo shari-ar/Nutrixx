@@ -33,7 +33,7 @@ State the choice and boundary precisely.
 
 - Consequence.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - Consequence and mitigation.
 

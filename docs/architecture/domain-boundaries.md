@@ -41,20 +41,20 @@ composition root
 
 Rules:
 
-- Domain packages MUST NOT import NestJS, database clients, HTTP clients, queue
-  SDKs, or environment variables.
-- A module MUST NOT access another module's repository or write-owned tables.
+- Domain packages import domain-safe shared contracts and standard-library types.
+- Each module accesses state through its own repositories or another module's
+  published application interface.
 - Cross-module synchronous calls use a documented application interface.
 - Cross-module asynchronous communication uses a versioned event envelope.
-- Shared code is limited to stable primitives such as identifiers, units,
-  time, result types, and contract tooling—not a miscellaneous utilities dump.
+- Shared code is a focused collection of stable primitives such as identifiers,
+  units, time, result types, and contract tooling.
 - Circular dependencies fail CI architecture tests.
-- Read models may join replicated/public data, but they do not create hidden
-  write coupling.
+- Read models may join replicated/public data while preserving owner-controlled
+  write boundaries.
 - Browser and PostgreSQL adapters implement the same canonical repository
-  contracts; adapter choice does not leak into domain rules.
-- Entitlements authorize capabilities but never alter nutrition facts or
-  scientific calculations.
+  contracts; adapter choice remains inside the adapter layer.
+- Entitlements authorize capability access while nutrition facts and scientific
+  calculations retain stable meaning.
 - AI orchestration can propose typed commands; the owning domain validates and
   commits a confirmed command through its public application interface.
 - Migration/sync is the only module allowed to switch canonical authority, and
@@ -64,18 +64,18 @@ Rules:
 
 One use case updates one owning aggregate and its outbox record atomically.
 Cross-context workflows use sagas/process managers with explicit compensation
-or replay. A distributed transaction is not assumed.
+or replay. Each module commits locally, and sagas coordinate cross-context work.
 
 ## Extraction criteria
 
-A module becomes a separate service only if at least one measured condition is
-material and cannot be solved safely inside the monolith:
+A module qualifies for separate-service extraction when at least one measured
+condition is material and demonstrates value beyond safe monolith evolution:
 
 1. materially different scaling or compute profile;
 2. required blast-radius or security isolation;
 3. independent deployment cadence owned by a stable team;
 4. incompatible runtime or data technology with demonstrated value;
-5. availability objective that the shared process cannot meet.
+5. availability objective requiring an independently operated process.
 
 The extraction plan MUST include contract ownership, data migration, failure
 semantics, observability, operating cost, and rollback.

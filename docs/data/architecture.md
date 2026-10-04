@@ -27,7 +27,7 @@ authoritative.
 | ------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
 | Meals, recipes, profile, preferences             | Browser database                                | PostgreSQL                                                       |
 | Derived nutrition state and local plan           | Browser database, reproducible from local facts | PostgreSQL/object artifact as defined by output class            |
-| Account, subscription, entitlement, hosted usage | Not required for ordinary local use             | PostgreSQL                                                       |
+| Account, subscription, entitlement, hosted usage | Begins with optional account/cloud capabilities | PostgreSQL                                                       |
 | Reference food/science release                   | Signed immutable release cached locally         | Signed immutable release with cloud index/cache                  |
 | Export/import manifest                           | User-controlled portable artifact               | User-controlled artifact generated from canonical cloud snapshot |
 
@@ -53,8 +53,8 @@ Important records distinguish:
 - local date/time and IANA timezone: how the user experienced a meal/day;
 - calculation time: when an immutable snapshot was produced.
 
-Corrections do not erase the previous statement. They create a new assertion
-and identify what it corrects. Target/rule activation is effective-dated.
+Corrections preserve the previous statement, create a new assertion, and
+identify what it corrects. Target/rule activation is effective-dated.
 
 ## Version model
 
@@ -72,22 +72,22 @@ and identify what it corrects. Target/rule activation is effective-dated.
 ## Persistence rules
 
 - Public identifiers are opaque and non-sequential.
-- Scientific quantities use exact decimal/numeric representations, never binary
-  floating point as durable truth.
-- Units and bases are identifiers, not free-text suffixes.
+- Scientific quantities use exact decimal/numeric representations as durable
+  truth.
+- Units and bases use governed identifiers.
 - UTC instants are stored for ordering; local date/time and IANA timezone are
   stored when day semantics matter.
-- Deletion, anonymization, and retention are policy-driven workflows; database
-  cascades are not the privacy model.
+- Deletion, anonymization, and retention use explicit policy-driven workflows;
+  database cascades serve referential integrity.
 - Tables/collections have one owning bounded context. Cross-context read models
-  are projections, not shared write ownership.
+  are projections; each context retains exclusive write ownership.
 - Data migrations use expand/migrate/contract and remain compatible during
   rolling deployment.
 - Local schema migrations are transactional where supported, version-gated,
   fixture-tested against historical databases, and retain a recoverable export
   or prior store until validation succeeds.
-- Free local nutrition content is never uploaded by ordinary telemetry,
-  authentication, entitlement checks, or static/reference delivery.
+- Free local nutrition content stays within the browser origin during telemetry,
+  authentication, entitlement checks, and static/reference delivery.
 - Authority promotion/demotion follows the verified protocol in
   [Storage-mode lifecycle](../domain/storage-mode-lifecycle.md).
 - Browser support, operational headroom, persistence UX, and export reminders
@@ -134,25 +134,25 @@ disposable and can be fetched again.
 
 Before import, Nutrixx rejects unknown structure or versions, malformed or
 duplicate identities, invalid record seals, count or hash mismatches,
-non-monotonic log order, incorrect mutation outcomes, and any final state that
-cannot be reproduced by replaying the log. Only a fully validated artifact may
+non-monotonic log order, incorrect mutation outcomes, and replay divergence.
+Only a fully validated artifact may
 replace local authority data. Records, log entries, and reconstructed command
 receipts replace the prior state in one strict IndexedDB transaction; any
 interruption restores the complete prior state.
 
-SHA-256 detects accidental corruption and inconsistent artifacts. It does not
-claim publisher authenticity or make a user export secret; transport,
+SHA-256 detects accidental corruption and inconsistent artifacts. Transport,
 encryption, and trusted-reference-release signing are separate controls.
 
 ### Reference dataset cache isolation
 
-Reference datasets live in a dedicated IndexedDB database, never in the user
-authority database or its exports. Each immutable release has a unique release
+Reference datasets live in a dedicated IndexedDB database, separate from the
+user-authority database and its exports. Each immutable release has a unique release
 identifier, publication time, size, manifest digest, and payload digest. A
 conflicting reuse of a release identifier fails closed. The active release is
 pinned while inactive releases may be pruned in deterministic least-recently-
-used order. Clearing the cache resets its active pointer and removes only
-re-downloadable reference content; it cannot clear canonical user records.
+used order. Clearing the cache resets its active pointer and removes
+re-downloadable reference content; canonical user records remain protected in
+their dedicated database.
 
 ### Local storage control surface
 
@@ -187,5 +187,5 @@ IndexedDB and PostgreSQL implement one storage-neutral canonical-record port
 and must pass the same executable contract suite. The suite fixes observable
 semantics for validation, cloning, deterministic subject queries, idempotence,
 version conflicts, stable identity, deletion, and concurrent writes. The
-PostgreSQL adapter remains a Stage 1 conformance probe; passing the suite does
-not promote local data to cloud authority or enable hosted product behavior.
+The PostgreSQL adapter remains a Stage 1 conformance probe; local authority and
+local entitlement boundaries remain active after the suite passes.

@@ -16,13 +16,13 @@
 | Staging             | Production-like release, migration, resilience validation | Synthetic or formally sanitized | Same artifact/config shape as production |
 | Production          | User service                                              | Real purpose-approved data      | Approved staged promotion                |
 
-Browser-local persistence is a production data plane for Free even though it
-is not Nutrixx-operated infrastructure. It therefore receives versioned schema
+Browser-local persistence is a user-operated production data plane for Free. It
+receives versioned schema
 migrations, compatibility fixtures, storage diagnostics, export/recovery UX,
-and client-side health signals that contain no nutrition payload.
+and client-side health signals limited to allowlisted operational metadata.
 
-Production data MUST NOT be copied to lower environments. The same immutable
-artifacts move forward; they are not rebuilt per environment.
+Lower environments use synthetic or approved masked data. The same immutable
+artifacts move forward across environments.
 
 ## Delivery and release
 
@@ -60,9 +60,9 @@ indicators and proposed objectives:
 | Usage accounting       | Reservations reaching correct terminal state           | 100% reconciliation within approved window                  |
 | Assistant tools        | Authorized, validated, correctly confirmed invocation  | Zero confirmation/ownership bypass in release gates         |
 
-Safety/integrity is a release invariant, not an error budget. Error budgets guide
-reliability work and release pace; they never permit hard safety violations or
-privacy/security exceptions.
+Safety and integrity remain release invariants. Error budgets guide reliability
+work and release pace while hard safety, privacy, and security requirements
+remain mandatory.
 
 ## Observability
 
@@ -71,9 +71,10 @@ Telemetry carries correlation/trace IDs, operation/module, version, status,
 duration, safe error code, job/data/rule versions where non-sensitive, and SLI
 labels.
 
-Telemetry MUST NOT contain meal contents, profile/health fields, lab values,
-tokens/secrets, raw request/response bodies, free-text user input, or high-
-cardinality user identifiers. Allowlist schemas and automated scans enforce it.
+Telemetry uses allowlisted operational metadata. Meal contents, profile/health
+fields, lab values, tokens/secrets, raw request/response bodies, free-text user
+input, and high-cardinality user identifiers stay inside their approved data
+boundaries. Automated scans enforce the allowlist.
 
 Key signals:
 
@@ -104,8 +105,8 @@ tested.
   uses versioning/immutability appropriate to artifact class.
 - RPO/RTO, retention, region strategy, and key-recovery procedures are accepted
   before launch.
-- Restore drills run in isolation and verify application/domain integrity, not
-  merely that files exist.
+- Restore drills run in isolation and verify application/domain integrity in
+  addition to file existence.
 - Dependency and worker outages degrade honestly; no cached or generated plan
   bypasses current validation.
 - Browser schema upgrades are rehearsed against retained historical fixtures;
@@ -154,8 +155,9 @@ Plan-specific launch gates are cumulative:
 | Pro      | Payment/entitlement reconciliation, verified cloud promotion/demotion, backup/restore, multi-device conflict tests, hosted capture quotas, full optimizer SLO/cost/runbooks |
 | Ultimate | Pro gates plus higher-limit capacity/budget, assistant grounding and adversarial evaluation, tool confirmation/kill switch, support escalation and retention policy         |
 
-A plan is not publicly sold until its whole advertised contract passes. Internal
-incremental delivery uses flags/cohorts and must not imply a partial paid plan.
+A plan enters public sale after its whole advertised contract passes. Internal
+incremental delivery uses flags/cohorts and remains clearly identified as
+pre-release capability.
 
 ## References
 

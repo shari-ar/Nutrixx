@@ -59,6 +59,6 @@ features:
 | Contribute or govern documentation      | [Documentation governance](/documentation-governance)           |
 
 > [!IMPORTANT]
-> These documents describe the intended production system—not merely the initial
-> repository scaffold. Any implementation that conflicts with an accepted
+> These documents describe the complete intended production system beyond the
+> initial repository scaffold. Any implementation that conflicts with an accepted
 > architecture decision or normative requirement must be reconciled explicitly.

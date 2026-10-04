@@ -23,4 +23,4 @@ design question.
 
 Diagrams MUST keep editable source and identify system boundaries, external
 systems, relationship direction, ownership, and trust/data boundaries where
-relevant. Accepted decisions are superseded, never silently rewritten.
+relevant. Accepted decisions retain immutable history and explicit successor links.

@@ -43,12 +43,12 @@ and publication validation remain deterministic authorities.
 
 ### Positive
 
-- Model/provider replacement does not change domain authority.
+- Domain authority remains stable across model/provider replacement.
 - Tool authorization and confirmation are independently testable.
-- Hallucinations cannot directly become canonical facts or unsafe plans.
+- Canonical facts and plans require typed validation independent of model output.
 - Local and hosted AI share the same draft/validation boundary.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - More orchestration and typed tool design than a free-form chatbot.
 - Some model capabilities are intentionally unavailable.

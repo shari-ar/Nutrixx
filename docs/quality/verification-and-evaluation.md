@@ -47,7 +47,7 @@
 
 Generative-model evaluation is versioned by provider/model/configuration and
 uses adversarial as well as representative multilingual inputs. A model change
-does not bypass contract, privacy, safety, cost, or regression gates.
+passes contract, privacy, safety, cost, and regression gates.
 
 ## Nutrition engine gates
 
@@ -56,8 +56,8 @@ recipe yield/retention, rounding boundaries, missing versus zero, detection
 limits, target applicability, source-specific upper limits, timezone/day
 boundaries, and corrections.
 
-Numerical tolerances are defined per calculation and never widened merely to
-make a test pass.
+Numerical tolerances are defined per calculation and change through a reviewed
+scientific rationale.
 
 ## Optimizer gates
 
@@ -72,7 +72,8 @@ make a test pass.
 | Explanation  | Every numeric/causal claim resolves to the validated trace                                                      |
 | Equity       | Metrics stratified by supported cuisine, catalog coverage, and relevant evaluated population groups             |
 
-No single aggregate score can hide a safety or subgroup regression.
+Safety and subgroup regressions remain independently visible alongside every
+aggregate score.
 
 ## Prediction/model gates
 
@@ -89,9 +90,9 @@ Govern–Map–Measure–Manage is used when AI/ML materially affects user outco
 
 Datasets have provenance, license, purpose, version, inclusion/exclusion logic,
 quality analysis, sensitive-data controls, contamination prevention, and an
-owner. Release benchmarks are immutable and access-controlled. User data is not
-used for model training or unrelated evaluation without an approved purpose
-and consent/legal basis.
+owner. Release benchmarks are immutable and access-controlled. Model training
+or unrelated evaluation with user data requires an approved purpose and
+consent/legal basis.
 
 ## Release decision
 

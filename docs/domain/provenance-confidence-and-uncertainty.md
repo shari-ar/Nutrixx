@@ -11,31 +11,31 @@
 
 Every scientific or derived value MUST be able to resolve the following:
 
-| Field                      | Purpose                                                             |
-| -------------------------- | ------------------------------------------------------------------- |
-| value and canonical unit   | Exact machine-interpretable quantity                                |
-| semantic identifier        | Nutrient, analyte, measure, or metric identity                      |
-| basis                      | Per mass, volume, serving, day, body mass, or other denominator     |
-| subject and preparation    | Food, recipe version, person, sample, raw/cooked state              |
-| observed/effective time    | When the fact applies                                               |
-| source and source record   | Dataset, publication, device, user, or calculation                  |
-| source version and license | Reproducibility and permitted use                                   |
-| method                     | Measurement, reported, calculated, estimated, or imputed            |
-| quality state              | Known, estimated, imputed, below detection, not applicable, unknown |
-| uncertainty                | Interval, distribution, scenario, or explicit unavailable reason    |
-| transformation trace       | Versioned conversions, retention factors, and formulas              |
+| Field                      | Purpose                                                           |
+| -------------------------- | ----------------------------------------------------------------- |
+| value and canonical unit   | Exact machine-interpretable quantity                              |
+| semantic identifier        | Nutrient, analyte, measure, or metric identity                    |
+| basis                      | Per mass, volume, serving, day, body mass, or other denominator   |
+| subject and preparation    | Food, recipe version, person, sample, raw/cooked state            |
+| observed/effective time    | When the fact applies                                             |
+| source and source record   | Dataset, publication, device, user, or calculation                |
+| source version and license | Reproducibility and permitted use                                 |
+| method                     | Measurement, reported, calculated, estimated, or imputed          |
+| quality state              | Known, estimated, imputed, below detection, inapplicable, unknown |
+| uncertainty                | Interval, distribution, scenario, or explicit unavailable reason  |
+| transformation trace       | Versioned conversions, retention factors, and formulas            |
 
 ## Semantics
 
-- Unknown MUST remain null with a reason; it MUST NOT become numeric zero.
-- A confidence percentage MUST NOT be displayed unless it is empirically
-  calibrated and its meaning is documented.
+- Unknown remains null with a reason and stays distinct from numeric zero.
+- A displayed confidence percentage requires empirical calibration and a
+  documented meaning.
 - Completeness and accuracy are separate measures.
 - Aggregation MUST propagate quality and uncertainty rather than average them
   into a misleading single score.
 - A derived result inherits the weakest material limitation of its inputs and
   records every version used.
-- Absence of an allergen value is not evidence that the food is allergen-free.
+- Allergen-free claims require explicit, qualified evidence.
 
 ## Run fingerprint
 
@@ -55,7 +55,8 @@ trace_id
 ```
 
 The exact input and output snapshots are retained according to privacy and
-retention policy. A random seed alone does not guarantee replayability.
+retention policy. Replayability requires a random seed plus the complete
+versioned execution context.
 
 ## User presentation
 

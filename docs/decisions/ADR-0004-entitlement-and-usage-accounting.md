@@ -14,7 +14,7 @@
 Plans differ in data residency, hosted AI allowances, optimizer availability,
 multi-device support, and assistant access. Hard-coded checks across clients
 and services would drift. AI work incurs cost before the user confirms a draft,
-but users should not pay allowance for validation or technical failure.
+while validation and technical failures release the user's allowance.
 
 ## Decision drivers
 
@@ -48,11 +48,11 @@ reservation and terminal result.
 ### Positive
 
 - Plan copy, UI, API authorization, billing, tests, and support share semantics.
-- Failed jobs do not unfairly consume allowance.
+- Failed jobs release reserved allowance.
 - Rejected successful results still account for incurred compute.
 - Plan policy can evolve without scattering constants through code.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - Reservation expiry and reconciliation require durable background work.
 - Entitlement outages need explicit fail-closed/fail-open rules by capability.
@@ -63,4 +63,4 @@ reservation and terminal result.
 Concurrency, retry, timeout, cancellation, provider-failure, timezone-change,
 upgrade/downgrade, refund, and reconciliation fixtures must prove no double
 consumption or unauthorized execution. Support adjustments are attributable,
-reason-coded, reversible, and cannot alter nutrition facts.
+reason-coded, reversible, and isolated from nutrition facts.

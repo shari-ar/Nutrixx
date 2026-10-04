@@ -52,8 +52,8 @@ the API. The eligibility rule and result contract are identical.
 4. Consumption stores the event and publishes MealRecorded.
 5. Nutrition State incrementally aggregates known nutrients, completeness, and
    uncertainty against applicable targets.
-6. The UI shows known results and limitations; missing values never appear as
-   zero.
+6. The UI shows known results and limitations; missing values retain an explicit
+   unknown state distinct from zero.
 
 Manual meal and recipe entry has no product quota in any plan. AI-assisted
 capture is an optional draft-producing path documented in
@@ -78,7 +78,8 @@ flowchart LR
 ```
 
 The user can accept, substitute, or reject a recommendation. Every substitution
-is solved or validated again; a text generator cannot improvise a replacement.
+is solved or validated again; replacements require the same deterministic
+validation pathway.
 
 ## Data publication
 
@@ -91,8 +92,8 @@ keep the release version originally used.
 
 ## Storage-mode changes
 
-Upgrade and downgrade are data-integrity workflows, not payment-page side
-effects. They use staged copy, manifest verification, a single authority
+Upgrade and downgrade are first-class data-integrity workflows coordinated with
+payment state. They use staged copy, manifest verification, a single authority
 switch, recovery evidence, and delayed source cleanup. See
 [Storage-mode lifecycle](storage-mode-lifecycle.md).
 

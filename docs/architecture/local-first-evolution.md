@@ -22,8 +22,8 @@ The product has two explicit authority modes:
 | `LOCAL` | Browser database for that browser profile | Reference assets and optional user-enabled AI only                       | Manual export/import; browser persistence remains best-effort |
 | `CLOUD` | Nutrixx cloud database                    | Required for canonical writes and sync; bounded offline cache is allowed | Encrypted backup, tested restore, multi-device sync           |
 
-A profile is in exactly one authority mode. Temporary migration states never
-create two writable masters.
+A profile has exactly one writable authority. Temporary migration states preserve
+that single-writer invariant.
 
 ## Local product boundary
 
@@ -101,10 +101,10 @@ flowchart LR
 ```
 
 In cloud mode PostgreSQL is the canonical operational authority for user
-content. Browser storage is a bounded cache/outbox and MUST NOT silently become
-a second master. Offline edits, when supported, carry stable command IDs and
-explicit conflict semantics; synchronization acknowledges committed versions,
-not timestamps alone.
+content. Browser storage is a bounded cache/outbox while PostgreSQL retains
+exclusive write authority. Offline edits, when supported, carry stable command
+IDs and explicit conflict semantics; synchronization acknowledges committed
+versions through logical clocks or version vectors alongside timestamps.
 
 ## Shared execution model
 
@@ -116,8 +116,9 @@ The browser and cloud reuse:
 - stable result types such as READY, NEEDS_INPUT, OUT_OF_SCOPE, and ERROR;
 - conformance fixtures proving equivalent results across adapters.
 
-They do not share secrets, server framework code, database clients, or an
-assumption that every workflow has an HTTP API.
+Browser and cloud packages share contracts and deterministic logic. Secrets,
+server framework code, database clients, and transport choices remain specific
+to their execution environments.
 
 ## Evolution sequence
 
@@ -135,8 +136,8 @@ flowchart LR
     L --> E --> P --> S --> M --> R --> O --> U
 ```
 
-This is a development sequence, not permission to market a partially fulfilled
-plan. Pro and Ultimate are released only when their public plan contracts and
+This development sequence authorizes public marketing after the complete plan
+contract is fulfilled. Pro and Ultimate are released when their public plan contracts and
 operational gates are satisfied. Each step is independently feature-flagged,
 observable, reversible, and covered by migration/rollback evidence.
 
@@ -145,11 +146,11 @@ observable, reversible, and covered by migration/rollback evidence.
 - Free logging and deterministic calculations continue without cloud services.
 - A failed upgrade leaves Local authority intact and releases any incomplete
   cloud staging data.
-- A cloud outage never promotes stale cache to canonical truth; the UI exposes
-  offline/read-only/pending state explicitly.
-- Hosted AI failure releases reserved usage and never stores an unreviewed
-  draft as a user fact.
-- A full-optimizer or assistant outage does not block manual logging, cloud
-  export, account access, or downgrade.
+- During a cloud outage, canonical authority remains in the cloud and the UI
+  exposes offline/read-only/pending state explicitly.
+- Hosted AI failure releases reserved usage and preserves unreviewed drafts
+  outside canonical user facts.
+- Manual logging, cloud export, account access, and downgrade remain available
+  during a full-optimizer or assistant outage.
 - Entitlement-service uncertainty fails closed for cost-incurring premium work
-  but does not hide already-owned data.
+  while already-owned data remains visible.

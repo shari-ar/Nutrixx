@@ -8,8 +8,8 @@
 | Last reviewed | 2026-09-27                                                    |
 
 This documentation defines the product Nutrixx is intended to become. The
-current repository scaffold is an implementation starting point, not evidence
-that every target capability already exists.
+current repository scaffold is an implementation starting point; completed
+capabilities require linked verification evidence.
 
 The rendered, searchable edition is published at
 <https://shari-ar.github.io/Nutrixx/>. This Markdown tree remains the canonical
@@ -60,7 +60,7 @@ it.
 
 | Status        | Meaning                                                      |
 | ------------- | ------------------------------------------------------------ |
-| Target state  | Intended end-state; implementation may not exist yet         |
+| Target state  | Intended end-state with implementation tracked separately    |
 | Proposed      | Review is still required before implementation depends on it |
 | Accepted      | Approved source of truth                                     |
 | Open decision | A named owner must resolve it before the stated gate         |
@@ -73,10 +73,10 @@ it.
   versioned machine-readable catalog will enforce the same values at runtime.
 - Accepted ADRs define architectural decisions; overview documents link to them.
 - Versioned scientific policy defines calculation semantics; application code
-  MUST NOT invent or silently override those rules.
+  MUST preserve and explicitly supersede those rules.
 - Diagrams are explanatory views. Canonical entities, interfaces, and policies
   remain machine-testable artifacts.
-- Superseded guidance is never silently rewritten or left ambiguous.
+- Superseded guidance retains explicit status and successor links.
 
 ## Maintenance gates
 

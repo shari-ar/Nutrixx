@@ -37,8 +37,8 @@ and server as concurrent masters would create unsafe divergence.
 Adopt option 3. Free nutrition content is canonically stored in the browser.
 Pro and Ultimate use cloud canonical storage. A profile has one authority mode
 and moves between modes through a verified migration state machine. Migration
-staging is never a writable production authority. Cloud clients retain only a
-bounded cache/outbox under explicit conflict semantics.
+staging remains isolated from writable production authority. Cloud clients
+retain a bounded cache/outbox under explicit conflict semantics.
 
 ## Consequences
 
@@ -49,7 +49,7 @@ bounded cache/outbox under explicit conflict semantics.
 - Authority, failure, deletion, and support responsibilities are explicit.
 - Server cost follows paid cloud use.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - Browser storage can be evicted and needs export, health, and migration UX.
 - Two persistence adapters and cross-runtime conformance tests are required.

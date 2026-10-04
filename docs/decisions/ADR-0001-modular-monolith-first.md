@@ -56,13 +56,12 @@ database, network, or environment dependencies.
 - Pure engines are portable, replayable, and independently testable.
 - Workers isolate compute and retry behavior from request latency.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - Module boundaries require active automated enforcement.
 - API and workers may initially share a release cadence.
 - One database remains a potential coupling point despite logical ownership.
-- Scaling the API process cannot independently scale an in-process synchronous
-  module; heavy work must move to workers.
+- Heavy work moves to workers for independent scaling beyond the API process.
 
 ## Validation and review triggers
 

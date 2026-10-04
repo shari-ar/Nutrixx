@@ -82,10 +82,10 @@ truth; the lockfile remains the reproducible-installation source of truth.
 
 Before adding or upgrading a directly selected technology, verify the exact
 stable release against its primary publisher, pin the intended version, update
-the lockfile, and pass the repository quality gate. Pre-release tags do not
-qualify. Framework internals, plugins, type declarations, and transitive
-packages inherit the compatibility policy of their listed parent technology
-and are not cataloged separately.
+the lockfile, and pass the repository quality gate. Stable release tags qualify.
+Framework internals, plugins, type declarations, and transitive packages inherit
+the compatibility policy of their listed parent technology; the catalog records
+the parent technology.
 
 | Technology            | Verified stable | Primary evidence                                                                 |
 | --------------------- | --------------- | -------------------------------------------------------------------------------- |
@@ -101,6 +101,6 @@ and are not cataloged separately.
 ## Maintenance rule
 
 Add a technology only when Nutrixx deliberately owns the selection and the
-repository directly uses it. Do not list a framework's internal packages or
-transitive dependency graph. Update the version and evidence in the same pull
+repository directly uses it. Record each framework as one direct technology.
+Update the version and evidence in the same pull
 request that adopts, upgrades, replaces, or removes the technology.

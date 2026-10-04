@@ -62,37 +62,37 @@ when the policy window advances.
 
 Private/Incognito/InPrivate sessions, embedded or third-party frames, in-app
 browsers, unmanaged WebViews, opaque origins, and browsers outside vendor
-security support are not valid Local-authority environments. Nutrixx may offer
-a limited explanatory or recovery experience there, but it MUST NOT imply that
-canonical local data is durable.
+security support receive an explanatory or recovery experience. Local authority
+requires the supported execution boundary described above, and durability
+claims appear exclusively in supported contexts.
 
 Core production features SHOULD use **Baseline Widely Available** web-platform
 capabilities. A newer or limited-availability capability requires feature
 detection, an equivalent supported fallback, or an explicit capability gate.
-User-agent-string matching MUST NOT authorize local storage. Runtime probes and
-behavioral conformance tests decide capability.
+Runtime probes and behavioral conformance tests authorize local-storage
+capability; user-agent strings serve informational purposes only.
 
 ### Canonical storage and isolation
 
 - IndexedDB is the Stage 1 canonical browser database because it provides
   asynchronous, transactional storage for structured data.
-- `localStorage` and `sessionStorage` MUST NOT contain canonical nutrition,
-  health, migration, or recovery data.
+- IndexedDB holds canonical nutrition, health, migration, and recovery data;
+  `localStorage` and `sessionStorage` hold presentation preferences only.
 - Cache Storage and OPFS MAY hold replaceable assets or future optimized
   projections, but they are non-authoritative until a separate decision changes
   that boundary.
 - Canonical user records, reference releases, application caches, migration
   staging, and export staging have separate logical accounting even when the
   browser reports one origin-level quota.
-- User records are never automatically deleted to make room. Disposable caches
-  and inactive reference releases are reclaimed first under an explicit policy.
+- Storage reclamation targets disposable caches and inactive reference releases
+  while user records remain protected.
 
 ### Capacity and operational headroom
 
 Nutrixx MUST use `navigator.storage.estimate()` where available and treat both
-`usage` and `quota` as approximate. It MUST NOT infer or promise physical free
-disk space: browsers intentionally do not expose a reliable device-free-space
-value.
+`usage` and `quota` as approximate. Capacity messaging refers to browser-reported
+origin quota because browsers expose that value rather than reliable physical
+device-free-space.
 
 Before a write that can materially expand storage, the caller calculates:
 
@@ -104,7 +104,7 @@ required headroom
 
 The second term preserves rollback/export working space. Unknown sizes use a
 conservative upper estimate. Every write still handles `QuotaExceededError`
-because a favorable estimate is not a guarantee.
+because every estimate remains approximate.
 
 | State    | Trigger                                                                      | Required behavior                                                                          |
 | -------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -113,17 +113,17 @@ because a favorable estimate is not a guarantee.
 | Critical | Usage at least 85%, or required headroom is unavailable                      | Block optional growth; preserve read, correction, export, and cleanup paths                |
 | Unknown  | Estimate is absent, invalid, or denied                                       | Permit bounded writes with exception handling; label capacity unknown and recommend export |
 
-An operation that cannot commit atomically fails without changing accepted
-canonical facts. The UI reports a safe error, offers export and disposable-data
-cleanup, and never reports the failed write as saved.
+An operation requiring more headroom completes atomically or preserves accepted
+canonical facts unchanged. The UI reports a safe error, offers export and
+disposable-data cleanup, and reports saved status exclusively after commit.
 
 ### Persistence experience
 
 Nutrixx checks `navigator.storage.persisted()` without prompting. After the
 first successful canonical write, it explains that browser-local data can be
 lost and offers a user-initiated **Protect data on this device** action. Only
-that action calls `navigator.storage.persist()`; the application MUST NOT call
-it on page load, repeatedly after refusal, or without explaining the outcome.
+that action calls `navigator.storage.persist()`. Calls require this explicit
+action, a clear outcome explanation, and a fresh user request after refusal.
 
 Settings always display:
 
@@ -135,9 +135,9 @@ Settings always display:
 - actions to request persistence, export, import, remove disposable data, and
   clear all local data.
 
-A granted persistence request reduces browser-initiated eviction risk; it is
-not described as backup, guaranteed durability, or protection from user/device
-loss. Refusal does not disable manual local use.
+A granted persistence request reduces browser-initiated eviction risk. Product
+copy describes its exact browser-defined scope, while verified export provides
+the portable recovery path. Manual local use remains available after refusal.
 
 ### Export reminder policy
 
@@ -148,17 +148,18 @@ telemetry.
    a successfully generated and internally verified export.
 2. After the first export, remind every 30 days only when canonical data has
    changed since that export.
-3. Allow a seven-day snooze and never show more than one routine reminder in a
+3. Allow a seven-day snooze and show at most one routine reminder in each
    seven-day period.
 4. Escalate the reminder when storage becomes Warning/Critical, persistence is
-   unavailable or not granted, or a destructive clear/reset is requested.
+   unavailable, pending user grant, or a destructive clear/reset is requested.
 5. A destructive clear requires an explicit preview and confirmation; export is
-   offered immediately beforehand but is not falsely reported as completed.
+   offered immediately beforehand, and completion status follows verified
+   artifact generation.
 
 “Verified export” means Nutrixx serialized the declared snapshot, validated its
 manifest, counts, relationships, and hashes, then handed the artifact to the
-browser. It does not prove that the user retained the downloaded file, and the
-UI states that limitation.
+browser. The UI explains that continued possession of the downloaded file
+remains the user's responsibility.
 
 ### Migration policy before first public release
 
@@ -175,22 +176,22 @@ the published compatibility window.
 
 - Browser support and storage promises are explicit and testable.
 - Capacity adapts to the actual origin instead of relying on vendor folklore.
-- Persistence is requested at a comprehensible moment and never oversold.
+- Persistence is requested at a comprehensible moment with precise scope.
 - Local data loss risk is reduced through verified export and visible status.
 - Cross-browser fallbacks remain possible without changing the canonical model.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - Real Safari and mobile-device testing is required in addition to desktop
   automation.
 - Two recent release generations increase conformance cost.
 - A browser may deny persistence or revise quota after a successful estimate.
-- Export reminders reduce risk but cannot guarantee that a user preserves a
-  backup.
+- Export reminders reduce risk while long-term backup possession remains the
+  user's responsibility.
 
 ## Validation and review triggers
 
-Stage 1 cannot exit until the supported matrix passes repository, transaction,
+Stage 1 exits after the supported matrix passes repository, transaction,
 reload, offline, persistence-denial, storage-pressure, `QuotaExceededError`,
 interrupted-migration, export/import, clear-data, and recovery fixtures.
 

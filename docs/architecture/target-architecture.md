@@ -101,7 +101,7 @@ flowchart TB
 
 ### Container responsibilities
 
-| Container        | Owns                                                                                                                                  | Must not own                                                                     |
+| Container        | Owns                                                                                                                                  | External ownership                                                               |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Web              | Accessible interaction, local canonical persistence in `LOCAL` mode, cloud cache/outbox in `CLOUD` mode, rendering, safe presentation | Invented scientific formulas, hidden cloud upload, server entitlement authority  |
 | API              | Authentication/authorization, use-case orchestration, transactions, synchronous contracts                                             | Solver internals, vendor-specific identity logic, cross-context data mutation    |
@@ -124,11 +124,11 @@ while the domain and team are still changing. Background workers reuse the
 same application/domain packages but run separate processes.
 
 Modules communicate in-process through public application interfaces and
-asynchronously through versioned domain events. They do not reach into another
-module's repositories or tables. The transactional outbox connects committed
+asynchronously through versioned domain events. Each module's repositories and
+tables remain under its exclusive control. The transactional outbox connects committed
 state to event delivery.
 
-Microservices are an extraction option, not a starting assumption. A module may
+The modular monolith is the starting architecture. A module may
 be extracted only when measured scaling, isolation, release cadence, security,
 or team-ownership pressure outweighs distributed-system cost.
 
@@ -163,7 +163,7 @@ flowchart LR
 The cloud plane is absent from a Free local session except for static/reference
 delivery and explicit user-enabled processing. Local, preview, staging, and
 production use the same immutable image definitions with environment-specific
-configuration. Production data never flows to lower environments. The
+configuration. Lower environments use synthetic or approved masked data. The
 deployment platform remains an open decision.
 
 ## Cross-cutting decisions
@@ -187,5 +187,5 @@ deployment platform remains an open decision.
 ## Deliberately deferred
 
 Kubernetes, event-streaming platforms, service meshes, multi-region writes,
-feature stores, and independent microservice databases are not selected until a
-quality scenario proves the need.
+feature stores, and independent microservice databases require a qualifying
+quality scenario and an accepted ADR before selection.

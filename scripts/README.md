@@ -4,11 +4,12 @@ Small, cross-platform automation used by contributors and CI.
 
 ## Contents
 
-| File                    | Responsibility                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `check-readmes.mjs`     | Enforces README presence in project-owned directories                                 |
-| `install-git-hooks.mjs` | Installs Husky only in eligible local Git checkouts; skips CI and production contexts |
-| `run-with-node-env.mjs` | Runs a command with an explicit, cross-platform Node environment                      |
+| File                     | Responsibility                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| `check-doc-language.mjs` | Enforces international scope and affirmative language across technical documentation  |
+| `check-readmes.mjs`      | Enforces README presence in project-owned directories                                 |
+| `install-git-hooks.mjs`  | Installs Husky only in eligible local Git checkouts; skips CI and production contexts |
+| `run-with-node-env.mjs`  | Runs a command with an explicit, cross-platform Node environment                      |
 
 ## Rules
 

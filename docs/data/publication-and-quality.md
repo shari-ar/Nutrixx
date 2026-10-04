@@ -5,7 +5,7 @@
 | Status        | Proposed target state                                     |
 | Audience      | Data engineering, nutrition science, security, operations |
 | Owner         | Nutrixx Data                                              |
-| Last reviewed | 2026-09-22                                                |
+| Last reviewed | 2026-10-04                                                |
 
 ## Pipeline
 
@@ -21,12 +21,12 @@ flowchart LR
     G -->|approve| H[Immutable release candidate]
     H --> I[Regression and canary evaluation]
     I -->|pass| J[Activate pointer]
-    I -->|fail| K[Do not activate]
+    I -->|fail| K[Retain previous release]
     J --> L[Impact analysis / recomputation jobs]
 ```
 
-Ingestion never writes directly into the active catalog. Activation updates a
-version pointer; rollback selects the previous accepted release.
+Ingestion writes to quarantined release candidates. Activation updates a version
+pointer; rollback selects the previous accepted release.
 
 ## Release manifest
 
@@ -43,7 +43,7 @@ Each release contains:
 
 ## Blocking checks
 
-A release cannot activate with:
+Activation requires resolution of every blocking condition:
 
 - an unknown or incompatible unit/basis in a published quantity;
 - a canonical ID collision or unresolved merge;
@@ -53,7 +53,7 @@ A release cannot activate with:
 - a missing lineage path for a calculated value;
 - unreviewed changes to eligibility, target, or upper-limit semantics.
 
-Outliers are quarantined, not silently clipped. Corrections create a new release.
+Outliers enter quarantine with explicit reasons. Corrections create a new release.
 
 ## Change impact
 
@@ -62,12 +62,15 @@ recipes, nutrition states, and optimizer cases. It reports changed outputs and
 whether the change crosses user-visible or safety thresholds.
 
 Historical snapshots preserve their original release IDs. Recalculation creates
-new snapshots and never rewrites prior evidence.
+new snapshots while preserving prior evidence.
 
-## Authoritative source examples
+## Accepted source policy
 
-Provider selection and licensing remain open decisions. Candidate sources must
-be evaluated for coverage, update semantics, provenance, and permitted use.
-The model is compatible with sources such as
-[USDA FoodData Central](https://fdc.nal.usda.gov/data-documentation/), but this
-reference is not a commitment to one provider.
+[ADR-0007](../decisions/ADR-0007-food-catalog-sources-and-release-quality.md)
+is authoritative for provider admission, licenses, international coverage,
+release cadence, and blocking thresholds. The first catalog release normalizes
+USDA FoodData Central Foundation Foods and SR Legacy under CC0.
+
+The active catalog exposes regional gaps, preserves missing nutrient states,
+labels user-selected approximate substitutions, and publishes each source with
+an approved license manifest and reproducible release evidence.

@@ -5,11 +5,10 @@
 | Status        | Living decision register                    |
 | Audience      | Product and all technical/scientific owners |
 | Owner         | Nutrixx Product                             |
-| Last reviewed | 2026-09-29                                  |
+| Last reviewed | 2026-10-04                                  |
 
 | ID     | Priority | Decision                                                                                                           | Accountable owner            | Must resolve before       |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------- | ------------------------- |
-| OD-003 | P0       | Food data sources/licenses, Iranian/regional food coverage, update cadence, and quality threshold                  | Data + Legal                 | Stage 2 build             |
 | OD-004 | P0       | Formal meaning/horizon of Nutrition State and user-safe terminology                                                | Nutrition Science + Product  | Stage 3 design            |
 | OD-006 | P0       | Privacy roles, purposes/legal bases, consent, retention, export/deletion, and launch-jurisdiction obligations      | Privacy + Legal              | Any user-data launch      |
 | OD-007 | P1       | Day boundary, timezone/travel, late correction, and rolling-window semantics                                       | Product + Domain             | Stage 3 build             |
@@ -31,11 +30,11 @@
 
 | ID     | Resolution                                                                                                                         | Authoritative record                                                                       |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| OD-001 | General-wellness product for consenting adults, Persian/English first, jurisdiction-gated launch                                   | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
-| OD-002 | Versioned DRI/NIH baseline with typed targets, no silent blending, and qualified approval                                          | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
-| OD-005 | Error-reduction assistance without guarantee; physician approval required for higher-risk use                                      | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
+| OD-001 | International general-wellness product for consenting adults with jurisdiction-gated launches                                      | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
+| OD-002 | Versioned DRI/NIH baseline with typed targets, explicit source boundaries, and qualified approval                                  | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
+| OD-003 | USDA FDC CC0 first release, license-gated source portfolio, international coverage corpora, and blocking quality gates             | [ADR-0007](../decisions/ADR-0007-food-catalog-sources-and-release-quality.md)              |
+| OD-005 | Error-reduction assistance with physician approval required for higher-risk use                                                    | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
 | OD-016 | Baseline-aligned support matrix, IndexedDB authority, dynamic headroom, explicit persistence UX, and change-aware export reminders | [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md)          |
 
-An open decision is not permission to choose implicitly in code. The owner
-creates an ADR, scientific policy, or product-policy record with alternatives,
-evidence, consequences, and approval.
+Every open decision requires an ADR, scientific policy, or product-policy record
+with alternatives, evidence, consequences, and approval before implementation.

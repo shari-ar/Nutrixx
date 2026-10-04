@@ -13,5 +13,6 @@
 | [Open decisions](open-decisions.md)     | Unresolved choices that block specific gates   |
 
 The roadmap completes the local product first, then adds cloud capabilities in
-independently gated stages. It is not a calendar promise and does not treat
-implementation scaffolding as product progress or a partial paid plan.
+independently gated stages. Release planning owns calendar commitments;
+verification evidence defines product progress, and complete capability gates
+define each paid plan.

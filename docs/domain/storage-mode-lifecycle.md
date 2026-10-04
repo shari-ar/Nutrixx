@@ -38,9 +38,9 @@ stateDiagram-v2
 1. Freeze a consistent local snapshot and record schema, reference-data,
    scientific-policy, and engine versions.
 2. Create an idempotent `MigrationSession` and an encrypted server-side staging
-   area that is not visible to normal cloud reads.
+   area isolated from normal cloud reads.
 3. Upload bounded chunks with sequence numbers, content hashes, and resume
-   tokens. Never log payload contents.
+   tokens. Logs contain identifiers and lifecycle metadata exclusively.
 4. Validate schema compatibility, record counts, relationships, versions,
    decimal/unit semantics, aggregate hashes, and representative replay cases.
 5. Commit the authority switch atomically and make the server copy visible.
@@ -49,8 +49,8 @@ stateDiagram-v2
 7. Ask the user to remove the full local database. After confirmation, delete
    it and retain only the documented bounded cache and non-sensitive settings.
 
-Purchase completion alone MUST NOT delete local content. A failed or abandoned
-migration leaves Local authority and usability intact. Staging data expires and
+Purchase completion begins a verified migration while local content remains
+available. A failed or abandoned migration leaves Local authority and usability intact. Staging data expires and
 is verifiably removed.
 
 ## Downgrade protocol
@@ -69,7 +69,7 @@ is verifiably removed.
 
 If the browser lacks sufficient storage or a compatible runtime, the user keeps
 read-only cloud access and export capability while choosing another supported
-device or destination. Nutrixx MUST NOT destroy the only valid copy.
+device or destination. Nutrixx preserves at least one verified valid copy.
 
 ## Synchronization in cloud mode
 
@@ -92,13 +92,13 @@ A complete bundle contains user-entered facts, corrections, immutable recipe
 versions, preferences/goals, observations, derived snapshots required for
 understanding history, plans, fingerprints, provenance pointers, schema and
 release manifests, and a machine-readable integrity manifest. Licensed source
-data that cannot be redistributed is represented by identifiers and a clear
+data governed by redistribution restrictions is represented by identifiers and a clear
 reacquisition/limitation record.
 
 ## Recovery and support
 
 Support can inspect migration state, safe counts, hashes, timestamps, and error
-codes but cannot browse nutrition content by default. Recovery actions are
+codes while nutrition-content access requires explicit audited elevation. Recovery actions are
 idempotent, attributable, and previewed. Customer-reported loss or mismatch is
 treated as a high-priority integrity incident; the safest valid copy is
 preserved until reconciliation completes.

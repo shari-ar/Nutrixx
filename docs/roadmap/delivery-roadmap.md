@@ -9,7 +9,7 @@
 
 Work is sequenced around one rule: finish the useful local product before cloud
 custody or paid hosted capabilities. Each stage has independently reviewable
-evidence, but Pro and Ultimate are not publicly offered until their complete
+evidence. Pro and Ultimate reach public availability after their complete
 published plan contract passes its cumulative launch gate.
 
 ```mermaid
@@ -30,7 +30,7 @@ scientific governance, source/license strategy, golden fixtures, plan policy,
 privacy lifecycle, threat model, ADRs, and contract conventions.
 
 Exit: all P0 decisions required by the first local slice are approved, and one
-source-to-explanation golden case is reproducible without a server database.
+source-to-explanation golden case is reproducible through local storage.
 
 ## Stage 1 — Local data foundation
 
@@ -39,7 +39,7 @@ log, versioned export/import, storage/persistence status, reference-release
 caching, clear-data control, and adapter conformance suites.
 
 Exit: historical-schema, interruption, offline reload, quota-pressure, export/
-import integrity, and supported-browser fixtures pass without silent upload.
+import integrity, and supported-browser fixtures pass with local-only authority.
 
 ## Stage 2 — Local food, recipe, and intake ledger
 
@@ -56,8 +56,9 @@ Deliver approved Health Context rules, daily/rolling Nutrition State, targets,
 uncertainty, contributor explanations, trends, and local version impact/
 recomputation.
 
-Exit: fingerprint and scientific/regression gates pass; evaluated users do not
-mistake dietary state for diagnosis; the workflow remains useful offline.
+Exit: fingerprint and scientific/regression gates pass; evaluated users
+correctly recognize dietary state as a general-wellness estimate; the workflow
+remains useful offline.
 
 ## Stage 4 — Complete Free local planning
 
@@ -74,9 +75,9 @@ Deliver an off-by-default Advanced Setting, provider OAuth/BYOK adapters where
 safe, optional user-approved WebGPU/WASM model install, typed capture drafts,
 compatibility/size/privacy disclosures, cancellation, cleanup, and fallback.
 
-Exit: credentials and local data cannot leak through Nutrixx telemetry/server;
-model/provider failure cannot corrupt facts; activation is explicit and never
-presented as necessary for Free.
+Exit: credentials and local data stay within their declared destinations;
+model/provider failure preserves canonical facts; activation uses explicit user
+action and remains optional for Free.
 
 ## Stage 6 — Account, commerce, and verified cloud promotion
 
@@ -85,7 +86,7 @@ catalog, usage ledger, encrypted staging, migration manifest verification,
 single authority switching, downgrade/export, grace and deletion workflows.
 
 Exit: billing/entitlement replay, migration fault injection, recovery, privacy,
-support adjustment, and no-data-loss downgrade tests pass.
+support adjustment, and lossless downgrade tests pass.
 
 ## Stage 7 — Pro persistence and multi-device sync
 
@@ -108,7 +109,7 @@ provider-outage, cost, and multilingual quality gates pass.
 
 ## Stage 9 — Full Pro optimizer
 
-Deliver the complete eligible server optimizer without a user API key: durable
+Deliver the complete eligible server optimizer with Nutrixx-managed AI access: durable
 jobs, expanded candidate/solver capability, independent validator, replay,
 freshness gate, explanations, kill switch, cost and SLO controls.
 

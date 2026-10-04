@@ -12,8 +12,8 @@
 The Ultimate assistant lets an entitled user ask questions about their current
 nutrition state and plans. It obtains facts through approved Nutrixx APIs when
 needed, explains validated results, and can prepare supported actions for user
-confirmation. It is not the nutrition engine, optimizer, policy authority, or
-medical professional.
+confirmation. Nutrition engines, the optimizer, policy authorities, and
+qualified medical professionals retain their respective authority.
 
 ## Architecture boundary
 
@@ -49,7 +49,7 @@ name, schema, scope, ownership, purpose, freshness, cost budget, and result.
 | Read          | Current plan, nutrient contributors, approved alternatives, calculation trace                 | Least data necessary; no hidden cross-user or privileged access |
 | Analysis      | Compare validated plans, request deterministic recomputation, explain trade-offs              | Result must reference typed output and versions                 |
 | Preview write | Prepare meal correction, preference change, substitution, or new optimizer request            | Returns diff, consequences, and required confirmation           |
-| Prohibited    | Diagnose disease, change medication, override safety, raw database query, arbitrary URL fetch | Never exposed to the model                                      |
+| Restricted    | Diagnose disease, change medication, override safety, raw database query, arbitrary URL fetch | Excluded from the model tool registry                           |
 
 Confirmation is bound to the exact preview hash, tool parameters, user,
 authority version, and expiry. Any material change requires a new preview.
@@ -64,23 +64,23 @@ Every consequential response distinguishes:
 - assumptions, unknowns, and data freshness;
 - actions completed versus merely proposed.
 
-The assistant refuses or safely redirects requests outside intended use. It
-never converts daily intake into a diagnosis, invents unavailable measurements,
-or presents a model guess as a calculation. Numeric and causal claims must
+The assistant safely redirects requests outside intended use. Daily intake
+remains a nutrition-state estimate, measurements require evidence, and model
+guesses retain explicit candidate status. Numeric and causal claims must
 resolve to validated tool output or an approved evidence record.
 
 ## Context and memory
 
 Conversation context is purpose-limited, minimized, retention-classed, and
-separate from canonical nutrition facts. A conversation does not silently
-become profile memory. Proposed memory is shown to the user and saved only
+separate from canonical nutrition facts. Proposed profile memory is shown to
+the user and saved only
 through an explicit typed action. Deleting a conversation and deleting a
 canonical fact are distinct workflows with clear consequences.
 
 External/provider prompts contain the minimum necessary context and use
-provider configurations approved for sensitive data. User content is not used
-for model training or unrelated evaluation without a separately approved
-purpose and consent/legal basis.
+provider configurations approved for sensitive data. Model training or
+unrelated evaluation requires a separately approved purpose and consent/legal
+basis.
 
 ## Threats and controls
 
@@ -93,7 +93,7 @@ purpose and consent/legal basis.
 - Redact sensitive content from telemetry and support views.
 - Require independent confirmation and validation for every plan-changing or
   fact-changing action.
-- Provide feature/provider kill switches that do not block data export or
+- Provide feature/provider kill switches while preserving data export and
   manual product use.
 
 ## Evaluation

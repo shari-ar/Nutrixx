@@ -10,9 +10,9 @@
 ## Purpose and boundary
 
 AI-assisted capture reduces typing by converting user-provided text, speech,
-images, or links into a structured meal or recipe draft. AI is an untrusted
-parser and candidate generator. It does not create an authoritative consumption
-fact, calculate durable nutrient truth, set targets, or bypass user review.
+images, or links into a structured meal or recipe draft. AI is a candidate
+generator. Authoritative consumption facts, durable nutrient truth, targets,
+and user confirmation remain under typed domain workflows.
 
 ```text
 minimum critical input
@@ -32,7 +32,7 @@ Hosted execution is available only through active Pro or Ultimate entitlements.
 The server reserves one action after required input passes bounded validation
 and immediately before costly execution. A complete result displayed to the
 user commits the action. Infrastructure/provider failure releases it. User
-rejection does not refund successful computation; manual edits are free.
+rejection retains the successful-computation charge; manual edits are free.
 
 The job is idempotent and records plan, allowance period, action kind, reserved
 at, terminal status, provider/model/prompt-policy versions, safe cost metadata,
@@ -45,8 +45,8 @@ allowances and reset rules.
 ## Experimental local execution
 
 Free users MAY explicitly enable `Experimental Local Processing` from Advanced
-Settings. The capability is intentionally absent from plan marketing and is
-never initialized in the background.
+Settings. Plan marketing excludes this capability, and initialization requires
+an explicit user action.
 
 Supported adapters may include:
 
@@ -56,8 +56,8 @@ Supported adapters may include:
 | BYOK direct request   | Bearer key and selected input remain in browser/provider path | Website-code access risk, provider terms, session/persistence choice   |
 | WebGPU/WASM           | Model and inference stay on device                            | Exact download/storage size, hardware support, cache removal, fallback |
 
-Local processing receives no Nutrixx hosted-AI entitlement and cannot unlock
-AI-dependent optimizer functions. It produces the same untrusted draft schema
+Local processing uses an independent user-enabled pathway. Hosted-AI and
+AI-dependent optimizer functions require their own entitlements. It produces the same candidate draft schema
 and passes the same deterministic resolver, validator, and confirmation flow.
 
 ## Draft contract
@@ -79,9 +79,9 @@ CaptureDraft
 ```
 
 The system asks only questions that can materially change identity, amount,
-nutrition, safety, or recipe yield. Confidence is not converted into a fact. A
+nutrition, safety, or recipe yield. Confidence remains metadata. A
 missing quantity or uncertain match remains unresolved or is confirmed by the
-user; it never becomes a silent default.
+user; explicit resolution governs every uncertain value.
 
 ## Safety and privacy controls
 
@@ -91,11 +91,12 @@ user; it never becomes a silent default.
   are untrusted and bounded by type, size, duration, and content policy.
 - Provider egress is allowlisted and purpose-specific. Provider terms,
   retention, training use, and region are reviewed before hosted activation.
-- API keys and tokens never enter Nutrixx logs, analytics, error reports,
-  support artifacts, or server requests in direct local mode.
+- Direct local mode keeps API keys and tokens inside the approved browser
+  credential boundary, with redaction across logs, analytics, error reports,
+  support artifacts, and server requests.
 - CSP, Trusted Types, dependency integrity, output encoding, and egress tests
-  reduce browser compromise risk; they do not justify a claim that page code
-  can never exercise a locally available bearer credential.
+  reduce browser compromise risk; product disclosure states that origin code
+  can exercise a locally available bearer credential.
 - Generated numbers and nutrient totals must resolve to deterministic typed
   output before display as Nutrixx calculations.
 - A user can inspect, edit, reject, and report a bad draft without losing the

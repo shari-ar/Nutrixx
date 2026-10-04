@@ -15,6 +15,7 @@
 | [Provenance and uncertainty](provenance-confidence-and-uncertainty.md) | Cross-domain evidence semantics                           |
 | [Storage-mode lifecycle](storage-mode-lifecycle.md)                    | Verified upgrade, sync authority, downgrade, and recovery |
 
-The MVP artifacts informed domain discovery but are not a database blueprint.
+The MVP artifacts informed domain discovery; the canonical model defines the
+database blueprint.
 Target entities are defined from invariants and ownership rather than copied
 from prototype tables.

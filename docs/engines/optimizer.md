@@ -10,8 +10,8 @@
 ## Contract
 
 The optimizer receives one immutable, eligible planning context and returns a
-typed result. It never fetches mutable state and never publishes directly to a
-user.
+typed result. The application supplies immutable state and publishes validated
+results to the user.
 
 ```text
 ContextSnapshot
@@ -37,12 +37,12 @@ FEASIBLE and OPTIMAL are separate solver outcomes.
 | ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Free local approximate  | Free, on a supported device | Deterministic bounded candidate set and approved local heuristics; no hosted inference and no AI-dependent optimizer capability |
 | Pro full optimizer      | Pro entitlement             | Complete eligible cloud optimization contract without requiring the user's API key                                              |
-| Ultimate full optimizer | Ultimate entitlement        | Same scientific/safety contract as Pro; higher hosted-AI capture allowances and assistant access do not weaken validation       |
+| Ultimate full optimizer | Ultimate entitlement        | Same scientific/safety contract as Pro; higher hosted-AI capture allowances and assistant access preserve full validation       |
 
-Experimental Local Processing may help parse input into a draft, but it cannot
-unlock the full paid optimizer or become an optimizer authority. Entitlement
-differences affect available compute/capabilities, never safety constraints or
-the meaning of nutrient calculations.
+Experimental Local Processing may help parse input into a draft. The full paid
+optimizer and optimizer authority require their dedicated entitlement.
+Entitlement differences affect available compute/capabilities while safety
+constraints and nutrient meanings remain universal.
 
 ## Planning context
 
@@ -67,7 +67,7 @@ semantics independent of a vendor.
 - scientifically approved hard limits;
 - internal consistency of servings, slots, and horizon.
 
-Hard constraints are never relaxed to improve score. When infeasible, the
+Hard constraints retain precedence over score. When infeasible, the
 result identifies a minimal/useful conflict set where the solver permits it.
 
 ### Hierarchical soft objectives
@@ -79,15 +79,15 @@ result identifies a minimal/useful conflict set where the solver permits it.
 5. reduce waste and unnecessary change from the prior plan.
 
 Weights, normalization, priority tiers, and tie-breakers are versioned policy.
-A combined score ranks alternatives; it MUST NOT be presented as a universal
-health score or probability of success.
+A combined score ranks alternatives and is presented exclusively as a
+plan-comparison score rather than a probability of success.
 
 ## Predictions
 
 Predictions are independent modules with a declared outcome, horizon,
 population, baseline, model/data version, interval, and validation evidence.
-They cannot automatically modify safety limits or user goals. An unvalidated
-model runs only in evaluation/shadow mode.
+Safety limits and user goals change through their dedicated authorized
+workflows. Models enter production after evaluation/shadow validation.
 
 ## Determinism and replay
 
@@ -104,7 +104,7 @@ validation report
 output hash
 ```
 
-A seed alone is insufficient. Where a solver cannot guarantee bit-for-bit
+A seed forms one part of the execution fingerprint. For equivalent-feasibility
 replay, the exact accepted result and validation evidence are retained.
 
 ## Independent validation
@@ -121,8 +121,8 @@ inside the intended-use boundary.
 Immediately before publication, the system atomically verifies that the
 eligibility, consent, allergy/restriction, context, active safety-policy, and
 dataset revisions used by the run are still current. A stale run is invalidated
-and safely recomputed or returned as NEEDS_INPUT; it is never published from
-cache. Cache reads and user substitutions pass the same validation and freshness
+and safely recomputed or returned as NEEDS_INPUT; publication uses current,
+validated results. Cache reads and user substitutions pass the same validation and freshness
 gates.
 
 A failed validation quarantines the result, records diagnostics, emits an
@@ -140,8 +140,8 @@ Every plan exposes:
 - independently validated substitutions.
 
 If generative AI is introduced, it may parse user language or verbalize a
-validated trace. It may not calculate nutrient values, set targets, decide
-safety, invent a substitution, or introduce a number absent from typed output.
+validated trace. Typed domain engines retain authority over nutrient values,
+targets, safety, substitutions, and every presented number.
 
 ## Evaluation
 

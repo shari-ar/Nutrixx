@@ -21,12 +21,12 @@ Product principle
 
 Every accepted requirement has a unique ID. Every safety/scientific rule and
 material risk has its own ID. Tests and evaluation cases reference those IDs
-directly; file paths alone are not durable traceability.
+directly; durable traceability uses stable IDs alongside file paths.
 
 ## Initial target trace map
 
-This map links proposed requirements to their design authority. It is not
-implementation or release evidence.
+This map links proposed requirements to their design authority. Implementation
+and release evidence are recorded in dedicated evidence bundles.
 
 | Requirement   | Primary design authority                                  | Required verification family                                                                           |
 | ------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -56,17 +56,17 @@ implementation or release evidence.
 
 ## Minimum traceability record
 
-| Field                                | Required              |
-| ------------------------------------ | --------------------- |
-| Requirement ID and version           | Yes                   |
-| Owner and status                     | Yes                   |
-| Rationale / linked risk              | Yes                   |
-| Applicable populations/environments  | When relevant         |
-| Policy/ADR/contract links            | Yes                   |
-| Automated/manual evidence IDs        | Yes                   |
-| Release-blocking threshold           | Yes                   |
-| Production signal and review cadence | For operable behavior |
-| Approved exception, owner, expiry    | If not satisfied      |
+| Field                                | Required                         |
+| ------------------------------------ | -------------------------------- |
+| Requirement ID and version           | Yes                              |
+| Owner and status                     | Yes                              |
+| Rationale / linked risk              | Yes                              |
+| Applicable populations/environments  | When relevant                    |
+| Policy/ADR/contract links            | Yes                              |
+| Automated/manual evidence IDs        | Yes                              |
+| Release-blocking threshold           | Yes                              |
+| Production signal and review cadence | For operable behavior            |
+| Approved exception, owner, expiry    | When a threshold remains pending |
 
 ## Change impact
 

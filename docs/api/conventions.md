@@ -16,18 +16,17 @@ examples, and bounded payloads. CI lints and bundles the contract, generates or
 checks types, runs provider/consumer contract tests, and blocks breaking changes
 unless a versioned migration is approved.
 
-The latest specification is not adopted solely because it is latest. Toolchain
-support is verified and the version choice is recorded in an ADR.
+Specification upgrades require verified toolchain support and an ADR.
 
 The OpenAPI contract describes cloud capabilities only. `LOCAL` workflows call
-storage-neutral application interfaces directly and MUST NOT add an HTTP round
-trip merely to resemble cloud mode. Shared command/result schemas belong in
+storage-neutral application interfaces directly and MUST keep ordinary local
+operation inside the browser process. Shared command/result schemas belong in
 versioned contracts usable by both adapters.
 
 ## Resource and versioning model
 
-- Public HTTP endpoints use `/api/v1`; nouns represent resources, not
-  implementation actions.
+- Public HTTP endpoints use `/api/v1`; nouns represent resources and preserve
+  implementation independence.
 - Breaking semantic or schema changes require a new major API version.
 - Additive changes are backward-compatible only when clients can safely ignore
   them under the schema contract.
@@ -45,7 +44,7 @@ versioned contracts usable by both adapters.
 | Instants           | RFC 3339 UTC offset timestamps                                                                               |
 | User-day semantics | Local date/time plus IANA timezone and recorded instant                                                      |
 | Quantities         | Decimal serialized as a contract-defined number/string, explicit unit and basis                              |
-| Unknown values     | Null/omitted only according to schema, with reason where material; never synthetic zero                      |
+| Unknown values     | Null/omitted according to schema, with a material reason and a distinct measured-zero representation         |
 | Enums              | Declared evolution policy; unknown future values handled deliberately                                        |
 | Provenance         | Compact reference in normal output; expandable evidence resource for audit                                   |
 
@@ -62,13 +61,13 @@ versioned contracts usable by both adapters.
   `202 Accepted`, a job resource, status URL, and optional retry hint.
 - Cancellation is best-effort and has an explicit terminal state.
 - Entitlement checks are server-authoritative for paid/cost-incurring work;
-  client plan labels, cached counters, or hidden controls never grant access.
+  access derives exclusively from validated server grants.
 - Hosted AI creates an action resource with a stable idempotency identity and a
   visible usage state: reserved, consumed, or released. Provider retries remain
   inside the same action.
 - Migration/sync commands include source authority epoch, manifest/schema
   version, stable command ID, and expected logical versions. Timestamps alone
-  never resolve conflicts or transfer authority.
+  preserve conflict evidence and canonical authority.
 - Assistant tool calls use allowlisted typed operations and a short-lived
   confirmation token bound to principal, arguments, policy version, expiry,
   and intent for any write or consequential action.
@@ -83,35 +82,35 @@ safe.
 
 ## Status and error semantics
 
-| Situation                                  | Typical status                        |
-| ------------------------------------------ | ------------------------------------- |
-| Successful read/create/update/delete       | 200 / 201 / 200-or-204 / 204          |
-| Durable work accepted                      | 202                                   |
-| Validation or malformed request            | 400                                   |
-| Unauthenticated / unauthorized             | 401 / 403 without resource disclosure |
-| Missing resource                           | 404                                   |
-| Version/idempotency conflict               | 409 or 412 as contractually defined   |
-| Semantically valid but unprocessable input | 422                                   |
-| Rate limited                               | 429 with safe retry metadata          |
-| Dependency unavailable / not ready         | 503                                   |
+| Situation                                  | Typical status                                |
+| ------------------------------------------ | --------------------------------------------- |
+| Successful read/create/update/delete       | 200 / 201 / 200-or-204 / 204                  |
+| Durable work accepted                      | 202                                           |
+| Validation or malformed request            | 400                                           |
+| Unauthenticated / unauthorized             | 401 / 403 with uniform disclosure-safe detail |
+| Missing resource                           | 404                                           |
+| Version/idempotency conflict               | 409 or 412 as contractually defined           |
+| Semantically valid but unprocessable input | 422                                           |
+| Rate limited                               | 429 with safe retry metadata                  |
+| Dependency awaiting readiness              | 503                                           |
 
 Domain outcomes such as NEEDS_INPUT, INFEASIBLE, or OUT_OF_SCOPE are typed
-business results when the HTTP request itself succeeded; they are not disguised
-as server errors.
+business results when the HTTP request itself succeeded; server errors use their
+dedicated contract.
 
 Usage exhaustion is a typed entitlement outcome with reset/cycle metadata; it
-does not pretend to be a transient transport failure. A technical/provider
-failure releases a reservation according to the usage policy and returns safe
+uses its domain result contract. A technical/provider failure releases a
+reservation according to the usage policy and returns safe
 retry semantics. A complete draft already shown to the user remains consumed
 even when later rejected.
 
 ## Security and privacy
 
 OAuth 2.0/OIDC scopes and ownership checks are explicit per operation.
-Sensitive fields are minimized and never placed in URLs, error details, logs,
-traces, cache keys, or examples. Field-level purpose/consent rules are enforced
-server-side. Rate limits are principal/operation-aware and do not reveal other
-users' existence.
+Sensitive fields stay inside approved encrypted payloads. URLs, error details,
+logs, traces, cache keys, and examples use allowlisted metadata. Field-level
+purpose/consent rules are enforced server-side. Principal- and operation-aware
+rate limits expose only the caller's activity.
 
 ## References
 

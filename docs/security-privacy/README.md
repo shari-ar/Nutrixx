@@ -14,4 +14,4 @@
 | [Security control baseline](security-control-baseline.md)                       | Engineering and release controls                                    |
 
 Security, privacy, product safety, and scientific validity are separate but
-interacting concerns. Passing one does not imply passing the others.
+interacting concerns. Each concern requires independent evidence.

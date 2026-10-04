@@ -26,7 +26,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:check": "node scripts/check-readmes.mjs && node scripts/check-mermaid.mjs",
+    "docs:check": "node scripts/check-readmes.mjs && node scripts/check-doc-language.mjs && node scripts/check-mermaid.mjs",
     "prepare": "node scripts/install-git-hooks.mjs",
     "format": "prettier . --write --ignore-unknown",
     "format:check": "prettier . --check --ignore-unknown",

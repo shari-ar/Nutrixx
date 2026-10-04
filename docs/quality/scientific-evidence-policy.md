@@ -20,8 +20,9 @@ Every scientific rule or claim has:
 - effective/sunset dates and scheduled review;
 - affected engine fixtures, metrics, and user-facing language.
 
-A citation alone is not approval. Secondary summaries may aid discovery but
-normative policy traces to authoritative/primary sources.
+Approval requires qualified review in addition to a citation. Secondary
+summaries may aid discovery while normative policy traces to
+authoritative/primary sources.
 
 ## Lifecycle
 
@@ -44,12 +45,12 @@ possible through a kill switch/policy rollback with incident follow-up.
 
 ## Claims policy
 
-- Intake comparison is not diagnosis.
-- Association is not causation.
-- Model prediction is not an observed outcome.
-- “Personalized” means inputs and approved policies affect output; it does not
-  imply clinical validation for every individual.
-- Precision shown to users cannot exceed evidence/data precision.
+- Diagnosis requires a qualified clinical process beyond intake comparison.
+- Causal claims require causal evidence beyond association.
+- Observed outcomes and model predictions retain distinct labels.
+- “Personalized” means inputs and approved policies affect output; individual
+  clinical validation requires a dedicated clinical process.
+- Displayed precision stays within evidence and data precision.
 - Unsupported, disputed, population-mismatched, or stale rules remain inactive.
 - User-facing language is reviewed together with the algorithm, because wording
   can change intended use and risk.
@@ -60,7 +61,7 @@ Preferred sources include authoritative reference-intake bodies, official food
 composition documentation, peer-reviewed systematic evidence, and validated
 standards. Selection also considers applicability to launch geography and
 population. Where authorities disagree, the rule records the selection
-rationale and does not blend incompatible values silently.
+rationale and preserves incompatible values as distinct alternatives.
 
 ## Change control
 

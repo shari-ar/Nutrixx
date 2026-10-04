@@ -41,8 +41,8 @@ DerivedSnapshot<T>
 
 Canonical identifiers are stable and provider-neutral. Provider IDs are stored
 as mappings scoped to provider and release. Nutrient identity MUST distinguish
-chemically or analytically different concepts; aliases are searchable names,
-not identity.
+chemically or analytically different concepts; aliases provide searchable names
+while stable identifiers define identity.
 
 Recommended interoperability:
 
@@ -59,7 +59,7 @@ Mappings are versioned claims with provenance and review state.
 Canonical user records are serializable without browser or PostgreSQL-specific
 fields. Each record carries a stable ID, schema version, subject ID, owning
 context, logical version, timestamps required by its domain, and integrity
-metadata. Storage adapters may add physical indexes but cannot change domain
+metadata. Storage adapters may add physical indexes while preserving domain
 meaning.
 
 ```text
@@ -74,8 +74,8 @@ CanonicalRecord<T>
 
 A portable bundle contains a versioned manifest, canonical records grouped by
 owning context, reference/version dependencies, per-part hashes, total counts,
-and compatibility metadata. It never contains provider credentials or server
-secrets.
+and compatibility metadata. Provider credentials and server secrets remain in
+their dedicated security stores.
 
 ## Normative schema version 1
 
@@ -89,7 +89,7 @@ JSON Schema Draft 2020-12 artifact with the stable identifier
 | Physical storage | No IndexedDB, OPFS, PostgreSQL, ORM, or transport fields                                           |
 | Exact decimals   | Canonical base-10 strings; no exponent, negative zero, or insignificant trailing fractional zero   |
 | Instants         | UTC RFC 3339 with exactly millisecond precision                                                    |
-| Unknown values   | Explicit tagged value with a reason; never encoded as zero or null                                 |
+| Unknown values   | Explicit tagged value with a reason and a distinct representation from zero and null               |
 | Payloads         | Bound to a registered `recordType` and `recordVersion` schema before acceptance                    |
 | Integrity        | SHA-256 over UTF-8 RFC 8785 canonical JSON excluding the `integrity` object                        |
 | Evolution        | Envelope uses `schemaVersion`; payload uses `recordVersion`; domain revision uses `logicalVersion` |
@@ -100,9 +100,9 @@ release, a published schema and its migration fixtures are immutable.
 ## Service-control records
 
 Entitlement grants, hosted-usage reservations, migration sessions, AI drafts,
-and assistant tool traces are operational/domain control records—not nutrition
-facts. They reference stable subjects/actions but cannot modify calculation
-meaning. AI drafts remain transient until transformed into a confirmed owning-
+and assistant tool traces are operational/domain control records. Nutrition
+facts remain in their canonical aggregates, and control records preserve
+calculation meaning. AI drafts remain transient until transformed into a confirmed owning-
 domain command.
 
 ## Quantity basis
@@ -110,7 +110,7 @@ domain command.
 A nutrient amount is incomplete without its denominator and food state. Common
 bases include per 100 g edible portion, per 100 mL, per serving, per recipe
 yield, and per consumed quantity. Raw/cooked, drained, fortified, brand,
-preparation method, and edible portion are not interchangeable attributes.
+preparation method, and edible portion are independently governed attributes.
 
 Conversion requires a traceable path:
 
@@ -127,7 +127,7 @@ resolve material ambiguity.
 
 ## Quality dimensions
 
-Do not collapse quality into one unexplained score. Track at least:
+Represent quality through these explicit dimensions:
 
 | Dimension                          | Example evidence                                       |
 | ---------------------------------- | ------------------------------------------------------ |
@@ -142,9 +142,9 @@ Do not collapse quality into one unexplained score. Track at least:
 - Published recipe versions, consumed meal-item facts, nutrition states, and
   optimizer runs are immutable.
 - A plan item and a consumed meal item are different entities.
-- Failure to log is not proof of zero intake.
-- A daily nutrition state estimates dietary intake against targets; it does not
-  represent physiological nutrient stores.
+- Missing logs preserve an unknown intake state.
+- A daily nutrition state estimates dietary intake against targets, while
+  qualified clinical assessment determines physiological nutrient stores.
 - Energy has one canonical nutrient identity. Label energy and calculated
   energy may coexist only as separately sourced observations with a declared
   selection policy.

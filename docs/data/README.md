@@ -16,4 +16,4 @@
 The operational schemas are derived from aggregates and access patterns after
 these invariants are accepted. Browser and PostgreSQL adapters implement the
 same canonical contracts under different authority modes. The MVP database is
-input to discovery, not a migration source or target schema.
+input to discovery while canonical schemas govern implementation and migration.

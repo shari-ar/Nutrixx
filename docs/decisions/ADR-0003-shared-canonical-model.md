@@ -33,8 +33,8 @@ by plan, and multiply correction/migration logic.
 Adopt option 3. Stable canonical identifiers, value objects, aggregate/event
 contracts, serialization rules, schema versions, and migration semantics are
 shared. IndexedDB/OPFS and PostgreSQL use independent physical layouts behind
-conforming repositories. Framework, transport, and database types cannot leak
-into canonical domain contracts.
+conforming repositories. Canonical domain contracts contain domain types
+exclusively, with framework, transport, and database types confined to adapters.
 
 Canonical Schema version `1` is implemented in `@nutrixx/canonical-schema`.
 Zod is its runtime source of truth, JSON Schema Draft 2020-12 is its portable
@@ -49,12 +49,12 @@ declares supported source/target versions and downgrade/export behavior.
 
 ### Positive
 
-- Plan changes do not reinterpret user facts.
+- User facts retain stable meaning across plan changes.
 - Domain/engine fixtures run identically against local and cloud adapters.
 - Portable bundles are durable contracts rather than database dumps.
 - Physical stores can optimize independently.
 
-### Negative / trade-offs
+### Costs and trade-offs
 
 - Canonical evolution requires stricter compatibility discipline.
 - Browser constraints must be considered in schema and migration design.

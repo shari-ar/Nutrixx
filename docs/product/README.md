@@ -17,5 +17,5 @@ it is built.
 | [Capability map](capability-map.md)                 | End-to-end target capabilities and ownership             |
 | [Plans and entitlements](plans-and-entitlements.md) | Free, Pro, Ultimate, hosted-AI accounting, and lifecycle |
 
-Product documents describe the target state. They MUST NOT present a prototype,
-database sketch, or current UI as the final product model.
+Product documents describe the target state and label prototypes, database
+sketches, current UI, and delivered behavior explicitly.

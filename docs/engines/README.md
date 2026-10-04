@@ -17,12 +17,12 @@
 
 Engines are deterministic, framework-free, side-effect-free packages. Callers
 resolve immutable inputs before invocation and persist immutable outputs after
-invocation. Engines do not read databases, call networks, inspect environment
-variables, or generate unverified prose.
+invocation. Adapters handle databases, networks, environment variables, and
+user-facing prose.
 
 The AI documents describe orchestration adapters around the deterministic
-core, not additional scientific engines. Model output is untrusted input until
-it passes typed validation, domain policy, and required user confirmation.
+core as supporting capabilities. Model output remains a candidate until it
+passes typed validation, domain policy, and required user confirmation.
 
 Common execution contract:
 

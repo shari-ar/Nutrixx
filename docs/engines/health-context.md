@@ -10,8 +10,8 @@
 ## Purpose
 
 Health Context creates a dated, non-diagnostic input snapshot used to select
-applicable target policy and planning constraints. It does not claim to
-represent a complete clinical health state.
+applicable target policy and planning constraints. A complete clinical health
+state belongs to a qualified healthcare assessment.
 
 ## Inputs
 
@@ -42,17 +42,17 @@ estimated, or defaulted.
 
 ## Guardrails
 
-- Date of birth produces age at the calculation date; mutable stored “age” is
-  not authoritative.
+- Date of birth produces the authoritative age at the calculation date.
 - Sex-related physiological inputs and gender identity are distinct concepts;
   a formula requests only the precise attribute it scientifically requires.
 - A formula is used only for its validated population.
 - Unsupported illness, medication, lab, pregnancy, child, or therapeutic
-  context yields OUT_OF_SCOPE or a reviewed safe pathway—not silent defaults.
+  context yields OUT_OF_SCOPE or a reviewed safe pathway with explicit inputs.
 - Lab data retains original analyte/code, specimen/context, unit, reference
-  interval, time, and source. It cannot by itself trigger a diagnosis.
+  interval, time, and source. Diagnostic interpretation requires a qualified
+  clinical process.
 - Weight/energy predictions state horizon, baseline, interval, and limitations;
-  they do not guarantee an outcome.
+  they communicate guidance and uncertainty rather than guaranteed outcomes.
 
 ## Output
 

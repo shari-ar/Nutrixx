@@ -14,8 +14,8 @@ canonical unit/dimension, measurement basis, parent/child relationships, source
 mappings, and lifecycle status.
 
 Component types—nutrients, subcomponents, bioactives, contaminants, allergens,
-and derived metrics—remain explicit. Nutrients are not added merely because a
-source contains a column; inclusion requires a defined decision or user value.
+and derived metrics—remain explicit. Nutrient inclusion requires a defined
+decision and demonstrated user value in addition to source availability.
 
 ## Unit and numeric policy
 
@@ -26,7 +26,7 @@ source contains a column; inclusion requires a defined decision or user value.
 - Unit conversion and portion conversion are separate operations.
 - Intermediate calculations preserve precision; rounding occurs only at an
   explicitly versioned publication/display boundary.
-- Incompatible dimensions fail validation. They are never coerced.
+- Incompatible dimensions fail validation and remain in quarantine.
 
 ## Food calculation
 
@@ -79,15 +79,15 @@ Supplements sources: RDA is preferred when applicable, AI is used only when no
 RDA exists, EAR supports population/uncertainty reasoning rather than an
 individual goal, UL is enforced only for its defined source and population,
 and AMDR expresses macronutrient ranges. Label Daily Value is display context,
-not a personalized target. Every activated target records authority, edition,
+distinct from a personalized target. Every activated target records authority, edition,
 population, jurisdiction applicability, and effective date and requires
 independent approval from a qualified nutrition-science professional; when
 sources conflict or applicability is unknown, the engine abstains instead of
 silently selecting or averaging values.
 
-RDA, AI, UL, and label Daily Value are not interchangeable. A daily intake gap
-does not diagnose deficiency, and a single-day comparison MUST NOT be
-described as physiological nutrient status.
+RDA, AI, UL, and label Daily Value retain distinct meanings. Deficiency
+assessment requires a qualified clinical process, and physiological nutrient
+status requires the applicable evidence horizon and clinical context.
 
 ## Missing data and uncertainty
 
@@ -95,7 +95,7 @@ described as physiological nutrient status.
 | ---------------------- | ---------------------------------------------- | -------------------------------------------------------- |
 | measured/reported zero | Source explicitly states zero under its method | Numeric zero with provenance                             |
 | below detection        | Present below an analytical limit              | Preserve limit/method; policy selects interval treatment |
-| not applicable         | Component cannot apply under a defined rule    | Excluded with reason                                     |
+| inapplicable           | Component lies outside a defined rule          | Excluded with reason                                     |
 | unknown                | No defensible value                            | Null; reduces coverage                                   |
 | estimated              | Model or proxy produced the value              | Include only with method and uncertainty                 |
 | imputed                | Missing value filled under an approved policy  | Distinct from sourced fact; sensitivity tested           |
@@ -110,7 +110,8 @@ recommended action.
 Bioavailability, nutrient interactions, and medication effects influence a
 calculation only through an approved, versioned rule with a defined population,
 dose/exposure, direction, confidence, and exclusion criteria. Narrative
-evidence alone does not become an optimizer coefficient.
+evidence becomes an optimizer coefficient after the applicable approval and
+validation process.
 
 ## Energy policy
 

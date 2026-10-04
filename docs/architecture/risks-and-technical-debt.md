@@ -25,11 +25,11 @@
 | Client tampers with plan or usage state                    | Revenue loss and inconsistent access     | Server-authoritative entitlements and append-only usage ledger; client state is advisory only                     |
 | Hosted AI retry miscounts allowance                        | Unfair billing or uncontrolled cost      | Idempotent reservation IDs, consume/release terminal states, timeout reconciliation                               |
 | Assistant tool call exceeds user intent                    | Unauthorized change or harmful guidance  | Allowlisted typed tools, least privilege, contextual authorization, confirmation, audit trace                     |
-| Experimental model download harms constrained devices      | Poor performance, storage pressure       | Never automatic, capability check, size disclosure, cancellation, cleanup and fallback                            |
+| Experimental model download harms constrained devices      | Poor performance, storage pressure       | User-initiated activation, capability check, size disclosure, cancellation, cleanup and fallback                  |
 
 ## Debt policy
 
 Technical debt MUST have an owner, consequence, trigger/expiry, and removal
-plan. “Temporary” without those fields is not an accepted state. Safety,
-privacy, scientific validity, and replayability debt cannot be waived by a
-normal product deadline.
+plan. Every temporary exception includes those fields. Safety, privacy,
+scientific validity, and replayability remain mandatory across normal product
+deadlines.

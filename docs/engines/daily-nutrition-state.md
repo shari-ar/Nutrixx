@@ -11,8 +11,8 @@
 
 Daily Nutrition State is an immutable estimate of recorded dietary intake for
 an explicit local-day or rolling period, compared with the applicable target
-policy. It is not a measurement of body stores, a diagnosis, or proof that an
-unlogged meal was not consumed.
+policy. Body-store measurement and diagnosis require qualified clinical
+processes, while the state reflects recorded intake exclusively.
 
 ## Inputs
 
@@ -30,7 +30,8 @@ unlogged meal was not consumed.
 3. Aggregate exact known amounts without converting unknowns to zero.
 4. Propagate completeness and uncertainty by nutrient.
 5. Compare with applicable ranges/limits over the correct averaging horizon.
-6. Classify the evidence, not the person's clinical condition.
+6. Classify intake evidence while reserving clinical classification for a
+   qualified healthcare process.
 7. Persist output plus input fingerprint and supersession relationship.
 
 ## Output per nutrient
@@ -46,8 +47,9 @@ unlogged meal was not consumed.
 | actionability            | Informational, planner objective, safety limit, or no action |
 
 “Below” over one day means below the selected intake reference for that period;
-it MUST NOT be labeled “deficient.” “Above” requires policy-aware handling of
-upper limits and source categories and MUST NOT automatically imply toxicity.
+the label is “below reference.” “Above” requires policy-aware handling of upper
+limits and source categories; toxicity assessment requires a qualified clinical
+process.
 
 ## Late corrections and recomputation
 
