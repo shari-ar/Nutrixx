@@ -32,6 +32,7 @@ export const RecipeIdentityV1Schema = z.strictObject({
 export const RecipeIngredientReferenceV1Schema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('food'),
+    catalogReleaseId: z.string().trim().min(1).max(200),
     foodId: CanonicalIdSchema,
     foodRevision: z.int().positive(),
   }),

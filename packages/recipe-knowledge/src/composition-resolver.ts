@@ -17,6 +17,7 @@ export class CatalogRecipeCompositionResolverV1
 {
   public constructor(
     private readonly catalog: FoodCatalogIndexV1,
+    private readonly catalogReleaseId: string,
     private readonly recipeLookup: RecipeNutritionLookupV1 = () => null,
   ) {}
 
@@ -39,6 +40,10 @@ export class CatalogRecipeCompositionResolverV1
             unit: nutrient.per100Gram.unit,
           }
         : { state: 'unknown', reason: 'not-resolvable' };
+    }
+
+    if (reference.catalogReleaseId !== this.catalogReleaseId) {
+      return { state: 'unknown', reason: 'not-resolvable' };
     }
 
     const observations = this.catalog

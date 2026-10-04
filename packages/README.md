@@ -9,6 +9,7 @@ Reusable, independently testable building blocks consumed by applications.
 | `canonical-schema/`       | Storage-neutral canonical records and serialization         |
 | `config/`                 | Shared tool and runtime configuration contracts             |
 | `contracts/`              | Public machine-readable API contracts                       |
+| `consumption/`            | Append-only meal intake and correction ledger               |
 | `food-knowledge/`         | Food catalog models, release tooling, and local queries     |
 | `recipe-knowledge/`       | Immutable recipe versions, yield, and nutrition calculation |
 | `nutrition-engine/`       | Deterministic nutrition-domain calculations                 |

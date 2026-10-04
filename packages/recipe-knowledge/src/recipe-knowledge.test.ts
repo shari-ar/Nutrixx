@@ -23,6 +23,7 @@ const INGREDIENT_TWO_ID = '40000000-0000-4000-8000-000000000002';
 const SOURCE_ID = '50000000-0000-4000-8000-000000000001';
 const OBSERVATION_ID = '60000000-0000-4000-8000-000000000001';
 const RECORD_ID = '70000000-0000-4000-8000-000000000001';
+const CATALOG_RELEASE_ID = 'food-catalog-fixture-1';
 const NOW = '2026-10-04T12:00:00.000Z';
 
 const POLICY: RecipeCalculationPolicyV1 = {
@@ -43,7 +44,12 @@ function recipeVersion(
         ingredientId: INGREDIENT_ONE_ID,
         position: 1,
         label: 'Ingredient one',
-        reference: { kind: 'food', foodId: FOOD_ONE_ID, foodRevision: 1 },
+        reference: {
+          kind: 'food',
+          catalogReleaseId: CATALOG_RELEASE_ID,
+          foodId: FOOD_ONE_ID,
+          foodRevision: 1,
+        },
         inputQuantity: { amount: '200', unit: { system: 'ucum', code: 'g' } },
         edibleGramWeight: '200',
         retentionFactors: [
@@ -58,7 +64,12 @@ function recipeVersion(
         ingredientId: INGREDIENT_TWO_ID,
         position: 2,
         label: 'Ingredient two',
-        reference: { kind: 'food', foodId: FOOD_TWO_ID, foodRevision: 1 },
+        reference: {
+          kind: 'food',
+          catalogReleaseId: CATALOG_RELEASE_ID,
+          foodId: FOOD_TWO_ID,
+          foodRevision: 1,
+        },
         inputQuantity: { amount: '50', unit: { system: 'ucum', code: 'g' } },
         edibleGramWeight: '50',
         retentionFactors: [],
@@ -288,10 +299,18 @@ describe('Recipe Knowledge', () => {
         },
       ],
     });
-    const composition = new CatalogRecipeCompositionResolverV1(catalog);
+    const composition = new CatalogRecipeCompositionResolverV1(
+      catalog,
+      CATALOG_RELEASE_ID,
+    );
     expect(
       composition.resolve(
-        { kind: 'food', foodId: FOOD_ONE_ID, foodRevision: 1 },
+        {
+          kind: 'food',
+          catalogReleaseId: CATALOG_RELEASE_ID,
+          foodId: FOOD_ONE_ID,
+          foodRevision: 1,
+        },
         'nutrient.protein',
       ),
     ).toEqual({
@@ -301,7 +320,12 @@ describe('Recipe Knowledge', () => {
     });
     expect(
       composition.resolve(
-        { kind: 'food', foodId: FOOD_ONE_ID, foodRevision: 1 },
+        {
+          kind: 'food',
+          catalogReleaseId: CATALOG_RELEASE_ID,
+          foodId: FOOD_ONE_ID,
+          foodRevision: 1,
+        },
         'nutrient.unavailable',
       ),
     ).toEqual({ state: 'unknown', reason: 'not-provided' });
