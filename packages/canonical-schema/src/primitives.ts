@@ -57,7 +57,7 @@ export const IanaTimeZoneSchema = z
   .meta({
     description:
       'IANA time zone identifier used to interpret local civil time.',
-    examples: ['Asia/Tehran'],
+    examples: ['America/New_York'],
   });
 
 export const JsonValueSchema = z.json().meta({
