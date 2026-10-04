@@ -16,9 +16,13 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/canonical-schema/package.json packages/canonical-schema/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/consumption/package.json packages/consumption/package.json
+COPY packages/food-knowledge/package.json packages/food-knowledge/package.json
 COPY packages/persistence/package.json packages/persistence/package.json
 COPY packages/persistence-indexeddb/package.json packages/persistence-indexeddb/package.json
 COPY packages/persistence-postgresql/package.json packages/persistence-postgresql/package.json
+COPY packages/recipe-knowledge/package.json packages/recipe-knowledge/package.json
+COPY packages/user-context/package.json packages/user-context/package.json
 
 FROM base AS dependencies
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
@@ -65,6 +69,7 @@ ENV CI=true \
 RUN npm run build --workspace=@nutrixx/canonical-schema \
     && npm run build --workspace=@nutrixx/persistence \
     && npm run build --workspace=@nutrixx/persistence-indexeddb \
+    && npm run build --workspace=@nutrixx/user-context \
     && npm run build --workspace=@nutrixx/web
 
 FROM ${NODE_IMAGE} AS web
