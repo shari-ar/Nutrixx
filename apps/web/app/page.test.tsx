@@ -6,7 +6,7 @@ import Home from './page';
 vi.mock('@/components/starter-form', () => ({
   StarterForm: () => (
     <form aria-label="Nutrition starting profile">
-      <button type="submit">Preview my dashboard</button>
+      <button type="submit">Save and open dashboard</button>
     </form>
   ),
 }));
@@ -24,7 +24,7 @@ describe('Home', () => {
       screen.getByRole('form', { name: /nutrition starting profile/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /preview my dashboard/i }),
+      screen.getByRole('button', { name: /save and open dashboard/i }),
     ).toBeInTheDocument();
   });
 });

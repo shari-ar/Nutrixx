@@ -32,7 +32,7 @@ export default function Home() {
               className="rounded-xl border border-separator bg-surface/70 px-5 py-3 text-sm font-semibold"
               href="/dashboard"
             >
-              Explore the preview
+              Open dashboard
             </Link>
           </div>
 

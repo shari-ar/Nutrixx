@@ -9,7 +9,7 @@ export default function StartPage() {
         eyebrow="Your starting point"
         title="Begin with what matters most."
       />
-      <StarterForm />
+      <StarterForm collapseWhenComplete={false} />
     </div>
   );
 }

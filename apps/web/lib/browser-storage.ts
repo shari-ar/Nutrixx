@@ -10,9 +10,14 @@ import {
   type StoragePressureAssessment,
 } from '@nutrixx/persistence-indexeddb';
 
-export const LOCAL_USER_DATABASE_NAME = 'nutrixx-user-data';
-export const REFERENCE_CACHE_DATABASE_NAME = 'nutrixx-reference-cache';
-const LAST_EXPORT_STORAGE_KEY = 'nutrixx:last-verified-export';
+import {
+  LAST_EXPORT_STORAGE_KEY,
+  LOCAL_USER_DATABASE_NAME,
+  ONBOARDING_LOCATOR_STORAGE_KEY,
+  REFERENCE_CACHE_DATABASE_NAME,
+} from './storage-constants';
+
+export { LOCAL_USER_DATABASE_NAME, REFERENCE_CACHE_DATABASE_NAME };
 
 export type RetentionStatus =
   | 'persistent'
@@ -153,6 +158,7 @@ export async function clearAllLocalData(): Promise<void> {
   await deleteIndexedDbDatabase(indexedDB, LOCAL_USER_DATABASE_NAME);
   try {
     localStorage.removeItem(LAST_EXPORT_STORAGE_KEY);
+    localStorage.removeItem(ONBOARDING_LOCATOR_STORAGE_KEY);
   } catch {
     // The databases are the authority; metadata cleanup is best effort.
   }

@@ -131,6 +131,7 @@ describe('browser storage service', () => {
 
   it('clears disposable reference data before canonical user data', async () => {
     localStorage.setItem('nutrixx:last-verified-export', 'old');
+    localStorage.setItem('nutrixx:onboarding-locator', 'old');
 
     await clearAllLocalData();
 
@@ -145,5 +146,6 @@ describe('browser storage service', () => {
       LOCAL_USER_DATABASE_NAME,
     );
     expect(localStorage.getItem('nutrixx:last-verified-export')).toBeNull();
+    expect(localStorage.getItem('nutrixx:onboarding-locator')).toBeNull();
   });
 });

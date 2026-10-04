@@ -12,6 +12,7 @@ Reusable, independently testable building blocks consumed by applications.
 | `consumption/`            | Append-only meal intake and correction ledger               |
 | `food-knowledge/`         | Food catalog models, release tooling, and local queries     |
 | `recipe-knowledge/`       | Immutable recipe versions, yield, and nutrition calculation |
+| `user-context/`           | Minimal one-time profile and local persistence service      |
 | `nutrition-engine/`       | Deterministic nutrition-domain calculations                 |
 | `optimizer-engine/`       | Constraint-based recommendation optimization                |
 | `persistence/`            | Storage-neutral repository contract and conformance suite   |
