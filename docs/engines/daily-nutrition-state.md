@@ -1,18 +1,23 @@
 # Daily nutrition state
 
-| Field         | Value                                           |
-| ------------- | ----------------------------------------------- |
-| Status        | Proposed; scientific semantics require approval |
-| Audience      | Nutrition science, engine, product, quality     |
-| Owner         | Nutrixx Nutrition Science                       |
-| Last reviewed | 2026-09-27                                      |
+| Field         | Value                                                  |
+| ------------- | ------------------------------------------------------ |
+| Status        | Implementation policy accepted; release review pending |
+| Audience      | Nutrition science, engine, product, quality            |
+| Owner         | Nutrixx Nutrition Science                              |
+| Last reviewed | 2026-10-10                                             |
 
 ## Definition
 
 Daily Nutrition State is an immutable estimate of recorded dietary intake for
 an explicit local-day or rolling period, compared with the applicable target
 policy. Body-store measurement and diagnosis require qualified clinical
-processes, while the state reflects recorded intake exclusively.
+processes, while the state reflects recorded intake exclusively. Accepted
+period, terminology, and uncertainty policies appear in
+[ADR-0008](../decisions/ADR-0008-recorded-intake-state-semantics.md),
+[ADR-0009](../decisions/ADR-0009-nutrition-day-and-rolling-periods.md), and
+[ADR-0010](../decisions/ADR-0010-intake-uncertainty-and-abstention.md).
+Their independent scientific release reviews precede user-facing activation.
 
 ## Inputs
 
@@ -42,14 +47,15 @@ processes, while the state reflects recorded intake exclusively.
 | coverage/completeness    | How much expected source information was known               |
 | uncertainty/limitations  | Material range and assumptions                               |
 | target range/type/source | Exact applicable policy snapshot                             |
-| comparison               | below/within/above/indeterminate under policy semantics      |
+| comparison               | Evidence-limited reference relation or indeterminate         |
 | contributors             | Major foods/items with trace references                      |
 | actionability            | Informational, planner objective, safety limit, or no action |
 
-“Below” over one day means below the selected intake reference for that period;
-the label is “below reference.” “Above” requires policy-aware handling of upper
-limits and source categories; toxicity assessment requires a qualified clinical
-process.
+The public label scopes any decisive relation to **recorded intake**. A
+single-day result expresses a logged observation, while the rolling trend
+shows seven completed periods with explicit gaps and comparable targets.
+Applicable upper limits retain source-category rules; toxicity assessment
+requires a qualified clinical process.
 
 ## Late corrections and recomputation
 

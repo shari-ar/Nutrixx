@@ -5,7 +5,7 @@
 | Status        | Process definition           |
 | Audience      | Architecture and engineering |
 | Owner         | Nutrixx Architecture         |
-| Last reviewed | 2026-10-04                   |
+| Last reviewed | 2026-10-10                   |
 
 ADRs capture decisions whose rationale must survive code changes. Use
 `ADR-NNNN-short-title.md` and the [template](ADR-0000-template.md).
@@ -19,10 +19,18 @@ ADRs capture decisions whose rationale must survive code changes. Use
 | [ADR-0005](ADR-0005-tool-mediated-generative-ai.md)                  | Generative AI is non-authoritative and tool-mediated                | Proposed |
 | [ADR-0006](ADR-0006-browser-support-and-local-storage-resilience.md) | Supported browsers and resilient local storage                      | Accepted |
 | [ADR-0007](ADR-0007-food-catalog-sources-and-release-quality.md)     | Food catalog sources, regional coverage, cadence, and quality gates | Accepted |
+| [ADR-0008](ADR-0008-recorded-intake-state-semantics.md)              | Recorded intake state meaning and user-safe language                | Accepted |
+| [ADR-0009](ADR-0009-nutrition-day-and-rolling-periods.md)            | Nutrition-day boundaries, travel, and rolling periods               | Accepted |
+| [ADR-0010](ADR-0010-intake-uncertainty-and-abstention.md)            | Uncertainty propagation and abstention                              | Accepted |
 
 Accepted ADRs are immutable history. A new ADR supersedes an old one and links
 both directions. Overview documents summarize and link while ADRs remain the
 exclusive decision source.
+
+ADR-0008 and ADR-0010 accept conservative implementation policies while their
+scientific release reviews remain pending. Acceptance authorizes Stage 3
+engineering; release activation follows the independent scientific and quality
+gates recorded in those ADRs.
 
 Statuses: Proposed, Accepted, Rejected, Deprecated, Superseded.
 

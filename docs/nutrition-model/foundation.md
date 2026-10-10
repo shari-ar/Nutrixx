@@ -5,7 +5,7 @@
 | Status        | Proposed; requires qualified nutrition-science approval |
 | Audience      | Nutrition science, engine and data engineers            |
 | Owner         | Nutrixx Nutrition Science                               |
-| Last reviewed | 2026-09-22                                              |
+| Last reviewed | 2026-10-10                                              |
 
 ## Nutrient ontology
 
@@ -111,6 +111,9 @@ Uncertainty sources—portion, food composition, measurement, activity estimate,
 model parameter, and target applicability—are tracked separately. A critical
 unknown produces NEEDS_INPUT or abstention when it could change safety or the
 recommended action.
+The accepted Stage 3 implementation policy for comparison and abstention is specified in
+[ADR-0010](../decisions/ADR-0010-intake-uncertainty-and-abstention.md);
+qualified independent review remains required before user-facing activation.
 
 ## Bioavailability and interactions
 

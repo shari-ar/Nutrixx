@@ -26,6 +26,13 @@ authoritative/primary sources.
 
 ## Lifecycle
 
+Product-approved, conservative implementation policies may guide inactive
+Stage 3 engineering before independent scientific review. Activation of a
+scientific rule or user-facing scientific comparison requires the qualified
+review, evaluation, and effective-dated release process below. An accepted
+implementation ADR records the engineering choice; its pending release-review
+field records the remaining scientific gate.
+
 ```mermaid
 flowchart LR
     P[Proposed evidence record] --> R[Independent scientific review]
