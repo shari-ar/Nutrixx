@@ -15,10 +15,10 @@
 | [AI-assisted capture](ai-assisted-capture.md)           | Safe hosted and user-enabled local draft generation          |
 | [Conversational assistant](conversational-assistant.md) | Ultimate tool-mediated, grounded conversation                |
 
-Engines are deterministic, framework-free, side-effect-free packages. Callers
-resolve immutable inputs before invocation and persist immutable outputs after
-invocation. Adapters handle databases, networks, environment variables, and
-user-facing prose.
+Engine calculations are deterministic, framework-free, and side-effect-free.
+Callers resolve immutable inputs before invocation. Local ledger adapters
+persist immutable outputs through the shared canonical repository; other
+adapters handle networks, environment variables, and user-facing prose.
 
 The AI documents describe orchestration adapters around the deterministic
 core as supporting capabilities. Model output remains a candidate until it

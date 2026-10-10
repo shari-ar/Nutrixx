@@ -1,11 +1,11 @@
 # Daily nutrition state
 
-| Field         | Value                                                  |
-| ------------- | ------------------------------------------------------ |
-| Status        | Implementation policy accepted; release review pending |
-| Audience      | Nutrition science, engine, product, quality            |
-| Owner         | Nutrixx Nutrition Science                              |
-| Last reviewed | 2026-10-10                                             |
+| Field         | Value                                               |
+| ------------- | --------------------------------------------------- |
+| Status        | Local calculation implemented; presentation pending |
+| Audience      | Nutrition science, engine, product, quality         |
+| Owner         | Nutrixx Nutrition Science                           |
+| Last reviewed | 2026-10-10                                          |
 
 ## Definition
 
@@ -30,28 +30,43 @@ precedes public launch under
 - nutrition engine/rule release;
 - late-data watermark and prior snapshot reference when incremental.
 
+The version 1 local implementation consumes the current committed meal
+revisions from the Consumption ledger. Each meal carries pinned food/recipe
+references and its recorded nutrition calculation. A revised food dataset
+affects new calculations; re-evaluating an existing meal creates a corrected
+meal revision with the chosen source version. The Nutrition State fingerprint
+includes the meal revisions, Health Context, target release, and zone policy.
+
 ## Calculation
 
-1. Normalize each known item quantity through its traceable portion path.
-2. Calculate nutrient amounts and quality metadata per item.
-3. Aggregate exact known amounts without converting unknowns to zero.
-4. Propagate completeness and uncertainty by nutrient.
-5. Compare with applicable ranges/limits over the correct averaging horizon.
-6. Classify intake evidence while reserving clinical classification for a
-   qualified healthcare process.
-7. Persist output plus input fingerprint and supersession relationship.
+1. Read the current accepted meal revision and its pinned nutrition result.
+2. Assign each occurrence instant to an effective-dated IANA nutrition day.
+3. Map compatible USDA nutrient identifiers and units to target concepts.
+4. Sum known decimal amounts exactly; carry missing meals and items separately.
+5. Select intake references and applicable upper limits for the dated Health
+   Context and market. Compare only when evidence supports a stable relation.
+6. Build seven completed daily states and a descriptive trend from comparable
+   observed ordinary periods. Preserve missing and travel-adjusted periods.
+7. Commit changed daily and rolling snapshots atomically with fingerprints,
+   input watermark, calculation version, and supersession links.
+
+The current implementation keeps AMDR energy-share comparisons indeterminate
+while validated nutrient energy attribution is being developed. It exposes the
+typed AMDR reference for subsequent evaluation. Recorded subtotals reflect
+the available composition and quantities, with individual nutrition status
+remaining outside the inference boundary.
 
 ## Output per nutrient
 
-| Field                    | Meaning                                                      |
-| ------------------------ | ------------------------------------------------------------ |
-| known amount + unit      | Sum supported by available evidence                          |
-| coverage/completeness    | How much expected source information was known               |
-| uncertainty/limitations  | Material range and assumptions                               |
-| target range/type/source | Exact applicable policy snapshot                             |
-| comparison               | Evidence-limited reference relation or indeterminate         |
-| contributors             | Major foods/items with trace references                      |
-| actionability            | Informational, planner objective, safety limit, or no action |
+| Field                    | Meaning                                              |
+| ------------------------ | ---------------------------------------------------- |
+| known amount + unit      | Sum supported by available evidence                  |
+| evidence + missing IDs   | Known recorded values and exact composition gaps     |
+| uncertainty/limitations  | Material range and assumptions                       |
+| target range/type/source | Exact applicable policy snapshot                     |
+| comparison               | Evidence-limited reference relation or indeterminate |
+| contributors             | Major foods/items with trace references              |
+| actionability            | Subsequent presentation/planner policy               |
 
 The public label scopes any decisive relation to **recorded intake**. A
 single-day result expresses a logged observation, while the rolling trend
@@ -61,14 +76,18 @@ requires a qualified clinical process.
 
 ## Late corrections and recomputation
 
-A meal edit, timezone correction, dataset/rule change, or target-policy change
-creates a new state snapshot. The old snapshot remains auditable. UI reads the
-latest accepted snapshot and exposes pending/recalculation status when relevant.
+A meal correction, zone-policy change, or target-policy change produces a new
+input fingerprint and immutable state snapshot. The prior snapshot remains
+auditable through the correction link. For a late correction, the local ledger
+can recompute the former and new nutrition days plus their dependent rolling
+windows, including historical windows outside the current seven-day view.
+The presentation layer reads the latest state for its active policy version.
 
 ## Statuses
 
-- COMPLETE: required inputs and coverage meet approved thresholds.
-- PARTIAL: useful result with disclosed non-critical gaps.
+- COMPLETE: the recorded meals and selected intake references have resolved
+  evidence under the structural version 1 rule.
+- PARTIAL: useful recorded subtotals with explicit composition or period gaps.
 - NEEDS_INPUT: a critical ambiguity can materially change safety/action.
 - OUT_OF_SCOPE: intended-use or policy boundary is crossed.
 - ERROR: technical failure; no scientific conclusion is implied.

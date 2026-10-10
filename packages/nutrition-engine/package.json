@@ -1,7 +1,7 @@
 {
   "name": "@nutrixx/nutrition-engine",
   "version": "0.1.0",
-  "description": "Versioned health-context and intake-target policy for Nutrixx.",
+  "description": "Versioned health context, intake targets, and local nutrition state for Nutrixx.",
   "private": true,
   "type": "module",
   "exports": {
@@ -22,11 +22,16 @@
     "typecheck": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
+    "@nutrixx/canonical-schema": "0.1.0",
+    "@nutrixx/consumption": "0.1.0",
+    "@nutrixx/persistence": "0.1.0",
     "@nutrixx/user-context": "0.1.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
     "@nutrixx/config": "0.1.0",
+    "@nutrixx/persistence-indexeddb": "0.1.0",
+    "fake-indexeddb": "6.2.5",
     "oxlint": "^1.58.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"

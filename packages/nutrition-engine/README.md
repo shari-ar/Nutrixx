@@ -1,13 +1,14 @@
 # Nutrition engine
 
-Deterministic nutrition policy independent of HTTP, UI, persistence, and vendor
-APIs. Stage 3 begins with versioned Health Context and intake-target selection.
+Deterministic nutrition policy independent of HTTP, UI, and vendor APIs. Stage 3
+includes versioned Health Context, intake targets, and local Nutrition State.
 
 ## Intended responsibilities
 
 - Nutrient normalization, unit conversion, aggregation, and completeness.
 - Intake targets, limits, uncertainty, and confidence-aware evaluation.
-- Pure domain models shared by API jobs and future offline pipelines.
+- Pure domain models shared by API jobs and offline pipelines.
+- A local ledger adapter for immutable daily and rolling snapshots.
 
 ## Rules
 

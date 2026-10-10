@@ -17,6 +17,26 @@ export {
   type NutrientCrosswalkEntryV1,
 } from './nutrient-crosswalk.js';
 export {
+  LocalNutritionStateLedgerV1,
+  type NutritionStateLedgerV1Options,
+  type NutritionWindowSnapshotV1,
+} from './nutrition-state-ledger.js';
+export {
+  NutritionDayPolicyV1Schema,
+  nutritionPeriodAtV1,
+  nutritionWindowAtV1,
+  type NutritionDayPolicyV1,
+  type NutritionPeriodV1,
+} from './nutrition-period.js';
+export {
+  NUTRITION_STATE_RULE_VERSION_V1,
+  calculateDailyNutritionStateV1,
+  calculateRollingNutritionStateV1,
+  type DailyNutritionStateV1,
+  type NutrientIntakeStateV1,
+  type RollingNutritionStateV1,
+} from './nutrition-state.js';
+export {
   TargetPolicyReleaseV1Schema,
   TargetRuleV1Schema,
   selectTargetV1,
