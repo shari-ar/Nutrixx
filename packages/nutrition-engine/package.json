@@ -1,0 +1,34 @@
+{
+  "name": "@nutrixx/nutrition-engine",
+  "version": "0.1.0",
+  "description": "Versioned health-context and intake-target policy for Nutrixx.",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "format": "prettier --write \"src/**/*.{md,ts}\" \"*.{json,md,ts}\"",
+    "format:check": "prettier --check \"src/**/*.{md,ts}\" \"*.{json,md,ts}\"",
+    "lint": "oxlint src/ vitest.config.ts",
+    "test": "vitest run --config ./vitest.config.ts",
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@nutrixx/user-context": "0.1.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@nutrixx/config": "0.1.0",
+    "oxlint": "^1.58.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}

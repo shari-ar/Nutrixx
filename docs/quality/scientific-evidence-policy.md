@@ -1,11 +1,11 @@
 # Scientific evidence policy
 
-| Field         | Value                                              |
-| ------------- | -------------------------------------------------- |
-| Status        | Proposed; requires qualified scientific governance |
-| Audience      | Nutrition science, product, data, engine, quality  |
-| Owner         | Nutrixx Nutrition Science                          |
-| Last reviewed | 2026-09-22                                         |
+| Field         | Value                                                      |
+| ------------- | ---------------------------------------------------------- |
+| Status        | MVP policy; qualified clinical review before public launch |
+| Audience      | Nutrition science, product, data, engine, quality          |
+| Owner         | Nutrixx Nutrition Science                                  |
+| Last reviewed | 2026-09-22                                                 |
 
 ## Evidence record
 
@@ -16,51 +16,52 @@ Every scientific rule or claim has:
 - population, geography, exposure/dose, outcome, and time horizon;
 - evidence type, quality/applicability assessment, and known limitations;
 - conflicts or uncertainty in the evidence;
-- reviewer identity/qualification and approval status;
+- publication status and accountable author; reviewer identity and qualifications once reviewed;
 - effective/sunset dates and scheduled review;
 - affected engine fixtures, metrics, and user-facing language.
 
-Approval requires qualified review in addition to a citation. Secondary
-summaries may aid discovery while normative policy traces to
-authoritative/primary sources.
+Provisional MVP publication requires a source citation, accountable author,
+documented applicability, and tests. Qualified review of the completed product
+and its rules precedes public launch. Secondary summaries may aid discovery
+while normative policy traces to authoritative/primary sources.
 
 ## Lifecycle
 
-Product-approved, conservative implementation policies may guide inactive
-Stage 3 engineering before independent scientific review. Activation of a
-scientific rule or user-facing scientific comparison requires the qualified
-review, evaluation, and effective-dated release process below. An accepted
-implementation ADR records the engineering choice; its pending release-review
-field records the remaining scientific gate.
+Conservative, source-derived policies may be published provisionally during
+MVP development after traceability and regression checks. Their outputs carry
+the provisional status. The completed product and its scientific releases
+receive qualified clinical review, evaluation, and any resulting corrections
+before public launch. An accepted implementation ADR records the engineering
+choice and its public-launch review status.
 
 ```mermaid
 flowchart LR
-    P[Proposed evidence record] --> R[Independent scientific review]
-    R -->|reject| X[Rejected / rationale retained]
+    P[Proposed evidence record] --> E[Source and regression checks]
+    E -->|pass| V[Provisional MVP publication]
+    E -->|revise| P
+    V --> R[Qualified review before public launch]
     R -->|revise| P
-    R -->|approve| C[Rule-set release candidate]
-    C --> E[Regression + safety evaluation]
-    E -->|pass| A[Effective-dated activation]
-    E -->|fail| X
+    R -->|accept| A[Reviewed public release]
     A --> M[Monitoring and scheduled review]
     M -->|new evidence/change| P
 ```
 
 High-consequence target limits, eligibility, interactions, and clinical
-exclusions require qualified review and dual approval. Emergency withdrawal is
-possible through a kill switch/policy rollback with incident follow-up.
+exclusions use conservative MVP boundaries and receive qualified review before
+public launch. Emergency withdrawal is possible through a kill switch/policy
+rollback with incident follow-up.
 
 ## Claims policy
 
 - Diagnosis requires a qualified clinical process beyond intake comparison.
 - Causal claims require causal evidence beyond association.
 - Observed outcomes and model predictions retain distinct labels.
-- “Personalized” means inputs and approved policies affect output; individual
+- “Personalized” means inputs and published policies affect output; individual
   clinical validation requires a dedicated clinical process.
 - Displayed precision stays within evidence and data precision.
 - Unsupported, disputed, population-mismatched, or stale rules remain inactive.
-- User-facing language is reviewed together with the algorithm, because wording
-  can change intended use and risk.
+- User-facing language and the algorithm receive joint review before public
+  launch, because wording can change intended use and risk.
 
 ## Source hierarchy
 
@@ -73,6 +74,7 @@ rationale and preserves incompatible values as distinct alternatives.
 ## Change control
 
 Scientific releases are immutable and semantically versioned according to
-impact. Activation requires impact analysis against representative historical
-cases, safety fixtures, subgroup reports, explanation snapshots, and a rollback
-plan. Material output changes are communicated to product and operations.
+impact. Provisional MVP publication includes impact analysis against
+representative cases, safety fixtures, explanation snapshots, and a rollback
+plan. Public release adds qualified review and subgroup evaluation. Material
+output changes are communicated to product and operations.

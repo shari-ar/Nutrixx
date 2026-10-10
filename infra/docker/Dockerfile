@@ -18,6 +18,7 @@ COPY packages/config/package.json packages/config/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/consumption/package.json packages/consumption/package.json
 COPY packages/food-knowledge/package.json packages/food-knowledge/package.json
+COPY packages/nutrition-engine/package.json packages/nutrition-engine/package.json
 COPY packages/persistence/package.json packages/persistence/package.json
 COPY packages/persistence-indexeddb/package.json packages/persistence-indexeddb/package.json
 COPY packages/persistence-postgresql/package.json packages/persistence-postgresql/package.json
@@ -73,6 +74,7 @@ RUN npm run build --workspace=@nutrixx/canonical-schema \
     && npm run build --workspace=@nutrixx/recipe-knowledge \
     && npm run build --workspace=@nutrixx/consumption \
     && npm run build --workspace=@nutrixx/user-context \
+    && npm run build --workspace=@nutrixx/nutrition-engine \
     && npm run build --workspace=@nutrixx/web
 
 FROM ${NODE_IMAGE} AS web

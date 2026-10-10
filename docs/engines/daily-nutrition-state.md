@@ -17,7 +17,9 @@ period, terminology, and uncertainty policies appear in
 [ADR-0008](../decisions/ADR-0008-recorded-intake-state-semantics.md),
 [ADR-0009](../decisions/ADR-0009-nutrition-day-and-rolling-periods.md), and
 [ADR-0010](../decisions/ADR-0010-intake-uncertainty-and-abstention.md).
-Their independent scientific release reviews precede user-facing activation.
+Their conservative rules apply during private MVP evaluation; qualified review
+precedes public launch under
+[ADR-0011](../decisions/ADR-0011-provisional-science-release-gate.md).
 
 ## Inputs
 

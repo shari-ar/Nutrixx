@@ -1,11 +1,11 @@
 # Nutrition foundation and calculation policy
 
-| Field         | Value                                                   |
-| ------------- | ------------------------------------------------------- |
-| Status        | Proposed; requires qualified nutrition-science approval |
-| Audience      | Nutrition science, engine and data engineers            |
-| Owner         | Nutrixx Nutrition Science                               |
-| Last reviewed | 2026-10-10                                              |
+| Field         | Value                                                    |
+| ------------- | -------------------------------------------------------- |
+| Status        | MVP policy; clinical review planned before public launch |
+| Audience      | Nutrition science, engine and data engineers             |
+| Owner         | Nutrixx Nutrition Science                                |
+| Last reviewed | 2026-10-10                                               |
 
 ## Nutrient ontology
 
@@ -78,7 +78,7 @@ Targets are versioned policies with:
 - amount/range, unit, averaging horizon, and effective dates;
 - whether a limit applies to all intake, supplements, fortified sources, or
   another defined subset;
-- evidence/approval state and limitations.
+- evidence/publication state and limitations.
 
 The initial authoritative baseline uses National Academies Dietary Reference
 Intakes as presented and cross-checked through NIH Office of Dietary
@@ -87,10 +87,17 @@ RDA exists, EAR supports population/uncertainty reasoning rather than an
 individual goal, UL is enforced only for its defined source and population,
 and AMDR expresses macronutrient ranges. Label Daily Value is display context,
 distinct from a personalized target. Every activated target records authority, edition,
-population, jurisdiction applicability, and effective date and requires
-independent approval from a qualified nutrition-science professional; when
+population, jurisdiction applicability, and effective date. A provisional MVP
+release records its accountable author and source-to-rule rationale. A
+qualified clinician reviews the completed product before public launch. When
 sources conflict or applicability is unknown, the engine abstains instead of
 silently selecting or averaging values.
+
+The Stage 3 release shape, minimum-input applicability, and activation gate are
+specified in [target policy version 1](target-policy-v1.md). The runtime
+selector accepts a provisional or reviewed effective release and retains the
+selected rule's source, population, horizon, intake-source scope, and
+publication status.
 
 RDA, AI, UL, and label Daily Value retain distinct meanings. Deficiency
 assessment requires a qualified clinical process, and physiological nutrient
@@ -113,7 +120,7 @@ unknown produces NEEDS_INPUT or abstention when it could change safety or the
 recommended action.
 The accepted Stage 3 implementation policy for comparison and abstention is specified in
 [ADR-0010](../decisions/ADR-0010-intake-uncertainty-and-abstention.md);
-qualified independent review remains required before user-facing activation.
+qualified clinical review follows completion of the MVP before public launch.
 
 ## Bioavailability and interactions
 
@@ -129,6 +136,12 @@ Energy is one canonical nutrient concept. Source-reported energy and energy
 derived from macronutrient factors are distinct observations with method
 metadata. A versioned selection/comparison rule prevents them from becoming two
 independent truths.
+
+The provisional maintenance-energy baseline implements the National
+Academies' [2023 age- and activity-specific EER equations](https://www.nationalacademies.org/read/26818/chapter/7).
+It preserves the equation release and input assumptions, and treats the result
+as a prediction for weight maintenance rather than a measured personal energy
+requirement or a weight-change prescription.
 
 ## Scientific references
 

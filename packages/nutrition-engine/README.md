@@ -1,7 +1,7 @@
 # Nutrition engine
 
-Reserved package boundary for deterministic nutrition calculations independent
-of HTTP, UI, persistence, and vendor APIs.
+Deterministic nutrition policy independent of HTTP, UI, persistence, and vendor
+APIs. Stage 3 begins with versioned Health Context and intake-target selection.
 
 ## Intended responsibilities
 
@@ -16,4 +16,7 @@ of HTTP, UI, persistence, and vendor APIs.
 - Version scientific rules and record their sources under `docs/nutrition-model/`.
 - Represent missing and estimated values explicitly; do not silently coerce zero.
 
-Add implementation only after its first public API and invariants are designed.
+The source map and public API are in [`src/README.md`](src/README.md). The
+source-attributed provisional US/Canada adult DRI release lives in this package;
+additional releases may be supplied by a caller. Clinical review of the
+completed product precedes public launch.

@@ -52,7 +52,7 @@ approved task-time, accessibility, integrity, and recovery objectives.
 
 ## Stage 3 — Local nutrition and health context
 
-Deliver approved Health Context rules, daily/rolling Nutrition State, targets,
+Deliver source-attributed provisional Health Context rules, daily/rolling Nutrition State, targets,
 uncertainty, contributor explanations, trends, and local version impact/
 recomputation.
 

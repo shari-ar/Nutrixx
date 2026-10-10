@@ -25,19 +25,19 @@
 
 ## Resolved decisions
 
-| ID     | Resolution                                                                                                                         | Authoritative record                                                                       |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| OD-001 | International general-wellness product for consenting adults with jurisdiction-gated launches                                      | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
-| OD-002 | Versioned DRI/NIH baseline with typed targets, explicit source boundaries, and qualified approval                                  | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
-| OD-003 | USDA FDC CC0 first release, license-gated source portfolio, international coverage corpora, and blocking quality gates             | [ADR-0007](../decisions/ADR-0007-food-catalog-sources-and-release-quality.md)              |
-| OD-004 | Recorded-intake state, explicit daily and seven-completed-day horizons, and general-wellness language                              | [ADR-0008](../decisions/ADR-0008-recorded-intake-state-semantics.md)                       |
-| OD-005 | Error-reduction assistance with physician approval required for higher-risk use                                                    | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
-| OD-007 | Effective-dated IANA nutrition-day zone, travel-aware periods, late correction, and seven completed rolling days                   | [ADR-0009](../decisions/ADR-0009-nutrition-day-and-rolling-periods.md)                     |
-| OD-009 | Evidence-bound nutrient comparisons with structural abstention and user-answerable NEEDS_INPUT                                     | [ADR-0010](../decisions/ADR-0010-intake-uncertainty-and-abstention.md)                     |
-| OD-016 | Baseline-aligned support matrix, IndexedDB authority, dynamic headroom, explicit persistence UX, and change-aware export reminders | [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md)          |
+| ID     | Resolution                                                                                                                                        | Authoritative record                                                                       |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| OD-001 | International general-wellness product for consenting adults with jurisdiction-gated launches                                                     | [Product constitution](../product/constitution.md#initial-market-and-supported-population) |
+| OD-002 | Versioned DRI/NIH baseline with typed targets, explicit source boundaries, and provisional MVP publication; qualified review before public launch | [Nutrition foundation](../nutrition-model/foundation.md#intake-targets)                    |
+| OD-003 | USDA FDC CC0 first release, license-gated source portfolio, international coverage corpora, and blocking quality gates                            | [ADR-0007](../decisions/ADR-0007-food-catalog-sources-and-release-quality.md)              |
+| OD-004 | Recorded-intake state, explicit daily and seven-completed-day horizons, and general-wellness language                                             | [ADR-0008](../decisions/ADR-0008-recorded-intake-state-semantics.md)                       |
+| OD-005 | Error-reduction assistance with physician approval required for higher-risk use                                                                   | [Product constitution](../product/constitution.md#clinical-and-higher-risk-contexts)       |
+| OD-007 | Effective-dated IANA nutrition-day zone, travel-aware periods, late correction, and seven completed rolling days                                  | [ADR-0009](../decisions/ADR-0009-nutrition-day-and-rolling-periods.md)                     |
+| OD-009 | Evidence-bound nutrient comparisons with structural abstention and user-answerable NEEDS_INPUT                                                    | [ADR-0010](../decisions/ADR-0010-intake-uncertainty-and-abstention.md)                     |
+| OD-016 | Baseline-aligned support matrix, IndexedDB authority, dynamic headroom, explicit persistence UX, and change-aware export reminders                | [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md)          |
 
 Every open decision requires an ADR, scientific policy, or product-policy record
 with alternatives, evidence, consequences, and approval before implementation.
 OD-004, OD-007, and OD-009 are accepted as implementation decisions. The
-qualified scientific and quality release gates recorded in ADR-0008 and
-ADR-0010 remain active before user-facing activation.
+conservative rules in ADR-0008 and ADR-0010 remain active. ADR-0011 sets
+qualified scientific and quality review before public launch.

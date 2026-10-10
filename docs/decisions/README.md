@@ -22,15 +22,15 @@ ADRs capture decisions whose rationale must survive code changes. Use
 | [ADR-0008](ADR-0008-recorded-intake-state-semantics.md)              | Recorded intake state meaning and user-safe language                | Accepted |
 | [ADR-0009](ADR-0009-nutrition-day-and-rolling-periods.md)            | Nutrition-day boundaries, travel, and rolling periods               | Accepted |
 | [ADR-0010](ADR-0010-intake-uncertainty-and-abstention.md)            | Uncertainty propagation and abstention                              | Accepted |
+| [ADR-0011](ADR-0011-provisional-science-release-gate.md)             | Provisional scientific policies during MVP development              | Accepted |
 
 Accepted ADRs are immutable history. A new ADR supersedes an old one and links
 both directions. Overview documents summarize and link while ADRs remain the
 exclusive decision source.
 
-ADR-0008 and ADR-0010 accept conservative implementation policies while their
-scientific release reviews remain pending. Acceptance authorizes Stage 3
-engineering; release activation follows the independent scientific and quality
-gates recorded in those ADRs.
+ADR-0008 and ADR-0010 accept conservative implementation policies. ADR-0011
+updates their review timing: provisional policies support private MVP
+evaluation, and qualified scientific review precedes public launch.
 
 Statuses: Proposed, Accepted, Rejected, Deprecated, Superseded.
 
