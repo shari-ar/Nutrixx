@@ -8,7 +8,11 @@ import { ProductIcon } from '@/components/product-icons';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { siteConfig } from '@/config/site';
 
-export const Navbar = () => {
+export const Navbar = ({
+  onboardingComplete,
+}: {
+  onboardingComplete: boolean;
+}) => {
   const pathname = usePathname();
 
   return (
@@ -23,7 +27,7 @@ export const Navbar = () => {
         </NextLink>
 
         <div className="hidden items-center gap-1 md:flex">
-          {siteConfig.navigation.map((item) => {
+          {(onboardingComplete ? siteConfig.navigation : []).map((item) => {
             const isActive = pathname.startsWith(item.href);
 
             return (
@@ -35,7 +39,7 @@ export const Navbar = () => {
                     ? 'bg-accent/10 text-accent'
                     : 'text-muted hover:bg-surface hover:text-foreground'
                 }`}
-                href={item.href}
+                href={{ pathname: item.href }}
               >
                 {item.label}
               </NextLink>
@@ -44,29 +48,31 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <NextLink
-            aria-label="Settings"
-            className="rounded-lg p-1 text-muted transition hover:text-foreground"
-            href="/settings"
-          >
-            <ProductIcon className="size-5" name="settings" />
-          </NextLink>
+          {onboardingComplete ? (
+            <NextLink
+              aria-label="Settings"
+              className="rounded-lg p-1 text-muted transition hover:text-foreground"
+              href="/settings"
+            >
+              <ProductIcon className="size-5" name="settings" />
+            </NextLink>
+          ) : null}
           <ThemeSwitch />
           <NextLink
             className="hidden rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition hover:opacity-90 sm:block"
             href="/start"
           >
-            Start now
+            {onboardingComplete ? 'Edit profile' : 'Start now'}
           </NextLink>
         </div>
       </header>
 
       <div className="flex gap-1 overflow-x-auto border-t border-separator px-4 py-2 md:hidden">
-        {siteConfig.navigation.map((item) => (
+        {(onboardingComplete ? siteConfig.navigation : []).map((item) => (
           <NextLink
             key={item.href}
             className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-muted"
-            href={item.href}
+            href={{ pathname: item.href }}
           >
             {item.label}
           </NextLink>

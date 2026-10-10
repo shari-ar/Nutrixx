@@ -90,6 +90,25 @@ export const MealRevisionV1Schema = z
     timeZone: IanaTimeZoneSchema,
     mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other']),
     items: z.array(MealItemV1Schema),
+    nutrition: z
+      .array(
+        z.discriminatedUnion('state', [
+          z.strictObject({
+            state: z.literal('known'),
+            nutrientId: CanonicalCodeSchema,
+            amount: NonnegativeCanonicalDecimalSchema,
+            unit: UnitV1Schema,
+          }),
+          z.strictObject({
+            state: z.literal('incomplete'),
+            nutrientId: CanonicalCodeSchema,
+            knownAmount: NonnegativeCanonicalDecimalSchema.optional(),
+            unit: UnitV1Schema.optional(),
+            missingItemIds: z.array(CanonicalIdSchema).min(1),
+          }),
+        ]),
+      )
+      .optional(),
     note: z.string().trim().min(1).max(2_000).optional(),
     provenance: DomainProvenanceV1Schema,
     recordedAt: UtcInstantSchema,
@@ -123,6 +142,39 @@ export const MealRevisionV1Schema = z
         path: ['items'],
         message: 'A voided meal retains history through earlier revisions.',
       });
+    }
+    if (meal.state === 'voided' && (meal.nutrition?.length ?? 0) > 0) {
+      context.addIssue({
+        code: 'custom',
+        path: ['nutrition'],
+        message: 'A voided meal cannot retain a current nutrition total.',
+      });
+    }
+    for (const nutrientId of duplicateValues(
+      meal.nutrition?.map((value) => value.nutrientId) ?? [],
+    )) {
+      context.addIssue({
+        code: 'custom',
+        path: ['nutrition'],
+        message: `Duplicate meal nutrient identifier: ${nutrientId}.`,
+      });
+    }
+    const itemIds = new Set(meal.items.map(({ itemId }) => itemId));
+    for (const [index, nutrient] of (meal.nutrition ?? []).entries()) {
+      if (nutrient.state !== 'incomplete') continue;
+      if (
+        (nutrient.knownAmount === undefined) !==
+          (nutrient.unit === undefined) ||
+        nutrient.missingItemIds.some((itemId) => !itemIds.has(itemId)) ||
+        duplicateValues(nutrient.missingItemIds).length > 0
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['nutrition', index],
+          message:
+            'Incomplete meal nutrition must identify exact missing items and a paired known amount and unit.',
+        });
+      }
     }
     for (const itemId of duplicateValues(
       meal.items.map(({ itemId }) => itemId),

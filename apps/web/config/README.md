@@ -1,11 +1,9 @@
 # Web static configuration
 
 Typed, non-secret configuration that describes Web presentation such as product
-metadata, navigation, and external links.
-
-`mock-data.ts` is a temporary exception containing presentation-only sample
-meals for the product skeleton. Remove it when Stage 1 introduces the real
-local data source; it must never become a second domain model.
+metadata, navigation, and external links. User facts, meals, recipes, and
+catalog data stay in their browser-backed domain adapters rather than static
+configuration.
 
 ## Rules
 

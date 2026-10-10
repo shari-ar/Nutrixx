@@ -1,6 +1,6 @@
 import '@/styles/globals.css';
 
-import { Navbar } from '@/components/navbar';
+import { ApplicationShell } from '@/components/application-shell';
 import { siteConfig } from '@/config/site';
 
 import { Providers } from './providers';
@@ -50,17 +50,7 @@ export default function RootLayout({
       <head />
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <Providers themeProps={{ attribute: 'class', defaultTheme: 'dark' }}>
-          <div className="relative flex min-h-screen flex-col">
-            <Navbar />
-            <main className="container mx-auto max-w-7xl flex-grow px-6">
-              {children}
-            </main>
-            <footer className="w-full border-t border-separator py-5">
-              <p className="mx-auto max-w-7xl px-6 text-sm text-muted">
-                Nutrixx · Personal nutrition, designed around real life
-              </p>
-            </footer>
-          </div>
+          <ApplicationShell>{children}</ApplicationShell>
         </Providers>
       </body>
     </html>

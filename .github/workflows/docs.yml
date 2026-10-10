@@ -50,6 +50,23 @@ jobs:
       - name: Build VitePress site
         run: npm run docs:build
 
+      - name: Download approved catalog release for same-origin delivery
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'shari-ar/Nutrixx'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release download food-catalog-usda-2026-04-30.1
+          --repo "$GITHUB_REPOSITORY"
+          --pattern 'food-catalog-usda-2026-04-30.1.v1.json.gz'
+          --pattern 'food-catalog-usda-2026-04-30.1.receipt.json'
+          --dir .catalog-release
+
+      - name: Stage catalog release for same-origin delivery
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.repository == 'shari-ar/Nutrixx'
+        run: |
+          mkdir -p docs/.vitepress/dist/catalog
+          cp .catalog-release/* docs/.vitepress/dist/catalog/
+
       - name: Upload GitHub Pages artifact
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

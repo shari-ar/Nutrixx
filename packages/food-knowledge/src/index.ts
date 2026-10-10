@@ -35,3 +35,15 @@ export {
   type StagedUsdaFoodV1,
   type UsdaFoodDataCentralIdFactory,
 } from './usda-fooddata-central.js';
+export {
+  CustomFoodHeadRecordV1Schema,
+  CustomFoodHeadV1Schema,
+  CustomFoodLedgerV1,
+  CustomFoodPortionV1Schema,
+  CustomFoodVersionRecordV1Schema,
+  CustomFoodVersionV1Schema,
+  SaveCustomFoodCommandV1Schema,
+  type CustomFoodLedgerV1Options,
+  type CustomFoodVersionV1,
+  type SaveCustomFoodCommandV1,
+} from './custom-food.js';

@@ -26,6 +26,7 @@ source; the website is a generated presentation of it.
 | System boundaries and technical strategy      | [Target architecture](architecture/target-architecture.md)        |
 | Local-first operation and cloud evolution     | [Local-first architecture](architecture/local-first-evolution.md) |
 | Canonical data, lineage, and versioning       | [Data architecture](data/architecture.md)                         |
+| Data relationships implemented so far         | [Current logical ER](data/current-logical-er.md)                  |
 | Calculations and optimization                 | [Engine documentation](engines/README.md)                         |
 | API behavior                                  | [API conventions](api/conventions.md)                             |
 | Security, privacy, and safety                 | [Security and privacy](security-privacy/README.md)                |

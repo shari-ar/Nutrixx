@@ -44,6 +44,7 @@ export const FoodV1Schema = z.strictObject({
   foodId: CanonicalIdSchema,
   revision: z.int().positive(),
   foodClass: CanonicalCodeSchema,
+  approximatePriceUsdPer100g: NonnegativeCanonicalDecimalSchema.optional(),
   descriptions: z.array(LocalizedFoodTextV1Schema).min(1),
   categories: z.array(
     z.strictObject({

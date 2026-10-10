@@ -146,10 +146,14 @@ await pipeline(
 await rename(temporaryGzipPath, gzipPath);
 await unlink(temporaryJsonPath);
 const gzipStats = await stat(gzipPath);
+const artifactSha256 = createHash('sha256')
+  .update(await readFile(gzipPath))
+  .digest('hex');
 const receipt = {
   releaseId: RELEASE_ID,
   artifact: path.basename(gzipPath),
   compressedByteLength: gzipStats.size,
+  artifactSha256,
   uncompressedPayloadByteLength: release.byteLength,
   manifest,
   manifestSha256: release.manifestSha256,

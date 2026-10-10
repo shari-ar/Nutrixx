@@ -5,10 +5,11 @@ stack instead of maintaining a second container definition.
 
 ## Contents
 
-| File                | Responsibility                                                |
-| ------------------- | ------------------------------------------------------------- |
-| `devcontainer.json` | VS Code, Codespaces, ports, workspace, and lifecycle settings |
-| `wait-for-api.mjs`  | Bounded readiness check after the container starts            |
+| File                        | Responsibility                                                |
+| --------------------------- | ------------------------------------------------------------- |
+| `devcontainer.json`         | VS Code, Codespaces, ports, workspace, and lifecycle settings |
+| `wait-for-api.mjs`          | Bounded readiness check after the container starts            |
+| `prepare-local-catalog.mjs` | Retrieves and verifies the current offline catalog release    |
 
 ## Operating rules
 
@@ -31,6 +32,14 @@ dependency layer and runs the locked `npm ci` automatically. The one-shot
 `dev-dependencies` service then synchronizes those exact dependencies into the
 named volumes used by API and Web. No lifecycle hook performs an unlocked
 install.
+
+After dependencies are ready, the lifecycle hook retrieves the approved,
+immutable catalog artifact from the same-origin catalog delivery endpoint,
+verifies its release receipt and SHA-256 digest, and writes it to the ignored
+`apps/web/public/catalog/` runtime path. The Web application offers the
+person an explicit one-click local installation into its reference cache. A
+temporary delivery outage leaves the development environment usable and prints
+a clear warning; retrying the Dev Container startup retries the artifact.
 
 ## GitHub Codespaces
 

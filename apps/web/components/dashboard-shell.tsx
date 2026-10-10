@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { CatalogInstaller } from '@/components/catalog-installer';
 import { DashboardCard } from '@/components/dashboard-card';
 import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
 
@@ -126,6 +127,8 @@ export function DashboardShell({ store }: { store?: OnboardingReader }) {
           ))}
         </dl>
       </header>
+
+      <CatalogInstaller />
 
       <section
         aria-label="Daily overview"

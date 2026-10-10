@@ -15,16 +15,18 @@ boundaries, and route-level metadata.
 
 ## Route map
 
-| Route             | Responsibility                                     |
-| ----------------- | -------------------------------------------------- |
-| `/start`          | Dedicated starting-profile form                    |
-| `/dashboard`      | Daily overview and domain entry points             |
-| `/meals`          | Previous and upcoming meal timeline                |
-| `/meals/[mealId]` | Recipe and nutrition detail for one meal           |
-| `/nutrition`      | Action-oriented nutrient coverage                  |
-| `/activity`       | Activity, sleep, and recovery context              |
-| `/hydration`      | Water intake and target detail                     |
-| `/settings`       | Profile, local data, backup, and advanced controls |
+| Route             | Responsibility                                             |
+| ----------------- | ---------------------------------------------------------- |
+| `/start`          | Dedicated starting-profile form                            |
+| `/dashboard`      | Daily overview and domain entry points                     |
+| `/meals`          | Local meal ledger, manual logging, correction, and removal |
+| `/meals/[mealId]` | Retained item snapshots and revision history               |
+| `/foods`          | Reference catalog installation, search, and custom foods   |
+| `/recipes`        | Versioned local recipes with exact ingredient references   |
+| `/nutrition`      | Action-oriented nutrient coverage                          |
+| `/activity`       | Activity, sleep, and recovery context                      |
+| `/hydration`      | Water intake and target detail                             |
+| `/settings`       | Profile, local data, backup, and advanced controls         |
 
 ## Conventions
 

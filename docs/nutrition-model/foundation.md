@@ -59,6 +59,13 @@ output concentration
 Missing ingredient values propagate into coverage. A retention factor is used
 only when source, applicability, and rule version are approved; otherwise the
 system presents the explicit assumption or withholds unsupported precision.
+The current local recipe editor accepts a user-supplied cooking-loss percentage
+for a named nutrient and ingredient, records its rule as user-entered, and
+applies the corresponding retained fraction. An omitted percentage leaves the
+ingredient composition unadjusted and its retention evidence unspecified.
+Already-cooked food observations require no second cooking adjustment. Future
+curated factors must map a food and preparation method to a documented source,
+such as the [USDA Table of Nutrient Retention Factors, Release 6](https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/methods-and-application-of-food-composition-laboratory/mafcl-site-pages/nutrient-retention-factors/).
 
 ## Intake targets
 
@@ -121,6 +128,24 @@ metadata. A versioned selection/comparison rule prevents them from becoming two
 independent truths.
 
 ## Scientific references
+
+USDA cooking estimates use Release 6 true nutrient-retention factors for a
+matching raw-food treatment. Each factor multiplies the raw ingredient's
+nutrient total before recipe concentration is calculated. Release 2
+meat/poultry and curated Agriculture Handbook 102 legume, vegetable, and grain
+weight yields multiply raw ingredient weights for matching food identities and
+methods. Yield factors may exceed one when water is absorbed. SR Legacy FDC IDs
+are crosswalked to NDB numbers before matching raw foods to yield rows. Recipe
+steps linked to specific ingredients suggest treatment and yield rows when the
+method resolves to one unique match. Ambiguous or unmatched methods stay under
+manual selection, and a measured final edible weight supplies the denominator
+for recipes outside the audited yield coverage. The pinned source tables record
+release provenance and SHA-256 hashes; published recipe versions retain the
+applied treatment and yield rules.
+
+- [USDA nutrient retention factors, Release 6](https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/methods-and-application-of-food-composition-laboratory/mafcl-site-pages/nutrient-retention-factors/)
+- [USDA cooking yields for meat and poultry, Release 2](https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/methods-and-application-of-food-composition-laboratory/mafcl-site-pages/cooking-yields/)
+- [USDA Agriculture Handbook 102: Food Yields Summarized by Different Stages of Preparation](https://www.ars.usda.gov/SP2UserFiles/Place/80400525/Data/Classics/ah102.pdf)
 
 - [NIH Office of Dietary Supplements: Dietary Reference Intakes](https://ods.od.nih.gov/HealthInformation/nutrientrecommendations/)
 - [National Academies DRI resources](https://www.nationalacademies.org/our-work/dietary-reference-intakes-tables-and-application)

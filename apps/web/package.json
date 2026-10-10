@@ -20,7 +20,11 @@
   "dependencies": {
     "@nutrixx/canonical-schema": "0.1.0",
     "@nutrixx/config": "0.1.0",
+    "@nutrixx/consumption": "0.1.0",
+    "@nutrixx/food-knowledge": "0.1.0",
+    "@nutrixx/persistence": "0.1.0",
     "@nutrixx/persistence-indexeddb": "0.1.0",
+    "@nutrixx/recipe-knowledge": "0.1.0",
     "@nutrixx/user-context": "0.1.0",
     "@heroui/react": "3.2.5",
     "@heroui/styles": "3.2.5",

@@ -278,6 +278,25 @@ describe('Food Knowledge foundation', () => {
     ).toThrow();
   });
 
+  it('accepts an optional nonnegative illustrative USD price per 100 g', () => {
+    const payload = fixturePayload();
+    const [first, ...remaining] = payload.foods;
+    if (first === undefined) throw new Error('The fixture requires a food.');
+    const priced = {
+      ...payload,
+      foods: [{ ...first, approximatePriceUsdPer100g: '0.4' }, ...remaining],
+    };
+    expect(FoodCatalogPayloadV1Schema.parse(priced).foods[0]).toMatchObject({
+      approximatePriceUsdPer100g: '0.4',
+    });
+    expect(() =>
+      FoodCatalogPayloadV1Schema.parse({
+        ...priced,
+        foods: [{ ...first, approximatePriceUsdPer100g: '-0.4' }, ...remaining],
+      }),
+    ).toThrow();
+  });
+
   it('derives release counts and deterministic coverage', () => {
     const payload = fixturePayload();
     const manifest = fixtureManifest(payload);
@@ -303,6 +322,7 @@ describe('Food Knowledge foundation', () => {
       foods: [
         {
           ...first,
+          categories: [{ locale: 'en', description: 'Orchard fruit' }],
           descriptions: [
             ...first.descriptions,
             { locale: 'es', value: 'Manzana', kind: 'primary' },
@@ -316,6 +336,9 @@ describe('Food Knowledge foundation', () => {
         matchedDescription: { locale: 'es', value: 'Manzana' },
         match: 'prefix',
       },
+    ]);
+    expect(catalog.search('orchard')).toMatchObject([
+      { matchedDescription: { value: 'Apple, raw' }, match: 'category' },
     ]);
     expect(catalog.getFood(first.foodId)?.foodId).toBe(first.foodId);
     expect(catalog.listPortions(first.foodId, first.revision)).toHaveLength(1);

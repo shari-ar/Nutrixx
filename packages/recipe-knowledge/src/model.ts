@@ -14,7 +14,10 @@ import {
   createCanonicalRecordDraftV1Schema,
   createCanonicalRecordV1Schema,
 } from '@nutrixx/canonical-schema';
-import { LocalizedFoodTextV1Schema } from '@nutrixx/food-knowledge';
+import {
+  FoodCatalogPayloadV1Schema,
+  LocalizedFoodTextV1Schema,
+} from '@nutrixx/food-knowledge';
 
 export const PositiveCanonicalDecimalSchema =
   NonnegativeCanonicalDecimalSchema.refine(
@@ -60,6 +63,8 @@ export const RecipeIngredientV1Schema = z.strictObject({
   }),
   edibleGramWeight: PositiveCanonicalDecimalSchema,
   retentionFactors: z.array(RecipeRetentionFactorV1Schema),
+  cookingYieldFactor: PositiveCanonicalDecimalSchema.optional(),
+  cookingYieldRule: VersionReferenceV1Schema.optional(),
 });
 
 export const RecipeYieldV1Schema = z.strictObject({
@@ -71,13 +76,14 @@ export const RecipeYieldV1Schema = z.strictObject({
     'calculated',
     'policy-approved',
   ]),
-  yieldFactor: CanonicalFractionSchema.optional(),
+  yieldFactor: PositiveCanonicalDecimalSchema.optional(),
   yieldRule: VersionReferenceV1Schema.optional(),
 });
 
 export const RecipePreparationStepV1Schema = z.strictObject({
   position: z.int().positive(),
   instruction: z.string().trim().min(1).max(5_000),
+  ingredientIds: z.array(CanonicalIdSchema).optional(),
 });
 
 export const RecipeCalculationRuleV1Schema = z.strictObject({
@@ -102,6 +108,12 @@ export const RecipeVersionV1Schema = z
     names: z.array(LocalizedFoodTextV1Schema).min(1),
     ingredients: z.array(RecipeIngredientV1Schema).min(1),
     preparationSteps: z.array(RecipePreparationStepV1Schema),
+    outputFood: z
+      .strictObject({
+        foodId: CanonicalIdSchema,
+        nutrition: z.lazy(() => RecipeNutritionCalculationV1Schema),
+      })
+      .optional(),
     yield: RecipeYieldV1Schema,
     calculationRule: RecipeCalculationRuleV1Schema,
     provenance: z.strictObject({
@@ -154,6 +166,45 @@ export const RecipeVersionV1Schema = z
           message: `Duplicate retention factor for nutrient: ${nutrientId}.`,
         });
       }
+    }
+
+    const ingredientIds = new Set(
+      recipe.ingredients.map(({ ingredientId }) => ingredientId),
+    );
+    for (const [stepIndex, step] of recipe.preparationSteps.entries()) {
+      for (const ingredientId of step.ingredientIds ?? []) {
+        if (!ingredientIds.has(ingredientId)) {
+          context.addIssue({
+            code: 'custom',
+            path: ['preparationSteps', stepIndex, 'ingredientIds'],
+            message:
+              'A preparation step must reference an ingredient in this recipe version.',
+          });
+        }
+      }
+      if (duplicates(step.ingredientIds ?? []).length > 0) {
+        context.addIssue({
+          code: 'custom',
+          path: ['preparationSteps', stepIndex, 'ingredientIds'],
+          message: 'A preparation step cannot repeat one ingredient.',
+        });
+      }
+    }
+
+    if (
+      recipe.outputFood !== undefined &&
+      (recipe.outputFood.nutrition.recipeId !== recipe.recipeId ||
+        recipe.outputFood.nutrition.recipeVersion !== recipe.version ||
+        recipe.outputFood.nutrition.finalEdibleGramWeight !==
+          recipe.yield.finalEdibleGramWeight ||
+        recipe.outputFood.nutrition.servings !== recipe.yield.servings)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['outputFood'],
+        message:
+          'The output food nutrition must describe this exact recipe version.',
+      });
     }
 
     if (
@@ -222,6 +273,54 @@ export const RecipeNutritionCalculationV1Schema = z.strictObject({
   nutrients: z.array(RecipeNutrientCalculationV1Schema),
 });
 
+export const RecipeOutputFoodVersionV1Schema = z
+  .strictObject({
+    foodId: CanonicalIdSchema,
+    ownerSubjectId: CanonicalIdSchema,
+    revision: z.int().positive(),
+    recipeId: CanonicalIdSchema,
+    recipeVersion: z.int().positive(),
+    catalog: FoodCatalogPayloadV1Schema,
+    nutrition: RecipeNutritionCalculationV1Schema,
+    publishedAt: UtcInstantSchema,
+  })
+  .refine(
+    (food) =>
+      food.revision === food.recipeVersion &&
+      food.nutrition.recipeId === food.recipeId &&
+      food.nutrition.recipeVersion === food.recipeVersion &&
+      food.catalog.foods.length === 1 &&
+      food.catalog.foods[0]?.foodId === food.foodId &&
+      food.catalog.foods[0]?.revision === food.revision &&
+      food.catalog.portions.length >= 1 &&
+      food.catalog.composition.length === food.nutrition.nutrients.length &&
+      food.nutrition.nutrients.every((nutrient) =>
+        food.catalog.composition.some(
+          (observation) =>
+            observation.nutrientId === nutrient.nutrientId &&
+            (nutrient.state === 'known'
+              ? observation.value.state === 'known' &&
+                observation.value.amount === nutrient.per100Gram.amount &&
+                observation.value.unit.code === nutrient.per100Gram.unit.code
+              : observation.value.state === 'unknown'),
+        ),
+      ),
+    { message: 'An output food must describe its exact recipe version.' },
+  );
+
+export const RecipeOutputFoodVersionRecordV1Schema =
+  createCanonicalRecordV1Schema(
+    'food.recipe-output-version',
+    1,
+    RecipeOutputFoodVersionV1Schema,
+  ).refine(
+    (record) =>
+      record.owningContext === 'food-knowledge' &&
+      record.subjectId === record.payload.ownerSubjectId &&
+      record.logicalVersion === record.payload.revision,
+    { message: 'Recipe output food record envelope is invalid.' },
+  );
+
 export const RecipeIdentityRecordDraftV1Schema =
   createCanonicalRecordDraftV1Schema(
     'recipe.identity',
@@ -274,6 +373,9 @@ export type ResolvedIngredientCompositionV1 = z.infer<
 >;
 export type RecipeNutritionCalculationV1 = z.infer<
   typeof RecipeNutritionCalculationV1Schema
+>;
+export type RecipeOutputFoodVersionV1 = z.infer<
+  typeof RecipeOutputFoodVersionV1Schema
 >;
 export type RecipeIdentityRecordDraftV1 = z.infer<
   typeof RecipeIdentityRecordDraftV1Schema

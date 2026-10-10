@@ -1,3 +1,8 @@
 # Meal Detail Route
 
-This dynamic route is the canonical view for a meal. It owns the meal summary, recipe ingredients, preparation steps, and nutrition snapshot. Keep the route identified by a stable meal ID and return the framework-standard not-found response for unknown IDs.
+This dynamic route reads a stable local meal ID and presents the retained item
+snapshots and complete revision history. It handles an unavailable record with a
+recoverable route state because browser data remains under the user's control.
+The current revision also displays its saved nutrient totals and identifies
+incomplete evidence separately from measured zero. Previously published
+revisions remain readable with their original fields.

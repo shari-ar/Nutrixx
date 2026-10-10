@@ -18,6 +18,7 @@ import {
   type RecipeCalculationPolicyV1,
   type RecipeIngredientReferenceV1,
   type RecipeNutritionCalculationV1,
+  type RecipeIngredientV1,
   type RecipeVersionV1,
   type ResolvedIngredientCompositionV1,
 } from './model.js';
@@ -66,10 +67,36 @@ export function calculateRecipeNutritionV1(
     throw new TypeError('At least one unique nutrient identifier is required.');
   }
 
-  const finalYield = rationalFromCanonicalDecimal(
-    recipe.yield.finalEdibleGramWeight,
-  );
-  const servings = rationalFromCanonicalDecimal(recipe.yield.servings);
+  const nutrients = calculateIngredientNutritionV1({
+    ingredients: recipe.ingredients,
+    nutrientIds,
+    finalEdibleGramWeight: recipe.yield.finalEdibleGramWeight,
+    servings: recipe.yield.servings,
+    resolver,
+    decimalPlaces: policy.decimalPlaces,
+  });
+
+  return RecipeNutritionCalculationV1Schema.parse({
+    recipeId: recipe.recipeId,
+    recipeVersion: recipe.version,
+    finalEdibleGramWeight: recipe.yield.finalEdibleGramWeight,
+    servings: recipe.yield.servings,
+    calculationRule: policy.rule,
+    nutrients,
+  });
+}
+
+export function calculateIngredientNutritionV1(input: {
+  readonly ingredients: readonly RecipeIngredientV1[];
+  readonly nutrientIds: readonly string[];
+  readonly finalEdibleGramWeight: string;
+  readonly servings: string;
+  readonly resolver: RecipeIngredientCompositionResolverV1;
+  readonly decimalPlaces: number;
+}): RecipeNutritionCalculationV1['nutrients'] {
+  const { ingredients, nutrientIds, resolver, decimalPlaces } = input;
+  const finalYield = rationalFromCanonicalDecimal(input.finalEdibleGramWeight);
+  const servings = rationalFromCanonicalDecimal(input.servings);
   const nutrients: RecipeNutritionCalculationV1['nutrients'][number][] = [];
 
   for (const nutrientId of nutrientIds) {
@@ -79,7 +106,7 @@ export function calculateRecipeNutritionV1(
     const missingIngredientIds: string[] = [];
     const reasonCodes = new Set<string>();
 
-    for (const ingredient of recipe.ingredients) {
+    for (const ingredient of ingredients) {
       const resolved = ResolvedIngredientCompositionV1Schema.parse(
         resolver.resolve(ingredient.reference, nutrientId),
       );
@@ -120,14 +147,14 @@ export function calculateRecipeNutritionV1(
           ? {}
           : {
               knownTotal: {
-                amount: roundRationalHalfEven(total, policy.decimalPlaces),
+                amount: roundRationalHalfEven(total, decimalPlaces),
                 unit,
               },
             }),
         completeness: roundRationalHalfEven(
           {
             numerator: BigInt(knownIngredients),
-            denominator: BigInt(recipe.ingredients.length),
+            denominator: BigInt(ingredients.length),
           },
           6,
         ),
@@ -144,7 +171,7 @@ export function calculateRecipeNutritionV1(
       state: 'known',
       nutrientId,
       total: {
-        amount: roundRationalHalfEven(total, policy.decimalPlaces),
+        amount: roundRationalHalfEven(total, decimalPlaces),
         unit,
       },
       per100Gram: {
@@ -153,14 +180,14 @@ export function calculateRecipeNutritionV1(
             multiplyRational(total, ONE_HUNDRED_RATIONAL),
             finalYield,
           ),
-          policy.decimalPlaces,
+          decimalPlaces,
         ),
         unit,
       },
       perServing: {
         amount: roundRationalHalfEven(
           divideRational(total, servings),
-          policy.decimalPlaces,
+          decimalPlaces,
         ),
         unit,
       },
@@ -168,12 +195,5 @@ export function calculateRecipeNutritionV1(
     });
   }
 
-  return RecipeNutritionCalculationV1Schema.parse({
-    recipeId: recipe.recipeId,
-    recipeVersion: recipe.version,
-    finalEdibleGramWeight: recipe.yield.finalEdibleGramWeight,
-    servings: recipe.yield.servings,
-    calculationRule: policy.rule,
-    nutrients,
-  });
+  return nutrients;
 }

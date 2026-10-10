@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -31,6 +32,7 @@ const verified = await createFoodCatalogReleaseV1({
 const checks = {
   artifact: path.basename(artifactPath),
   compressedByteLength: artifactStats.size,
+  artifactSha256: createHash('sha256').update(compressed).digest('hex'),
   uncompressedPayloadByteLength: verified.byteLength,
   releaseId: verified.releaseId,
   manifestSha256: verified.manifestSha256,

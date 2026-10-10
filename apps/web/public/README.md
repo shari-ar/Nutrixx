@@ -2,6 +2,9 @@
 
 Static files served verbatim from the site root by Next.js.
 
+The `catalog/` child directory is the same-origin runtime delivery location for
+verified offline reference catalogs. Generated catalog files stay outside Git.
+
 ## Rules
 
 - Use stable, lowercase, descriptive filenames.

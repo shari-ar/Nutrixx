@@ -1,0 +1,69 @@
+{
+  "source": "USDA Agriculture Handbook No. 102, Food Yields Summarized by Different Stages of Preparation",
+  "sourceUrl": "https://www.ars.usda.gov/SP2UserFiles/Place/80400525/Data/Classics/ah102.pdf",
+  "sourceSha256": "7fa4bebb0be5020e6a8bb696c86e149c32654aecf1768d40bee414367bebd23f",
+  "publicationYear": 1975,
+  "matchPolicy": "curated-raw-sr-legacy-ndb-and-method",
+  "rows": [
+    {
+      "id": "ah102-191",
+      "foodGroup": "16",
+      "rawNdbNumbers": ["16071"],
+      "description": "Lima beans, large, mature seeds, dry",
+      "method": "Soaked and boiled, drained",
+      "factor": "2.43",
+      "printedPage": 13,
+      "pdfPage": 16,
+      "sourceInput": "Lima beans, mature seeds, dry, all samples",
+      "sourceOutput": "Soaked and boiled, drained"
+    },
+    {
+      "id": "ah102-2044",
+      "foodGroup": "11",
+      "rawNdbNumbers": ["11352"],
+      "description": "Potatoes, unpared, flesh and skin, raw",
+      "method": "Boiled",
+      "factor": "0.94",
+      "printedPage": 94,
+      "pdfPage": 97,
+      "sourceInput": "Potatoes, raw, unpared, for cooking in water or steam",
+      "sourceOutput": "Boiled"
+    },
+    {
+      "id": "ah102-2045",
+      "foodGroup": "11",
+      "rawNdbNumbers": ["11352"],
+      "description": "Potatoes, unpared, flesh and skin, raw",
+      "method": "Steamed",
+      "factor": "0.99",
+      "printedPage": 94,
+      "pdfPage": 97,
+      "sourceInput": "Potatoes, raw, unpared, for cooking in water or steam",
+      "sourceOutput": "Steamed"
+    },
+    {
+      "id": "ah102-2196",
+      "foodGroup": "20",
+      "rawNdbNumbers": ["20036"],
+      "description": "Rice, brown, long grain, raw",
+      "method": "Boiled or baked in water",
+      "factor": "3.35",
+      "printedPage": 99,
+      "pdfPage": 102,
+      "sourceInput": "Rice, regular, brown, long grain",
+      "sourceOutput": "Boiled or baked in water"
+    },
+    {
+      "id": "ah102-2198",
+      "foodGroup": "20",
+      "rawNdbNumbers": ["20044", "20444"],
+      "description": "Rice, white, long grain, regular, raw",
+      "method": "Boiled, steamed, or baked in water",
+      "factor": "3.08",
+      "printedPage": 99,
+      "pdfPage": 102,
+      "sourceInput": "Rice, regular, white, long or medium grain",
+      "sourceOutput": "Boiled, steamed, or baked in water"
+    }
+  ]
+}

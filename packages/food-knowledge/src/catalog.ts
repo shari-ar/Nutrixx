@@ -24,7 +24,7 @@ export interface CreateFoodCatalogReleaseV1Options {
 export interface FoodSearchResultV1 {
   readonly food: FoodV1;
   readonly matchedDescription: FoodV1['descriptions'][number];
-  readonly match: 'exact' | 'prefix' | 'contains';
+  readonly match: 'exact' | 'prefix' | 'contains' | 'category';
 }
 
 export interface FoodCatalogReleaseRepositoryV1 {
@@ -202,6 +202,26 @@ export class FoodCatalogIndexV1 {
           match: kind,
           score: localePenalty + kindScore + primaryPenalty,
         });
+      }
+      if (
+        food.categories.some((category) =>
+          normalizeSearchText(category.description).includes(normalizedQuery),
+        )
+      ) {
+        const description =
+          food.descriptions.find(
+            (value) =>
+              value.kind === 'primary' &&
+              (locale === undefined || value.locale === locale),
+          ) ?? food.descriptions[0];
+        if (description) {
+          matches.push({
+            food,
+            matchedDescription: description,
+            match: 'category',
+            score: 20,
+          });
+        }
       }
     }
 

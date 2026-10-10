@@ -34,6 +34,8 @@ report.*.json
 # Temporary files
 .temp/
 .tmp/
+apps/web/public/catalog/*.json
+apps/web/public/catalog/*.json.gz
 
 # Tooling and deployment
 .pnp

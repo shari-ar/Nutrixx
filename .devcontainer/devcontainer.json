@@ -31,7 +31,10 @@
   },
   "overrideCommand": false,
   "shutdownAction": "stopCompose",
-  "postStartCommand": ["node", ".devcontainer/wait-for-api.mjs"],
+  "postStartCommand": [
+    "node .devcontainer/prepare-local-catalog.mjs",
+    "node .devcontainer/wait-for-api.mjs"
+  ],
   "waitFor": "postStartCommand",
   "remoteUser": "root",
   "updateRemoteUserUID": false

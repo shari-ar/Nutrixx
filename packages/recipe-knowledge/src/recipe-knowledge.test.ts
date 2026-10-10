@@ -114,6 +114,32 @@ function resolver(
 }
 
 describe('Recipe Knowledge', () => {
+  it('accepts USDA weight yields above one when cooking absorbs water', () => {
+    const original = recipeVersion();
+    const hydratedRice = recipeVersion({
+      ingredients: [
+        {
+          ...original.ingredients[0]!,
+          cookingYieldFactor: '3.35',
+          cookingYieldRule: {
+            component: 'usda-yield-ah102-2196',
+            version: '1975',
+          },
+        },
+      ],
+      yield: {
+        finalEdibleGramWeight: '670',
+        servings: '4',
+        determination: 'calculated',
+        yieldFactor: '3.35',
+        yieldRule: { component: 'usda-cooking-yield-composite', version: '1' },
+      },
+    });
+    expect(
+      RecipeVersionV1Schema.parse(hydratedRice).yield.finalEdibleGramWeight,
+    ).toBe('670');
+  });
+
   it('binds recipe payloads to storage-neutral canonical records', () => {
     const draft = {
       format: 'nutrixx.canonical-record',

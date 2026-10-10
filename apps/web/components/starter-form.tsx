@@ -81,6 +81,7 @@ export function StarterForm({
     try {
       const saved = await (store ?? new BrowserOnboardingStore()).save(values);
       setProfile(saved);
+      window.dispatchEvent(new Event('nutrixx:onboarding-profile-saved'));
       router.push('/dashboard');
     } catch {
       setError(

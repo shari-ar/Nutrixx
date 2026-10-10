@@ -108,3 +108,19 @@ export const ONE_HUNDRED_RATIONAL: NonnegativeRational = {
   numerator: 100n,
   denominator: 1n,
 };
+
+export function per100GramAmountV1(
+  amountPerServing: string,
+  servingGramWeight: string,
+): string {
+  return roundRationalHalfEven(
+    divideRational(
+      multiplyRational(
+        rationalFromCanonicalDecimal(amountPerServing),
+        ONE_HUNDRED_RATIONAL,
+      ),
+      rationalFromCanonicalDecimal(servingGramWeight),
+    ),
+    12,
+  );
+}

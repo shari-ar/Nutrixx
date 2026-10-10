@@ -27,6 +27,10 @@
 
 ## Conceptual relationships
 
+The diagram below describes the target domain. For the implemented local
+scope, see the [current logical ER](../data/current-logical-er.md) and
+[current physical storage ER](../data/current-storage-er.md).
+
 ```mermaid
 erDiagram
     ACCOUNT ||--o{ CONSENT_GRANT : grants
