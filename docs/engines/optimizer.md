@@ -28,8 +28,10 @@ ContextSnapshot
 → PlanDraft
 ```
 
-Possible statuses are READY, NEEDS_INPUT, INFEASIBLE, OUT_OF_SCOPE, and ERROR.
-FEASIBLE and OPTIMAL are separate solver outcomes.
+Possible statuses are READY, NEEDS_INPUT, INFEASIBLE, SEARCH_LIMIT,
+OUT_OF_SCOPE, and ERROR. FEASIBLE and OPTIMAL are separate solver outcomes.
+SEARCH_LIMIT means bounded search ended without a validated plan and without
+proof of infeasibility.
 
 ## Capability profiles
 
@@ -43,6 +45,14 @@ Experimental Local Processing may help parse input into a draft. The full paid
 optimizer and optimizer authority require their dedicated entitlement.
 Entitlement differences affect available compute/capabilities while safety
 constraints and nutrient meanings remain universal.
+
+The accepted Stage 4 Free policy is specified by
+[constraint semantics](../decisions/ADR-0012-local-planner-constraint-policy.md),
+[bounded search and replay](../decisions/ADR-0013-local-planner-search-and-replay.md),
+[one-day lifecycle](../decisions/ADR-0014-free-plan-horizon-and-lifecycle.md),
+and the [capability and quality floor](../decisions/ADR-0015-free-local-planner-boundary.md).
+These ADRs govern the Free implementation. The mixed-integer model below
+remains a candidate for the later full optimizer.
 
 ## Planning context
 

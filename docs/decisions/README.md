@@ -5,7 +5,7 @@
 | Status        | Process definition           |
 | Audience      | Architecture and engineering |
 | Owner         | Nutrixx Architecture         |
-| Last reviewed | 2026-10-10                   |
+| Last reviewed | 2026-10-11                   |
 
 ADRs capture decisions whose rationale must survive code changes. Use
 `ADR-NNNN-short-title.md` and the [template](ADR-0000-template.md).
@@ -23,6 +23,10 @@ ADRs capture decisions whose rationale must survive code changes. Use
 | [ADR-0009](ADR-0009-nutrition-day-and-rolling-periods.md)            | Nutrition-day boundaries, travel, and rolling periods               | Accepted |
 | [ADR-0010](ADR-0010-intake-uncertainty-and-abstention.md)            | Uncertainty propagation and abstention                              | Accepted |
 | [ADR-0011](ADR-0011-provisional-science-release-gate.md)             | Provisional scientific policies during MVP development              | Accepted |
+| [ADR-0012](ADR-0012-local-planner-constraint-policy.md)              | Free local planner hard and soft constraint policy                  | Accepted |
+| [ADR-0013](ADR-0013-local-planner-search-and-replay.md)              | Bounded local search, solver status, and replay                     | Accepted |
+| [ADR-0014](ADR-0014-free-plan-horizon-and-lifecycle.md)              | One-day Free plan horizon and lifecycle                             | Accepted |
+| [ADR-0015](ADR-0015-free-local-planner-boundary.md)                  | Free local planner boundary and quality floor                       | Accepted |
 
 Accepted ADRs are immutable history. A new ADR supersedes an old one and links
 both directions. Overview documents summarize and link while ADRs remain the

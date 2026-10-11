@@ -66,6 +66,12 @@ Deliver deterministic local approximate planning, eligibility, hard/soft
 constraints appropriate to the profile, independent validation, infeasibility,
 safe alternatives, and evidence-linked explanation.
 
+Stage 4 starts from the accepted Free
+[constraint](../decisions/ADR-0012-local-planner-constraint-policy.md),
+[search](../decisions/ADR-0013-local-planner-search-and-replay.md),
+[lifecycle](../decisions/ADR-0014-free-plan-horizon-and-lifecycle.md), and
+[capability](../decisions/ADR-0015-free-local-planner-boundary.md) decisions.
+
 Exit: the complete advertised Free contract passes; mandatory fixtures show
 zero escaped hard violations. AI-dependent optimizer features remain excluded.
 
