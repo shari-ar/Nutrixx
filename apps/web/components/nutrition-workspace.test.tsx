@@ -10,6 +10,13 @@ const release = getAdultDriBaselineReleaseV1();
 const proteinRule = release.rules.find(
   (rule) => rule.nutrientId === 'nutrient.protein' && rule.type === 'RDA',
 )!;
+const ironLimit = release.rules.find(
+  (rule) =>
+    rule.nutrientId === 'nutrient.iron' &&
+    rule.type === 'UL' &&
+    rule.population.minimumAgeYears <= 32 &&
+    rule.population.maximumAgeYears >= 32,
+)!;
 
 function snapshot(options: {
   market: 'US' | null;
@@ -211,5 +218,59 @@ describe('nutrition workspace', () => {
         '2026-10-11T00:00:00.000Z',
       ),
     );
+  });
+
+  it('S3-UX-001 explains scope and exposes the source of an upper-limit observation', async () => {
+    const initial = snapshot({ market: 'US' });
+    const first = initial.window.current.nutrients[0]!;
+    const observed: BrowserNutritionSnapshotV1 = {
+      ...initial,
+      window: {
+        ...initial.window,
+        current: {
+          ...initial.window.current,
+          nutrients: [
+            {
+              ...first,
+              nutrientId: 'nutrient.iron',
+              unit: 'mg',
+              knownRecordedSubtotal: '46',
+              upperLimit: {
+                status: 'READY',
+                releaseId: release.releaseId,
+                policyVersion: release.policyVersion,
+                publicationStatus: 'provisional',
+                profileRevision: 1,
+                rule: ironLimit,
+                equivalentRuleIds: [ironLimit.ruleId],
+              },
+              upperLimitComparison: 'recorded-above-upper-limit',
+            },
+          ],
+        },
+      },
+    };
+    render(
+      <NutritionWorkspace
+        store={{
+          load: async () => observed,
+          selectMarket: async () => undefined,
+          scheduleTimeZoneChange: async () => undefined,
+        }}
+      />,
+    );
+    expect(
+      await screen.findByText(
+        /general-wellness estimates describe only meals recorded/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Recorded amount above the applicable upper-limit/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Evidence, meals, and seven-day trend'));
+    expect(
+      screen.getByText(/Upper-limit reference: 45 mg per day/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/toxicity diagnosis/)).toBeInTheDocument();
   });
 });

@@ -150,7 +150,10 @@ function createLedger(options: {
     contextForPeriod: (period) =>
       assessHealthContextV1({
         profile: { ...options.profile, timeZone: period.timeZone },
-        assessedAt: options.now,
+        assessedAt:
+          period.startsAt > options.profile.updatedAt
+            ? period.startsAt
+            : options.profile.updatedAt,
       }),
   });
 }

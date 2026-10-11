@@ -95,6 +95,11 @@ replaced or canceled before that boundary. Starting-profile edits retain the
 original zone, and completed periods keep their historical identities. The
 transition period is marked travel-adjusted and withholds daily target
 comparisons.
+
+The browser assesses each period against a stable period/profile timestamp.
+Reloading an unchanged period later in the same day therefore reuses its
+fingerprint and preserves the immutable snapshot history.
+
 The selected US or Canada target region is retained as a versioned canonical
 user-context record and participates in the calculation fingerprint. Until a
 region is selected, recorded amounts remain visible while target comparisons
@@ -103,6 +108,10 @@ seven completed days with explicit unobserved periods. Progress bars reflect
 only evidence-complete recorded meals with a compatible target, and their
 percentage describes recorded intake relative to a reference; personal
 nutritional status requires a separate qualified assessment.
+
+The [Stage 3 acceptance protocol](../quality/stage-3-local-nutrition-acceptance.md)
+tracks independent reference fixtures, release-impact replay, offline behavior,
+and the pending human comprehension evaluation.
 
 ## Statuses
 

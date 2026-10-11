@@ -7,12 +7,13 @@
 | Owner         | Nutrixx Quality                                          |
 | Last reviewed | 2026-09-27                                               |
 
-| Document                                                              | Purpose                                               |
-| --------------------------------------------------------------------- | ----------------------------------------------------- |
-| [Scientific evidence policy](scientific-evidence-policy.md)           | How claims, rules, and sources become approved policy |
-| [Verification and evaluation](verification-and-evaluation.md)         | Test strategy and release evaluation gates            |
-| [Traceability](traceability.md)                                       | Requirement-to-evidence model                         |
-| [Stage 2 local ledger acceptance](stage-2-local-ledger-acceptance.md) | Local food, recipe, and meal acceptance evidence      |
+| Document                                                                    | Purpose                                                     |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [Scientific evidence policy](scientific-evidence-policy.md)                 | How claims, rules, and sources become approved policy       |
+| [Verification and evaluation](verification-and-evaluation.md)               | Test strategy and release evaluation gates                  |
+| [Traceability](traceability.md)                                             | Requirement-to-evidence model                               |
+| [Stage 2 local ledger acceptance](stage-2-local-ledger-acceptance.md)       | Local food, recipe, and meal acceptance evidence            |
+| [Stage 3 local nutrition acceptance](stage-3-local-nutrition-acceptance.md) | Scientific, regression, offline, and comprehension evidence |
 
 Quality means more than code passing tests. Nutrixx separately evaluates
 software correctness, data quality, scientific validity, recommendation safety,

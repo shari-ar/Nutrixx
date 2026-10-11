@@ -215,4 +215,31 @@ describe('browser nutrition state', () => {
       store.scheduleTimeZoneChange('Invalid/Zone', boundary),
     ).rejects.toThrow();
   });
+
+  it('S3-OFFLINE-001 replays the same local window offline without new snapshots as the clock advances', async () => {
+    const fetch = vi.fn(() => {
+      throw new Error('Network unavailable');
+    });
+    vi.stubGlobal('fetch', fetch);
+    const indexedDB = new IDBFactory();
+    const createId = ids();
+    let now = NOW;
+    const dependencies = {
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId,
+      now: () => now,
+      timeZone: () => 'UTC',
+      onboarding: { load: async () => profile() },
+    };
+    const first = await new BrowserNutritionStateStore(dependencies).load();
+    expect(first.window.newSnapshotCount).toBe(9);
+    now = '2026-10-10T13:00:00.000Z';
+    const replay = await new BrowserNutritionStateStore(dependencies).load();
+    expect(replay.window.newSnapshotCount).toBe(0);
+    expect(replay.window.current.period.periodId).toBe(
+      first.window.current.period.periodId,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

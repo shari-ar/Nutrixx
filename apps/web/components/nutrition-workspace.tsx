@@ -74,7 +74,7 @@ function progressPercent(
 
 function relationLabel(nutrient: NutrientIntakeStateV1): string {
   if (nutrient.upperLimitComparison === 'recorded-above-upper-limit') {
-    return 'Recorded intake above the selected upper-limit reference';
+    return 'Recorded amount above the applicable upper-limit intake reference';
   }
   if (nutrient.comparison === 'recorded-at-or-above-reference') {
     return 'Recorded intake reaches the selected reference';
@@ -265,6 +265,24 @@ function NutritionCard({
               </a>{' '}
               ({nutrient.target.rule.source.edition}; provisional Nutrixx
               mapping).
+            </p>
+          ) : null}
+          {nutrient.upperLimit.status === 'READY' &&
+          nutrient.upperLimit.rule.value.kind === 'point' ? (
+            <p>
+              Upper-limit reference: {nutrient.upperLimit.rule.value.amount}{' '}
+              {nutrient.unit} per day (
+              {nutrient.upperLimit.rule.sourceScope.replaceAll('-', ' ')}).{' '}
+              <a
+                className="text-accent underline"
+                href={nutrient.upperLimit.rule.source.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {nutrient.upperLimit.rule.source.title}
+              </a>
+              . A recorded exceedance calls for a review of the entries and,
+              when relevant, qualified advice; it is not a toxicity diagnosis.
             </p>
           ) : null}
         </div>
@@ -469,9 +487,10 @@ export function NutritionWorkspace({ store }: { store?: NutritionStore }) {
               {loading ? 'Refreshing…' : 'Refresh calculations'}
             </button>
             <p className="mt-5 text-sm leading-6 text-muted">
-              These values describe meals you recorded. They do not measure
-              nutrient stores or diagnose a health condition. A day with one
-              meal remains a partial picture of the day.
+              These general-wellness estimates describe only meals recorded
+              here. Unlogged meals remain unknown. A day with one meal is a
+              partial picture; nutrient stores, personal adequacy, and clinical
+              health require separate assessment.
             </p>
             <p className="mt-2 text-sm leading-6 text-muted">
               The provisional adult reference assumes an adult life stage
