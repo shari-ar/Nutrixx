@@ -15,6 +15,10 @@ vi.mock('@/components/catalog-installer', () => ({
   CatalogInstaller: () => <section aria-label="Offline food knowledge" />,
 }));
 
+vi.mock('@/components/nutrition-dashboard-summary', () => ({
+  NutritionDashboardSummary: () => <span>Recorded nutrition summary</span>,
+}));
+
 const profile: StartingProfileV1 = {
   profileId: '10000000-0000-4000-8000-000000000001',
   ownerSubjectId: '20000000-0000-4000-8000-000000000001',

@@ -27,6 +27,7 @@ import {
   type RecipeVersionV1,
 } from '@nutrixx/recipe-knowledge';
 
+import { BrowserNutritionStateStore } from './browser-nutrition-state';
 import { BrowserOnboardingStore } from './browser-onboarding';
 import { exampleUsdPricePer100g } from './food-price-examples';
 import { loadNutritionContextV1 } from './nutrition-context';
@@ -172,6 +173,24 @@ export class BrowserStageTwoStore {
 
   public constructor(dependencies: StageTwoDependencies = defaults()) {
     this.dependencies = dependencies;
+  }
+
+  private async refreshNutritionState(
+    affectedOccurredAt: readonly string[],
+  ): Promise<void> {
+    try {
+      await new BrowserNutritionStateStore({
+        indexedDB: this.dependencies.indexedDB,
+        keyRange: this.dependencies.keyRange,
+        createId: this.dependencies.createId,
+        now: this.dependencies.now,
+        timeZone: this.dependencies.timeZone,
+        onboarding: this.dependencies.onboarding,
+      }).recomputeAfterMealChange(affectedOccurredAt);
+    } catch {
+      // The committed meal remains authoritative; opening Nutrition retries
+      // the derived projection from the current local meal ledger.
+    }
   }
 
   private async ownerSubjectId(): Promise<string> {
@@ -792,7 +811,7 @@ export class BrowserStageTwoStore {
   }
 
   public async saveMeal(input: SaveMealInput): Promise<string> {
-    return this.withRepository(async (repository, owner) => {
+    const saved = await this.withRepository(async (repository, owner) => {
       const ledger = new ConsumptionLedgerV1({
         repository,
         digestSha256Hex: sha256Canonical,
@@ -906,41 +925,53 @@ export class BrowserStageTwoStore {
           meal,
         });
       }
-      return mealId;
+      return {
+        mealId,
+        affectedOccurredAt: [
+          ...(previous === undefined ? [] : [previous.occurredAt]),
+          occurredAt,
+        ],
+      };
     });
+    await this.refreshNutritionState(saved.affectedOccurredAt);
+    return saved.mealId;
   }
 
   public async voidMeal(mealId: string, reason: string): Promise<void> {
-    await this.withRepository(async (repository, owner) => {
-      const ledger = new ConsumptionLedgerV1({
-        repository,
-        digestSha256Hex: sha256Canonical,
-      });
-      const history = await ledger.getMealHistory(owner, mealId);
-      const previous = history.at(-1);
-      const headInput = await repository.getById(mealId);
-      if (previous === undefined || headInput === null) {
-        throw new Error('The meal is unavailable.');
-      }
-      const head = MealHeadRecordV1Schema.parse(headInput);
-      const now = this.dependencies.now();
-      await ledger.correctMeal({
-        commandId: `void-meal:${this.dependencies.createId()}`,
-        expectedPreviousMealRecordId: head.payload.activeMealRecordId,
-        mealRecordId: this.dependencies.createId(),
-        eventRecordId: this.dependencies.createId(),
-        eventId: this.dependencies.createId(),
-        meal: {
-          ...previous,
-          revision: previous.revision + 1,
-          state: 'voided',
-          items: [],
-          nutrition: [],
-          note: reason,
-          provenance: { ...previous.provenance, recordedAt: now },
-          recordedAt: now,
-        },
-      });
-    });
+    const affectedOccurredAt = await this.withRepository(
+      async (repository, owner) => {
+        const ledger = new ConsumptionLedgerV1({
+          repository,
+          digestSha256Hex: sha256Canonical,
+        });
+        const history = await ledger.getMealHistory(owner, mealId);
+        const previous = history.at(-1);
+        const headInput = await repository.getById(mealId);
+        if (previous === undefined || headInput === null) {
+          throw new Error('The meal is unavailable.');
+        }
+        const head = MealHeadRecordV1Schema.parse(headInput);
+        const now = this.dependencies.now();
+        await ledger.correctMeal({
+          commandId: `void-meal:${this.dependencies.createId()}`,
+          expectedPreviousMealRecordId: head.payload.activeMealRecordId,
+          mealRecordId: this.dependencies.createId(),
+          eventRecordId: this.dependencies.createId(),
+          eventId: this.dependencies.createId(),
+          meal: {
+            ...previous,
+            revision: previous.revision + 1,
+            state: 'voided',
+            items: [],
+            nutrition: [],
+            note: reason,
+            provenance: { ...previous.provenance, recordedAt: now },
+            recordedAt: now,
+          },
+        });
+        return previous.occurredAt;
+      },
+    );
+    await this.refreshNutritionState([affectedOccurredAt]);
   }
 }

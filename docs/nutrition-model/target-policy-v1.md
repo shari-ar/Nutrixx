@@ -56,9 +56,10 @@ The committed USDA crosswalk records exact source nutrient IDs, names, and
 observation units from the active Foundation/SR Legacy food catalog. Copper's
 source DRI micrograms are represented as milligrams to match the USDA
 observation unit. Folate DFE and vitamin A RAE retain their distinct chemical
-equivalence definitions. The `AMDR` unit is percent of energy; a later
-Nutrition State calculation will derive that percentage from nutrient and
-energy observations.
+equivalence definitions. The `AMDR` unit is percent of energy; the current
+Nutrition State implementation retains the typed range and marks its
+comparison indeterminate while validated nutrient-energy attribution is
+developed.
 
 The first catalog omits comparisons where the active food observation lacks
 the required equivalence or source partition: vitamin K forms, niacin
@@ -99,8 +100,10 @@ preserves that status in its output, and rejects draft, inactive, missing, or
 conflicting releases at runtime. Publication checks cover source provenance,
 population coverage, unit dimensions, age bands, overlapping rules, and exact
 USDA nutrient mappings. Expert review and clinical corrections follow before
-public launch. User-facing comparison and trend integration belongs to the
-subsequent Stage 3 work packages.
+public launch. The local browser Nutrition route presents source-linked
+comparisons and seven-completed-day recorded-intake trends. Final scientific,
+regression, offline, and user-understanding acceptance follows in the last
+Stage 3 work package.
 
 ## References
 

@@ -1,11 +1,11 @@
 # Daily nutrition state
 
-| Field         | Value                                               |
-| ------------- | --------------------------------------------------- |
-| Status        | Local calculation implemented; presentation pending |
-| Audience      | Nutrition science, engine, product, quality         |
-| Owner         | Nutrixx Nutrition Science                           |
-| Last reviewed | 2026-10-10                                          |
+| Field         | Value                                                  |
+| ------------- | ------------------------------------------------------ |
+| Status        | Local calculation and browser presentation implemented |
+| Audience      | Nutrition science, engine, product, quality            |
+| Owner         | Nutrixx Nutrition Science                              |
+| Last reviewed | 2026-10-10                                             |
 
 ## Definition
 
@@ -82,6 +82,27 @@ auditable through the correction link. For a late correction, the local ledger
 can recompute the former and new nutrition days plus their dependent rolling
 windows, including historical windows outside the current seven-day view.
 The presentation layer reads the latest state for its active policy version.
+
+The browser Nutrition route recalculates the active window from the current
+meal ledger whenever it opens. Meal save, correction, and removal also request
+recomputation for affected periods. A failed derived refresh leaves the
+authoritative meal revision intact; opening the route retries reconciliation.
+The browser suggests its detected IANA zone for travel while retaining the
+current nutrition-day zone until the user reviews and confirms a change. The
+confirmed preference is a versioned canonical user-context record whose new
+zone starts at the next boundary in the previous zone. A pending change can be
+replaced or canceled before that boundary. Starting-profile edits retain the
+original zone, and completed periods keep their historical identities. The
+transition period is marked travel-adjusted and withholds daily target
+comparisons.
+The selected US or Canada target region is retained as a versioned canonical
+user-context record and participates in the calculation fingerprint. Until a
+region is selected, recorded amounts remain visible while target comparisons
+request that input. The route shows contributing meals, composition gaps, and
+seven completed days with explicit unobserved periods. Progress bars reflect
+only evidence-complete recorded meals with a compatible target, and their
+percentage describes recorded intake relative to a reference; personal
+nutritional status requires a separate qualified assessment.
 
 ## Statuses
 

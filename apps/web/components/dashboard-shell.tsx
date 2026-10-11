@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { CatalogInstaller } from '@/components/catalog-installer';
 import { DashboardCard } from '@/components/dashboard-card';
+import { NutritionDashboardSummary } from '@/components/nutrition-dashboard-summary';
 import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
 
 import type { StartingProfileV1 } from '@nutrixx/user-context';
@@ -148,9 +149,9 @@ export function DashboardShell({ store }: { store?: OnboardingReader }) {
           eyebrow="Nutrition and health"
           href="/nutrition"
           icon="nutrition"
-          title="Build your nutrition state"
+          title="Your recorded nutrition"
         >
-          Nutrition insights become available as your real meal history grows.
+          <NutritionDashboardSummary />
         </DashboardCard>
         <DashboardCard
           accent="violet"

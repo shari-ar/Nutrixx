@@ -178,7 +178,7 @@ export class BrowserOnboardingStore {
         physiologicalReference: values.physiologicalReference,
         primaryGoal: values.primaryGoal,
         foodRestrictions: [...values.foodRestrictions],
-        timeZone: this.dependencies.timeZone(),
+        timeZone: existing?.timeZone ?? this.dependencies.timeZone(),
         adultConfirmedAt: existing?.adultConfirmedAt ?? savedAt,
         savedAt,
       });

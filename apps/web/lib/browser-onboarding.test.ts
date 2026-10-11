@@ -80,5 +80,17 @@ describe('browser onboarding store', () => {
       revision: 2,
       primaryGoal: 'gain',
     });
+
+    const travelingStore = new BrowserOnboardingStore({
+      storage: localStorage,
+      indexedDB: database,
+      keyRange: IDBKeyRange,
+      createId: () => PROFILE_ID,
+      now: () => NOW,
+      timeZone: () => 'Asia/Tokyo',
+    });
+    expect((await travelingStore.save(values)).timeZone).toBe(
+      'America/New_York',
+    );
   });
 });

@@ -12,6 +12,14 @@ clearing.
 `browser-onboarding.ts` owns the one-time starting profile. `browser-stage-two.ts`
 owns verified catalog installation and the local custom-food, recipe, and meal
 workflows. Both remain browser-only and use the shared canonical repository.
+`browser-nutrition-state.ts` connects the meal ledger and starting profile to
+versioned local daily and rolling calculations. The optional US/Canada
+reference-region choice and effective-dated nutrition-day time zone are retained
+as canonical user-context records. The device's travel zone is proposed for
+user review; only explicit confirmation schedules it at the next boundary.
+Starting-profile edits preserve the original zone to keep historical days stable. Meal
+corrections refresh derived snapshots; opening Nutrition reconciles them again
+from authoritative meal history.
 `nutrition-context.ts` resolves exact catalog, custom-food, and recipe-version
 composition for publication. It preserves unknown values and supports local
 recipe and meal nutrition snapshots entirely in the browser.
