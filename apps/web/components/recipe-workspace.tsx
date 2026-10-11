@@ -24,11 +24,18 @@ import {
   usdaYieldOptions,
 } from '@/lib/usda-cooking';
 
-import type { CurrentRecipeV1 } from '@nutrixx/recipe-knowledge';
+import type {
+  CurrentRecipeV1,
+  RecipeVersionV1,
+} from '@nutrixx/recipe-knowledge';
 
 type RecipeStore = Pick<
   BrowserStageTwoStore,
-  'listRecipes' | 'recipeChoices' | 'saveRecipe' | 'searchFoods'
+  | 'listRecipes'
+  | 'recipeChoices'
+  | 'saveRecipe'
+  | 'searchFoods'
+  | 'recipeHistory'
 >;
 
 type IngredientDraft = SaveRecipeInput['ingredients'][number] & {
@@ -77,6 +84,8 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
     () =>
       store ?? {
         listRecipes: () => new BrowserStageTwoStore().listRecipes(),
+        recipeHistory: (recipeId) =>
+          new BrowserStageTwoStore().recipeHistory(recipeId),
         recipeChoices: () => new BrowserStageTwoStore().recipeChoices(),
         saveRecipe: (input) => new BrowserStageTwoStore().saveRecipe(input),
         searchFoods: (query, includeRecipes) =>
@@ -85,6 +94,11 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
     [store],
   );
   const [recipes, setRecipes] = useState<readonly CurrentRecipeV1[]>([]);
+  const [history, setHistory] = useState<{
+    recipeId: string;
+    versions: readonly RecipeVersionV1[];
+  } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const nextDraftId = useRef(0);
   const [ingredients, setIngredients] = useState<readonly IngredientDraft[]>(
     [],
@@ -140,6 +154,22 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
   const refresh = useCallback(async () => {
     setRecipes(await runtime.listRecipes());
   }, [runtime]);
+
+  async function openHistory(recipeId: string) {
+    if (history?.recipeId === recipeId) {
+      setHistory(null);
+      return;
+    }
+    setHistoryLoading(true);
+    setError(null);
+    try {
+      setHistory({ recipeId, versions: await runtime.recipeHistory(recipeId) });
+    } catch {
+      setError('Recipe version history could not be opened.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -279,6 +309,7 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
       setSteps([]);
       setWeightDetermination('measured');
       event.currentTarget.reset();
+      setHistory(null);
       await refresh();
     } catch (cause) {
       setError(
@@ -402,6 +433,112 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
                 >
                   Publish next version
                 </button>
+                <button
+                  className="mt-3 ml-4 text-sm font-semibold text-accent"
+                  disabled={historyLoading}
+                  onClick={() => {
+                    openHistory(recipe.identity.recipeId).catch(
+                      () => undefined,
+                    );
+                  }}
+                  type="button"
+                >
+                  {history?.recipeId === recipe.identity.recipeId
+                    ? 'Hide version history'
+                    : `View ${recipe.version.names[0]?.value} version history`}
+                </button>
+                {history?.recipeId === recipe.identity.recipeId ? (
+                  <ol
+                    aria-label={`${recipe.version.names[0]?.value} version history`}
+                    className="mt-4 space-y-3"
+                  >
+                    {[...history.versions].reverse().map((version) => (
+                      <li
+                        className="rounded-lg bg-background/60 p-4 text-sm"
+                        key={version.version}
+                      >
+                        <p className="font-semibold">
+                          Version {version.version} · {version.names[0]?.value}
+                        </p>
+                        <p className="mt-1 text-muted">
+                          Published{' '}
+                          {new Date(version.publishedAt).toLocaleString()}
+                          {' · '}
+                          {version.yield.servings} servings
+                          {' · '}
+                          {version.yield.finalEdibleGramWeight} g final edible
+                          yield
+                        </p>
+                        <ul
+                          className="mt-2 space-y-1"
+                          aria-label={`Version ${version.version} ingredients`}
+                        >
+                          {version.ingredients.map((ingredient) => (
+                            <li key={ingredient.ingredientId}>
+                              {ingredient.label}: {ingredient.edibleGramWeight}{' '}
+                              g
+                              {ingredient.cookingYieldFactor ? (
+                                <span className="block pl-4 text-muted">
+                                  Cooking yield factor{' '}
+                                  {ingredient.cookingYieldFactor}
+                                  {ingredient.cookingYieldRule
+                                    ? ` · ${ingredient.cookingYieldRule.component} ${ingredient.cookingYieldRule.version}`
+                                    : ''}
+                                </span>
+                              ) : null}
+                              {ingredient.retentionFactors.length > 0 ? (
+                                <ul className="pl-4 text-muted">
+                                  {ingredient.retentionFactors.map((factor) => (
+                                    <li key={factor.nutrientId}>
+                                      {factor.nutrientId}: retention{' '}
+                                      {factor.factor}
+                                      {' · '}
+                                      {factor.rule.component}{' '}
+                                      {factor.rule.version}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 text-muted">
+                          Final weight: {version.yield.determination}
+                          {version.yield.yieldFactor
+                            ? ` · yield factor ${version.yield.yieldFactor}`
+                            : ''}
+                        </p>
+                        {version.preparationSteps.length > 0 ? (
+                          <ol className="mt-2 list-inside list-decimal space-y-1">
+                            {version.preparationSteps.map((step) => (
+                              <li key={step.position}>{step.instruction}</li>
+                            ))}
+                          </ol>
+                        ) : null}
+                        {version.outputFood ? (
+                          <details className="mt-2">
+                            <summary className="cursor-pointer font-medium">
+                              Nutrition per serving for version{' '}
+                              {version.version}
+                            </summary>
+                            <ul className="mt-2 max-h-52 space-y-1 overflow-auto">
+                              {version.outputFood.nutrition.nutrients.map(
+                                (nutrient) => (
+                                  <li key={nutrient.nutrientId}>
+                                    {nutrient.nutrientId}:{' '}
+                                    {nutrient.state === 'known'
+                                      ? `${nutrient.perServing.amount} ${nutrient.perServing.unit.code}`
+                                      : 'Incomplete evidence'}
+                                  </li>
+                                ),
+                              )}
+                            </ul>
+                          </details>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
               </li>
             ))}
           </ul>

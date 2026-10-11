@@ -1,5 +1,6 @@
 'use client';
 
+import { FOOD_COMPONENTS_V1 } from '@nutrixx/nutrition-engine';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { FoodPicker } from '@/components/food-picker';
@@ -9,7 +10,11 @@ import type { CustomFoodVersionV1 } from '@nutrixx/food-knowledge';
 
 type FoodStore = Pick<
   BrowserStageTwoStore,
-  'recipeChoices' | 'saveCustomFood' | 'searchFoods' | 'listCustomFoods'
+  | 'recipeChoices'
+  | 'saveCustomFood'
+  | 'searchFoods'
+  | 'listCustomFoods'
+  | 'customFoodHistory'
 >;
 
 export function FoodWorkspace({ store }: { store?: FoodStore }) {
@@ -22,6 +27,8 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
           new BrowserStageTwoStore().searchFoods(query, includeRecipes),
         recipeChoices: () => new BrowserStageTwoStore().recipeChoices(),
         listCustomFoods: () => new BrowserStageTwoStore().listCustomFoods(),
+        customFoodHistory: (foodId) =>
+          new BrowserStageTwoStore().customFoodHistory(foodId),
       },
     [store],
   );
@@ -30,8 +37,14 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
     readonly CustomFoodVersionV1[]
   >([]);
   const [editing, setEditing] = useState<CustomFoodVersionV1 | null>(null);
+  const [history, setHistory] = useState<{
+    foodId: string;
+    versions: readonly CustomFoodVersionV1[];
+  } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [registrySearch, setRegistrySearch] = useState('');
 
   useEffect(() => {
     void runtime
@@ -90,10 +103,27 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
       });
       setCustomFoods(await runtime.listCustomFoods());
       setEditing(null);
+      setHistory(null);
       setStatus('Custom food version saved locally with explicit provenance.');
       event.currentTarget.reset();
     } catch {
       setError('The custom food could not be validated or saved.');
+    }
+  }
+
+  async function openHistory(foodId: string) {
+    if (history?.foodId === foodId) {
+      setHistory(null);
+      return;
+    }
+    setHistoryLoading(true);
+    setError(null);
+    try {
+      setHistory({ foodId, versions: await runtime.customFoodHistory(foodId) });
+    } catch {
+      setError('Custom food history could not be opened.');
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -199,16 +229,140 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
       </section>
 
       <section className="rounded-[1.5rem] border border-separator bg-surface/75 p-6">
+        <h2 className="text-2xl font-semibold">Your custom foods</h2>
+        {customFoods.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            Saved custom foods will appear here.
+          </p>
+        ) : (
+          <ul className="mt-5 space-y-3">
+            {customFoods.map((food) => (
+              <li
+                className="rounded-xl border border-separator p-4"
+                key={food.foodId}
+              >
+                <p className="font-semibold">{food.name}</p>
+                <p className="mt-1 text-sm text-muted">
+                  Current revision {food.revision}
+                </p>
+                <button
+                  className="mt-3 text-sm font-semibold text-accent"
+                  disabled={historyLoading}
+                  onClick={() => {
+                    openHistory(food.foodId).catch(() => undefined);
+                  }}
+                  type="button"
+                >
+                  {history?.foodId === food.foodId
+                    ? 'Hide version history'
+                    : `View ${food.name} version history`}
+                </button>
+                {history?.foodId === food.foodId ? (
+                  <ol
+                    className="mt-4 space-y-3"
+                    aria-label={`${food.name} version history`}
+                  >
+                    {[...history.versions].reverse().map((version) => (
+                      <li
+                        className="rounded-lg bg-background/60 p-4 text-sm"
+                        key={version.revision}
+                      >
+                        <p className="font-semibold">
+                          Revision {version.revision} · {version.name}
+                        </p>
+                        <p className="mt-1 text-muted">
+                          Published{' '}
+                          {new Date(version.publishedAt).toLocaleString()} ·{' '}
+                          {version.preparationState}
+                        </p>
+                        <p className="mt-1 text-muted">
+                          Portions:{' '}
+                          {version.portions
+                            .map(
+                              (portion) =>
+                                `${portion.label}: ${portion.gramWeight} g`,
+                            )
+                            .join('; ')}
+                        </p>
+                        <p className="mt-1 text-muted">
+                          Categories:{' '}
+                          {version.categories?.join(', ') || 'Uncategorized'}
+                        </p>
+                        <p className="mt-1 text-muted">
+                          Approximate price:{' '}
+                          {version.approximatePriceUsdPer100g === undefined
+                            ? 'Not set'
+                            : `$${version.approximatePriceUsdPer100g} / 100 g`}
+                        </p>
+                        <ul
+                          className="mt-2 space-y-1"
+                          aria-label={`Revision ${version.revision} nutrients`}
+                        >
+                          {version.composition.map((nutrient) => (
+                            <li key={nutrient.nutrientId}>
+                              {nutrient.nutrientId}:{' '}
+                              {nutrient.value.state === 'known'
+                                ? `${nutrient.value.amount} ${nutrient.value.unit.code} per serving`
+                                : 'Unknown'}
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-[1.5rem] border border-separator bg-surface/75 p-6">
         <h2 className="text-2xl font-semibold">
           {editing
             ? 'Publish a custom food correction'
             : 'Create a custom food'}
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Enter label facts as nutrient code, amount, unit—one per line. Leave
+          Enter label facts as component ID, amount, unit—one per line. Leave
           amount and unit blank to preserve an explicitly unknown value. A
           measured zero stays zero.
         </p>
+        <details className="mt-4 rounded-xl border border-separator p-4 text-sm">
+          <summary className="cursor-pointer font-semibold">
+            Browse the {FOOD_COMPONENTS_V1.length} recognized food components
+          </summary>
+          <p className="mt-3 text-muted">
+            Copy a component ID and its unit into the nutrient facts field.
+            Source data and personal intake references are available only where
+            their identities and evidence match.
+          </p>
+          <label className="mt-3 block font-medium">
+            Find a food component
+            <input
+              className="mt-2 block w-full rounded-xl border border-separator bg-background/70 px-3 py-2.5"
+              onChange={(event) => setRegistrySearch(event.target.value)}
+              type="search"
+              value={registrySearch}
+            />
+          </label>
+          <ul className="mt-3 max-h-64 space-y-2 overflow-auto">
+            {FOOD_COMPONENTS_V1.filter((component) => {
+              const query = registrySearch.trim().toLowerCase();
+              return (
+                !query ||
+                component.name.toLowerCase().includes(query) ||
+                component.accessCode.toLowerCase().includes(query) ||
+                component.componentId.includes(query)
+              );
+            }).map((component) => (
+              <li key={component.componentId}>
+                {component.name} · {component.category} ·{' '}
+                <code>{component.componentId}</code> · {component.unit}
+              </li>
+            ))}
+          </ul>
+        </details>
         <form
           key={`${editing?.foodId ?? 'new'}:${editing?.revision ?? 0}`}
           className="mt-5 grid gap-4 sm:grid-cols-2"

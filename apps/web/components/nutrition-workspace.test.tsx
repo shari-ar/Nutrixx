@@ -1,4 +1,7 @@
-import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
+import {
+  FOOD_COMPONENTS_V1,
+  getAdultDriBaselineReleaseV1,
+} from '@nutrixx/nutrition-engine';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -21,6 +24,7 @@ const ironLimit = release.rules.find(
 function snapshot(options: {
   market: 'US' | null;
   incomplete?: boolean;
+  allComponents?: boolean;
 }): BrowserNutritionSnapshotV1 {
   const nutrient = {
     nutrientId: 'nutrient.protein',
@@ -85,7 +89,7 @@ function snapshot(options: {
     travelAdjusted: false,
   };
   const day = {
-    ruleVersion: 'recorded-intake-v1' as const,
+    ruleVersion: 'recorded-intake-v2' as const,
     ownerSubjectId: '10000000-0000-4000-8000-000000000001',
     period,
     calculatedAt: '2026-10-10T12:00:00.000Z',
@@ -94,7 +98,21 @@ function snapshot(options: {
     mealRevisions: [],
     targetReleaseId: release.releaseId,
     healthContextRevision: 1,
-    nutrients: [nutrient],
+    nutrients: options.allComponents
+      ? FOOD_COMPONENTS_V1.map((component) => ({
+          ...nutrient,
+          nutrientId: component.componentId,
+          unit: component.unit,
+          target: {
+            status: 'OUT_OF_SCOPE' as const,
+            reason: 'target-unavailable' as const,
+          },
+          comparison: 'indeterminate' as const,
+          knownRecordedSubtotal: '0',
+          contributingMeals: [],
+          missingMealIds: [],
+        }))
+      : [nutrient],
     limitationCodes: [],
   };
   return {
@@ -117,7 +135,7 @@ function snapshot(options: {
         recordedMealCount: 0,
       })),
       rolling: {
-        ruleVersion: 'recorded-intake-v1',
+        ruleVersion: 'recorded-intake-v2',
         ownerSubjectId: day.ownerSubjectId,
         completedPeriodIds: [],
         status: 'PARTIAL',
@@ -130,6 +148,33 @@ function snapshot(options: {
 }
 
 describe('nutrition workspace', () => {
+  it('keeps the short view and lets a user browse and filter all 112 components', async () => {
+    render(
+      <NutritionWorkspace
+        store={{
+          load: async () => snapshot({ market: 'US', allComponents: true }),
+          selectMarket: async () => undefined,
+          scheduleTimeZoneChange: async () => undefined,
+        }}
+      />,
+    );
+    expect(await screen.findByText('Protein')).toBeInTheDocument();
+    expect(screen.queryByText('Arsenic')).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Browse all 112 components' }),
+    );
+    fireEvent.change(screen.getByLabelText('Category'), {
+      target: { value: 'Contaminant' },
+    });
+    expect(screen.getByText('Arsenic')).toBeInTheDocument();
+    expect(screen.queryByText('Protein')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Find a component'), {
+      target: { value: 'mercury' },
+    });
+    expect(screen.getByText('Mercury')).toBeInTheDocument();
+    expect(screen.queryByText('Arsenic')).not.toBeInTheDocument();
+  });
+
   it('shows recorded values, then a real reference only after region selection', async () => {
     const load = vi
       .fn()

@@ -6,12 +6,14 @@ import {
 import { ConsumptionLedgerV1, type MealRevisionV1 } from '@nutrixx/consumption';
 import {
   assessHealthContextV1,
+  estimateEnergyRequirementV1,
   getAdultDriBaselineReleaseV1,
   LocalNutritionStateLedgerV1,
   NutritionDayPolicyV1Schema,
   nutritionPeriodAtV1,
   type NutritionDayPolicyV1,
   type NutritionWindowSnapshotV1,
+  type EnergyRequirementResultV1,
 } from '@nutrixx/nutrition-engine';
 import {
   IndexedDbCanonicalRecordRepository,
@@ -25,9 +27,20 @@ import type { StartingProfileV1 } from '@nutrixx/user-context';
 
 const MARKET_RECORD_TYPE = 'user-context.nutrition-market';
 const DAY_POLICY_RECORD_TYPE = 'user-context.nutrition-day-policy';
+const ACTIVITY_RECORD_TYPE = 'user-context.activity-level';
 const DAY_POLICY_VERSION = 'nutrition-day-zone-v1';
 
 export type NutritionTargetMarketV1 = 'US' | 'CA';
+export type NutritionActivityLevelV1 =
+  | 'inactive'
+  | 'low'
+  | 'active'
+  | 'very-active';
+
+export interface BrowserEnergyRequirementV1 {
+  readonly activityLevel: NutritionActivityLevelV1 | null;
+  readonly result: EnergyRequirementResultV1;
+}
 
 export interface BrowserNutritionSnapshotV1 {
   readonly market: NutritionTargetMarketV1 | null;
@@ -37,6 +50,11 @@ export interface BrowserNutritionSnapshotV1 {
   readonly meals: readonly MealRevisionV1[];
 }
 
+export type NutritionLockRunner = <T>(
+  name: string,
+  operation: () => Promise<T>,
+) => Promise<T>;
+
 export interface BrowserNutritionStateDependencies {
   readonly indexedDB: IDBFactory;
   readonly keyRange: typeof IDBKeyRange;
@@ -44,6 +62,20 @@ export interface BrowserNutritionStateDependencies {
   readonly now: () => string;
   readonly timeZone: () => string;
   readonly onboarding: Pick<BrowserOnboardingStore, 'load'>;
+  readonly runExclusive?: NutritionLockRunner;
+}
+
+function browserNutritionLock<T>(
+  name: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const manager = globalThis.navigator?.locks;
+  if (manager === undefined) {
+    throw new Error(
+      'Local nutrition calculation requires Web Locks in a secure browser context.',
+    );
+  }
+  return manager.request(name, { mode: 'exclusive' }, operation);
 }
 
 function defaults(): BrowserNutritionStateDependencies {
@@ -86,6 +118,40 @@ function marketFromRecord(
     throw new TypeError('The stored nutrition market is invalid.');
   }
   return payload['market'];
+}
+
+function latestActivityRecord(
+  records: readonly CanonicalRecordV1[],
+): CanonicalRecordV1 | null {
+  let latest: CanonicalRecordV1 | null = null;
+  for (const record of records) {
+    if (record.recordType !== ACTIVITY_RECORD_TYPE) continue;
+    if (latest === null || record.logicalVersion > latest.logicalVersion) {
+      latest = record;
+    } else if (record.logicalVersion === latest.logicalVersion) {
+      throw new TypeError('Conflicting activity-level settings were found.');
+    }
+  }
+  return latest;
+}
+
+function activityFromRecord(
+  record: CanonicalRecordV1 | null,
+): NutritionActivityLevelV1 | null {
+  if (record === null) return null;
+  const payload = record.payload;
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    Array.isArray(payload) ||
+    typeof payload['activityLevel'] !== 'string' ||
+    !['inactive', 'low', 'active', 'very-active'].includes(
+      payload['activityLevel'],
+    )
+  ) {
+    throw new TypeError('The stored activity level is invalid.');
+  }
+  return payload['activityLevel'] as NutritionActivityLevelV1;
 }
 
 function latestDayPolicyRecord(
@@ -159,6 +225,8 @@ function createLedger(options: {
 }
 
 export class BrowserNutritionStateStore {
+  private inFlightLoad: Promise<BrowserNutritionSnapshotV1> | null = null;
+
   public constructor(
     private readonly dependencies: BrowserNutritionStateDependencies = defaults(),
   ) {}
@@ -168,25 +236,34 @@ export class BrowserNutritionStateStore {
       repository: IndexedDbCanonicalRecordRepository,
       profile: StartingProfileV1,
     ) => Promise<T>,
+    exclusiveNutritionCalculation = false,
   ): Promise<T> {
     const profile = await this.dependencies.onboarding.load();
     if (profile === null) throw new Error('A starting profile is required.');
-    const repository = await IndexedDbCanonicalRecordRepository.create({
-      databaseName: LOCAL_USER_DATABASE_NAME,
-      indexedDB: this.dependencies.indexedDB,
-      keyRange: this.dependencies.keyRange,
-      verifyRecord: (record) =>
-        verifyCanonicalRecordV1(record, sha256Canonical),
-    });
-    try {
-      return await operation(repository, profile);
-    } finally {
-      await repository.close();
-    }
+    const execute = async () => {
+      const repository = await IndexedDbCanonicalRecordRepository.create({
+        databaseName: LOCAL_USER_DATABASE_NAME,
+        indexedDB: this.dependencies.indexedDB,
+        keyRange: this.dependencies.keyRange,
+        verifyRecord: (record) =>
+          verifyCanonicalRecordV1(record, sha256Canonical),
+      });
+      try {
+        return await operation(repository, profile);
+      } finally {
+        await repository.close();
+      }
+    };
+    if (!exclusiveNutritionCalculation) return execute();
+    return (this.dependencies.runExclusive ?? browserNutritionLock)(
+      `nutrixx:nutrition-state:${profile.ownerSubjectId}`,
+      execute,
+    );
   }
 
   public async load(): Promise<BrowserNutritionSnapshotV1> {
-    return this.withRepository(async (repository, profile) => {
+    if (this.inFlightLoad !== null) return this.inFlightLoad;
+    const pending = this.withRepository(async (repository, profile) => {
       const records = await repository.listBySubject(profile.ownerSubjectId);
       const market = marketFromRecord(latestMarketRecord(records));
       const dayPolicy = dayPolicyFromRecord(
@@ -214,6 +291,69 @@ export class BrowserNutritionStateStore {
         window,
         meals,
       };
+    }, true);
+    this.inFlightLoad = pending;
+    try {
+      return await pending;
+    } finally {
+      if (this.inFlightLoad === pending) this.inFlightLoad = null;
+    }
+  }
+
+  public async loadEnergyRequirement(): Promise<BrowserEnergyRequirementV1> {
+    return this.withRepository(async (repository, profile) => {
+      const records = await repository.listBySubject(profile.ownerSubjectId);
+      const activityLevel = activityFromRecord(latestActivityRecord(records));
+      const context = assessHealthContextV1({
+        profile,
+        assessedAt: this.dependencies.now(),
+        ...(activityLevel === null ? {} : { activityLevel }),
+      });
+      return {
+        activityLevel,
+        result: estimateEnergyRequirementV1(context),
+      };
+    });
+  }
+
+  public async selectActivityLevel(
+    activityLevel: NutritionActivityLevelV1,
+  ): Promise<void> {
+    if (!['inactive', 'low', 'active', 'very-active'].includes(activityLevel)) {
+      throw new TypeError('Choose a supported activity level.');
+    }
+    await this.withRepository(async (repository, profile) => {
+      const records = await repository.listBySubject(profile.ownerSubjectId);
+      const previous = latestActivityRecord(records);
+      if (activityFromRecord(previous) === activityLevel) return;
+      const now = this.dependencies.now();
+      const record = await sealCanonicalRecordV1(
+        {
+          format: 'nutrixx.canonical-record',
+          schemaVersion: 1,
+          recordType: ACTIVITY_RECORD_TYPE,
+          recordVersion: 1,
+          recordId: this.dependencies.createId(),
+          subjectId: profile.ownerSubjectId,
+          owningContext: 'user-context',
+          logicalVersion: (previous?.logicalVersion ?? 0) + 1,
+          createdAt: now,
+          updatedAt: now,
+          ...(previous === null ? {} : { correctionOf: previous.recordId }),
+          provenance: {
+            method: 'user-entered',
+            source: { kind: 'user', sourceId: profile.ownerSubjectId },
+            recordedAt: now,
+          },
+          payload: { activityLevel },
+        },
+        sha256Canonical,
+      );
+      await repository.commit({
+        commandId: `activity-level:${this.dependencies.createId()}`,
+        occurredAt: now,
+        mutations: [{ kind: 'put', record }],
+      });
     });
   }
 
@@ -336,6 +476,6 @@ export class BrowserNutritionStateStore {
         now,
       });
       return ledger.recomputeAfterMealCorrection(affectedOccurredAt);
-    });
+    }, true);
   }
 }

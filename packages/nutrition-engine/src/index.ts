@@ -17,6 +17,13 @@ export {
   type NutrientCrosswalkEntryV1,
 } from './nutrient-crosswalk.js';
 export {
+  FOOD_COMPONENTS_V1,
+  findFoodComponentV1,
+  resolveFoodComponentV1,
+  type FoodComponentKindV1,
+  type FoodComponentV1,
+} from './nutrient-registry.js';
+export {
   LocalNutritionStateLedgerV1,
   type NutritionStateLedgerV1Options,
   type NutritionWindowSnapshotV1,
@@ -29,7 +36,7 @@ export {
   type NutritionPeriodV1,
 } from './nutrition-period.js';
 export {
-  NUTRITION_STATE_RULE_VERSION_V1,
+  NUTRITION_STATE_RULE_VERSION_V2,
   calculateDailyNutritionStateV1,
   calculateRollingNutritionStateV1,
   type DailyNutritionStateV1,

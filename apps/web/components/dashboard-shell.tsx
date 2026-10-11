@@ -155,12 +155,12 @@ export function DashboardShell({ store }: { store?: OnboardingReader }) {
         </DashboardCard>
         <DashboardCard
           accent="violet"
-          eyebrow="Activity and sleep"
+          eyebrow="Activity context"
           href="/activity"
           icon="activity"
-          title="Add movement and recovery"
+          title="Set your activity level"
         >
-          Keep activity, sleep, and recovery context together.
+          Review your activity category and estimated maintenance energy.
         </DashboardCard>
         <DashboardCard
           accent="blue"

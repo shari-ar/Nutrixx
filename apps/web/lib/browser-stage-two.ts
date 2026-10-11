@@ -27,7 +27,10 @@ import {
   type RecipeVersionV1,
 } from '@nutrixx/recipe-knowledge';
 
-import { BrowserNutritionStateStore } from './browser-nutrition-state';
+import {
+  BrowserNutritionStateStore,
+  type NutritionLockRunner,
+} from './browser-nutrition-state';
 import { BrowserOnboardingStore } from './browser-onboarding';
 import { exampleUsdPricePer100g } from './food-price-examples';
 import { loadNutritionContextV1 } from './nutrition-context';
@@ -44,6 +47,7 @@ export interface StageTwoDependencies {
   readonly now: () => string;
   readonly timeZone: () => string;
   readonly onboarding: Pick<BrowserOnboardingStore, 'load'>;
+  readonly runExclusive?: NutritionLockRunner;
 }
 
 export interface FoodChoice {
@@ -186,6 +190,9 @@ export class BrowserStageTwoStore {
         now: this.dependencies.now,
         timeZone: this.dependencies.timeZone,
         onboarding: this.dependencies.onboarding,
+        ...(this.dependencies.runExclusive === undefined
+          ? {}
+          : { runExclusive: this.dependencies.runExclusive }),
       }).recomputeAfterMealChange(affectedOccurredAt);
     } catch {
       // The committed meal remains authoritative; opening Nutrition retries
@@ -422,6 +429,17 @@ export class BrowserStageTwoStore {
     );
   }
 
+  public async customFoodHistory(
+    foodId: string,
+  ): Promise<readonly CustomFoodVersionV1[]> {
+    return this.withRepository((repository, owner) =>
+      new CustomFoodLedgerV1({
+        repository,
+        digestSha256Hex: sha256Canonical,
+      }).history(owner, foodId),
+    );
+  }
+
   public async saveCustomFood(input: SaveCustomFoodInput): Promise<string> {
     return this.withRepository(async (repository, owner) => {
       const ledger = new CustomFoodLedgerV1({
@@ -490,6 +508,17 @@ export class BrowserStageTwoStore {
         repository,
         digestSha256Hex: sha256Canonical,
       }).listCurrent(owner),
+    );
+  }
+
+  public async recipeHistory(
+    recipeId: string,
+  ): Promise<readonly RecipeVersionV1[]> {
+    return this.withRepository((repository, owner) =>
+      new RecipeLedgerV1({
+        repository,
+        digestSha256Hex: sha256Canonical,
+      }).history(owner, recipeId),
     );
   }
 

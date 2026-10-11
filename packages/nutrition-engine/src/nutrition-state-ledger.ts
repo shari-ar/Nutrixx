@@ -18,7 +18,7 @@ import {
 import {
   calculateDailyNutritionStateV1,
   calculateRollingNutritionStateV1,
-  NUTRITION_STATE_RULE_VERSION_V1,
+  NUTRITION_STATE_RULE_VERSION_V2,
   type DailyNutritionStateV1,
   type RollingNutritionStateV1,
 } from './nutrition-state.js';
@@ -135,7 +135,7 @@ export class LocalNutritionStateLedgerV1 {
           method: 'calculated',
           source: {
             kind: 'calculation',
-            sourceId: NUTRITION_STATE_RULE_VERSION_V1,
+            sourceId: NUTRITION_STATE_RULE_VERSION_V2,
           },
           recordedAt: options.now,
         },
@@ -183,7 +183,7 @@ export class LocalNutritionStateLedgerV1 {
           meal.occurredAt >= period.startsAt && meal.occurredAt < period.endsAt,
       );
       const fingerprint = await this.fingerprint({
-        ruleVersion: NUTRITION_STATE_RULE_VERSION_V1,
+        ruleVersion: NUTRITION_STATE_RULE_VERSION_V2,
         period,
         meals: inputs,
         context,
@@ -232,7 +232,7 @@ export class LocalNutritionStateLedgerV1 {
       .map((period) => period.periodId)
       .join('|');
     const rollingFingerprint = await this.fingerprint({
-      ruleVersion: NUTRITION_STATE_RULE_VERSION_V1,
+      ruleVersion: NUTRITION_STATE_RULE_VERSION_V2,
       completedPeriodIds: window.completed.map((period) => period.periodId),
       dailyFingerprints: fingerprints.slice(0, 7),
     });

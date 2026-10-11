@@ -6,6 +6,8 @@
 | `baseline-targets.ts`          | Source-attributed adult DRI target release for US and Canada                   |
 | `energy-requirement.ts`        | Source-attributed 2023 maintenance energy estimate                             |
 | `nutrient-crosswalk.ts`        | Exact USDA FDC observation-to-target concept mappings                          |
+| `nutrient-registry.ts`         | All 112 feasibility food components and exact source identities                |
+| `nutrient-registry.test.ts`    | Coverage, stable identity, and source-mapping fixtures                         |
 | `target-policy.ts`             | Versioned target-release validation and applicability selection                |
 | `nutrition-period.ts`          | IANA nutrition-day and seven-completed-day period boundaries                   |
 | `nutrition-state.ts`           | Recorded nutrient aggregation and evidence-limited comparisons                 |

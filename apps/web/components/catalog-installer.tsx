@@ -113,7 +113,7 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
       await installArtifact(artifact);
     } catch {
       setError(
-        'The local catalog is unavailable. Retry later or install a verified artifact manually.',
+        'The offline catalog could not be installed. Check your connection and available browser storage, then retry.',
       );
     } finally {
       setInstalling(false);

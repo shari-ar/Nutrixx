@@ -6,8 +6,9 @@ adapters, but they must not contain presentation code or silently transmit
 local-authority data.
 
 `browser-storage.ts` is the single web boundary for storage status,
-user-initiated persistence, verified export download, and explicit local-data
-clearing.
+user-initiated persistence, verified export download and restore, and explicit
+local-data clearing. Restore checks integrity and the starting profile before
+offering an explicit replacement confirmation.
 
 `browser-onboarding.ts` owns the one-time starting profile. `browser-stage-two.ts`
 owns verified catalog installation and the local custom-food, recipe, and meal
@@ -20,6 +21,12 @@ user review; only explicit confirmation schedules it at the next boundary.
 Starting-profile edits preserve the original zone to keep historical days stable. Meal
 corrections refresh derived snapshots; opening Nutrition reconciles them again
 from authoritative meal history.
+The same service stores the chosen activity category as canonical user context
+and exposes the NASEM-based maintenance-energy estimate to the Activity route.
+Nutrition snapshot recomputation shares an in-flight request within one store
+and holds an exclusive origin-wide Web Lock per subject across tabs. Meal-change
+recomputations use the same lock. A secure browser context provides the Web
+Locks API used by the supported browser matrix.
 `nutrition-context.ts` resolves exact catalog, custom-food, and recipe-version
 composition for publication. It preserves unknown values and supports local
 recipe and meal nutrition snapshots entirely in the browser.

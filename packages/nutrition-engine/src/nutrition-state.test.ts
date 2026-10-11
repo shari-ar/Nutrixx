@@ -174,6 +174,51 @@ describe('Nutrition-day boundaries', () => {
 });
 
 describe('Recorded-intake state', () => {
+  it('tracks all 112 registered components while withholding unsupported targets', () => {
+    const recorded = meal('2026-10-19T10:00:00.000Z', [
+      {
+        state: 'known',
+        nutrientId: 'source.usda-fdc.1008',
+        amount: '230',
+        unit: { system: 'ucum', code: 'kcal' },
+      },
+      {
+        state: 'known',
+        nutrientId: 'source.usda-fdc.1009',
+        amount: '12.5',
+        unit: { system: 'ucum', code: 'g' },
+      },
+      {
+        state: 'known',
+        nutrientId: 'source.usda-fdc.1146',
+        amount: '0.2',
+        unit: { system: 'ucum', code: 'ug' },
+      },
+    ]);
+    const state = daily('2026-10-19T10:00:00.000Z', [recorded]);
+    expect(state.nutrients).toHaveLength(112);
+    expect(nutrient(state, 'food-component.enerc-kcal')).toMatchObject({
+      knownRecordedSubtotal: '230',
+      unit: 'kcal',
+      evidence: 'known-for-recorded-meals',
+    });
+    expect(nutrient(state, 'food-component.starch')).toMatchObject({
+      knownRecordedSubtotal: '12.5',
+      evidence: 'known-for-recorded-meals',
+      target: { status: 'OUT_OF_SCOPE', reason: 'target-unavailable' },
+      comparison: 'indeterminate',
+    });
+    expect(nutrient(state, 'food-component.as')).toMatchObject({
+      knownRecordedSubtotal: '0',
+      evidence: 'incomplete',
+    });
+    expect(nutrient(state, 'food-component.ni')).toMatchObject({
+      knownRecordedSubtotal: '0.2',
+      target: { status: 'OUT_OF_SCOPE', reason: 'target-unavailable' },
+      comparison: 'indeterminate',
+    });
+  });
+
   it('keeps measured zero and missing composition distinct', () => {
     const knownZero = meal('2026-10-19T10:00:00.000Z', [
       {

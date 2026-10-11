@@ -13,6 +13,11 @@ Each tracked component has a stable semantic ID, names/synonyms, component type,
 canonical unit/dimension, measurement basis, parent/child relationships, source
 mappings, and lifecycle status.
 
+The implemented [112-component register](food-component-registry.md) retains
+the feasibility database's active food-component scope. Exact USDA source
+mappings and measured-versus-unavailable evidence determine which recorded
+amounts can be calculated.
+
 Component types—nutrients, subcomponents, bioactives, contaminants, allergens,
 and derived metrics—remain explicit. Nutrient inclusion requires a defined
 decision and demonstrated user value in addition to source availability.

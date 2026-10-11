@@ -41,10 +41,13 @@ includes the meal revisions, Health Context, target release, and zone policy.
 
 1. Read the current accepted meal revision and its pinned nutrition result.
 2. Assign each occurrence instant to an effective-dated IANA nutrition day.
-3. Map compatible USDA nutrient identifiers and units to target concepts.
+3. Map compatible USDA nutrient identifiers and units to the 112-component
+   [recorded-intake registry](../nutrition-model/food-component-registry.md).
 4. Sum known decimal amounts exactly; carry missing meals and items separately.
-5. Select intake references and applicable upper limits for the dated Health
-   Context and market. Compare only when evidence supports a stable relation.
+5. Select intake references and applicable upper limits for the 27 supported
+   target concepts in the dated Health Context and market. Compare only when
+   evidence supports a stable relation; other components retain a recorded
+   amount and an unavailable target.
 6. Build seven completed daily states and a descriptive trend from comparable
    observed ordinary periods. Preserve missing and travel-adjusted periods.
 7. Commit changed daily and rolling snapshots atomically with fingerprints,

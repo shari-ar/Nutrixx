@@ -1,7 +1,10 @@
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { BrowserNutritionStateStore } from './browser-nutrition-state';
+import {
+  BrowserNutritionStateStore,
+  type NutritionLockRunner,
+} from './browser-nutrition-state';
 import { BrowserStageTwoStore } from './browser-stage-two';
 
 import type { StartingProfileV1 } from '@nutrixx/user-context';
@@ -9,6 +12,27 @@ import type { StartingProfileV1 } from '@nutrixx/user-context';
 const NOW = '2026-10-10T12:00:00.000Z';
 const OCCURRED_AT = '2026-10-10T10:00:00.000Z';
 const OWNER_ID = '10000000-0000-4000-8000-000000000001';
+const runWithoutContention: NutritionLockRunner = (_name, operation) =>
+  operation();
+
+function serialLockRunner(): NutritionLockRunner {
+  const tails = new Map<string, Promise<void>>();
+  return async (name, operation) => {
+    const previous = tails.get(name) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    tails.set(name, current);
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (tails.get(name) === current) tails.delete(name);
+    }
+  };
+}
 
 function ids() {
   let next = 1;
@@ -36,6 +60,102 @@ function profile(): StartingProfileV1 {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('browser nutrition state', () => {
+  it('requests an exclusive browser Web Lock for the current subject', async () => {
+    const request = vi.fn(
+      async (
+        _name: string,
+        _options: LockOptions,
+        operation: () => Promise<unknown>,
+      ) => operation(),
+    );
+    vi.stubGlobal('navigator', { locks: { request } });
+    const store = new BrowserNutritionStateStore({
+      indexedDB: new IDBFactory(),
+      keyRange: IDBKeyRange,
+      createId: ids(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+      onboarding: { load: async () => profile() },
+    });
+    expect((await store.load()).window.newSnapshotCount).toBe(9);
+    expect(request).toHaveBeenCalledWith(
+      `nutrixx:nutrition-state:${OWNER_ID}`,
+      { mode: 'exclusive' },
+      expect.any(Function),
+    );
+  });
+
+  it('shares one in-flight calculation within a page and serializes two tabs', async () => {
+    const indexedDB = new IDBFactory();
+    const createId = ids();
+    const serial = serialLockRunner();
+    const lockCalls: string[] = [];
+    const runExclusive: NutritionLockRunner = (name, operation) => {
+      lockCalls.push(name);
+      return serial(name, operation);
+    };
+    const dependencies = {
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId,
+      now: () => NOW,
+      timeZone: () => 'UTC',
+      onboarding: { load: async () => profile() },
+      runExclusive,
+    };
+    const firstTab = new BrowserNutritionStateStore(dependencies);
+    const secondTab = new BrowserNutritionStateStore(dependencies);
+    const [first, repeated, second] = await Promise.all([
+      firstTab.load(),
+      firstTab.load(),
+      secondTab.load(),
+    ]);
+    expect(first).toEqual(repeated);
+    expect(
+      [first.window.newSnapshotCount, second.window.newSnapshotCount].sort(),
+    ).toEqual([0, 9]);
+    expect(lockCalls).toEqual([
+      `nutrixx:nutrition-state:${OWNER_ID}`,
+      `nutrixx:nutrition-state:${OWNER_ID}`,
+    ]);
+    expect((await secondTab.load()).window.newSnapshotCount).toBe(0);
+  });
+
+  it('retains a user-selected usual activity level and exposes the sourced maintenance estimate', async () => {
+    const indexedDB = new IDBFactory();
+    const dependencies = {
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: ids(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+      onboarding: { load: async () => profile() },
+      runExclusive: runWithoutContention,
+    };
+    const store = new BrowserNutritionStateStore(dependencies);
+    const before = await store.loadEnergyRequirement();
+    expect(before.activityLevel).toBeNull();
+    expect(before.result).toMatchObject({
+      status: 'NEEDS_INPUT',
+      fields: ['activity-level'],
+    });
+
+    await store.selectActivityLevel('low');
+    const after = await new BrowserNutritionStateStore(
+      dependencies,
+    ).loadEnergyRequirement();
+    expect(after.activityLevel).toBe('low');
+    expect(after.result.status).toBe('READY');
+    if (after.result.status === 'READY') {
+      expect(
+        after.result.maintenanceKilocaloriesPerDay.minimum,
+      ).toBeGreaterThan(0);
+      expect(after.result.source.url).toBe(
+        'https://www.nationalacademies.org/read/26818/chapter/7',
+      );
+    }
+  });
+
   it('recalculates real local meals, retains market selection, and reconciles corrections offline', async () => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
@@ -49,6 +169,7 @@ describe('browser nutrition state', () => {
       now: () => NOW,
       timeZone: () => 'UTC',
       onboarding,
+      runExclusive: runWithoutContention,
     });
     const nutrition = new BrowserNutritionStateStore({
       indexedDB,
@@ -57,6 +178,7 @@ describe('browser nutrition state', () => {
       now: () => NOW,
       timeZone: () => 'UTC',
       onboarding,
+      runExclusive: runWithoutContention,
     });
 
     await meals.saveCustomFood({
@@ -125,6 +247,7 @@ describe('browser nutrition state', () => {
       now: () => now,
       timeZone: () => deviceTimeZone,
       onboarding,
+      runExclusive: runWithoutContention,
     };
     const store = new BrowserNutritionStateStore(dependencies);
     const before = await store.load();
@@ -196,6 +319,7 @@ describe('browser nutrition state', () => {
       now: () => NOW,
       timeZone: () => 'UTC',
       onboarding: { load: async () => profile() },
+      runExclusive: runWithoutContention,
     };
     const store = new BrowserNutritionStateStore(dependencies);
     const initial = await store.load();
@@ -231,6 +355,7 @@ describe('browser nutrition state', () => {
       now: () => now,
       timeZone: () => 'UTC',
       onboarding: { load: async () => profile() },
+      runExclusive: runWithoutContention,
     };
     const first = await new BrowserNutritionStateStore(dependencies).load();
     expect(first.window.newSnapshotCount).toBe(9);

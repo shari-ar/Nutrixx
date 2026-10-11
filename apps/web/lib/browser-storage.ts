@@ -1,5 +1,9 @@
 import { verifyCanonicalRecordV1 } from '@nutrixx/canonical-schema';
 import {
+  validateLocalDataExportV1,
+  type LocalDataExportArtifactV1,
+} from '@nutrixx/persistence';
+import {
   INDEXED_DB_SCHEMA_VERSION,
   REFERENCE_CACHE_SCHEMA_VERSION,
   IndexedDbCanonicalRecordRepository,
@@ -9,6 +13,7 @@ import {
   sha256Canonical,
   type StoragePressureAssessment,
 } from '@nutrixx/persistence-indexeddb';
+import { StartingProfileRecordV1Schema } from '@nutrixx/user-context';
 
 import {
   LAST_EXPORT_STORAGE_KEY,
@@ -39,6 +44,79 @@ export interface BrowserStorageSnapshot {
 }
 
 export type PersistenceRequestResult = 'granted' | 'denied' | 'unavailable';
+
+export interface VerifiedLocalRestoreV1 {
+  readonly artifact: LocalDataExportArtifactV1;
+  readonly profileId: string;
+  readonly ownerSubjectId: string;
+}
+
+export async function inspectLocalExport(
+  file: File,
+): Promise<VerifiedLocalRestoreV1> {
+  let input: unknown;
+  try {
+    input = JSON.parse(await file.text());
+  } catch {
+    throw new TypeError('Choose a valid Nutrixx export JSON file.');
+  }
+  const artifact = await validateLocalDataExportV1(input, {
+    hash: sha256Canonical,
+    verifyRecord: (record) => verifyCanonicalRecordV1(record, sha256Canonical),
+  });
+  const profiles = artifact.records.flatMap((record) => {
+    const result = StartingProfileRecordV1Schema.safeParse(record);
+    return result.success ? [result.data.payload] : [];
+  });
+  const profile = profiles[0];
+  if (
+    profiles.length !== 1 ||
+    profile === undefined ||
+    artifact.manifest.subjectIds.length !== 1 ||
+    artifact.manifest.subjectIds[0] !== profile.ownerSubjectId
+  ) {
+    throw new TypeError('The export must contain one complete local profile.');
+  }
+  return {
+    artifact,
+    profileId: profile.profileId,
+    ownerSubjectId: profile.ownerSubjectId,
+  };
+}
+
+export async function restoreVerifiedLocalExport(
+  preview: VerifiedLocalRestoreV1,
+): Promise<void> {
+  const locator = JSON.stringify({
+    profileId: preview.profileId,
+    ownerSubjectId: preview.ownerSubjectId,
+  });
+  const previousLocator = localStorage.getItem(ONBOARDING_LOCATOR_STORAGE_KEY);
+  // Confirm the browser can retain the locator before replacing canonical data.
+  localStorage.setItem(ONBOARDING_LOCATOR_STORAGE_KEY, locator);
+  if (previousLocator === null) {
+    localStorage.removeItem(ONBOARDING_LOCATOR_STORAGE_KEY);
+  } else {
+    localStorage.setItem(ONBOARDING_LOCATOR_STORAGE_KEY, previousLocator);
+  }
+  const repository = await IndexedDbCanonicalRecordRepository.create({
+    databaseName: LOCAL_USER_DATABASE_NAME,
+    indexedDB,
+    keyRange: IDBKeyRange,
+    verifyRecord: (record) => verifyCanonicalRecordV1(record, sha256Canonical),
+  });
+  try {
+    await repository.importLocalData(preview.artifact);
+    localStorage.setItem(ONBOARDING_LOCATOR_STORAGE_KEY, locator);
+    try {
+      localStorage.removeItem(LAST_EXPORT_STORAGE_KEY);
+    } catch {
+      // Operational export metadata must not turn a completed restore into a failure.
+    }
+  } finally {
+    await repository.close();
+  }
+}
 
 function readLastVerifiedExportAt(): string | null {
   try {

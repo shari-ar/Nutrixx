@@ -36,7 +36,7 @@ export function NutritionDashboardSummary({
           (nutrient) => nutrient.evidence === 'known-for-recorded-meals',
         ).length;
         setSummary(
-          `${count} meal(s) recorded today · ${known} of ${window.current.nutrients.length} nutrients have complete composition for those meals.${market === null ? ' Choose a reference region for comparisons.' : ''}`,
+          `${count} meal(s) recorded today · ${known} of ${window.current.nutrients.length} food components have complete composition for those meals.${market === null ? ' Choose a reference region for comparisons.' : ''}`,
         );
       })
       .catch(() => {

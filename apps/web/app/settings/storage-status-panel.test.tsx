@@ -8,7 +8,13 @@ const storage = vi.hoisted(() => ({
   downloadVerifiedLocalExport: vi.fn(),
   readBrowserStorageSnapshot: vi.fn(),
   requestBrowserPersistence: vi.fn(),
+  inspectLocalExport: vi.fn(),
+  restoreVerifiedLocalExport: vi.fn(),
 }));
+
+const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
+
+vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
 vi.mock('@/lib/browser-storage', () => storage);
 
@@ -38,6 +44,7 @@ beforeEach(() => {
   storage.requestBrowserPersistence.mockResolvedValue('granted');
   storage.downloadVerifiedLocalExport.mockResolvedValue(undefined);
   storage.clearAllLocalData.mockResolvedValue(undefined);
+  storage.restoreVerifiedLocalExport.mockResolvedValue(undefined);
 });
 
 describe('StorageStatusPanel', () => {
@@ -93,5 +100,38 @@ describe('StorageStatusPanel', () => {
         'All Nutrixx local data was cleared from this browser.',
       ),
     ).toBeVisible();
+  });
+
+  it('verifies an export, previews replacement, and restores only after confirmation', async () => {
+    const preview = {
+      artifact: {
+        manifest: {
+          exportedAt: '2026-10-10T12:00:00.000Z',
+          recordCount: 12,
+          transactionCount: 15,
+        },
+      },
+      profileId: 'profile',
+      ownerSubjectId: 'owner',
+    };
+    storage.inspectLocalExport.mockResolvedValue(preview);
+    render(<StorageStatusPanel />);
+    const file = new File(['{}'], 'nutrixx-backup.json', {
+      type: 'application/json',
+    });
+    fireEvent.change(await screen.findByLabelText('Nutrixx export file'), {
+      target: { files: [file] },
+    });
+    expect(storage.restoreVerifiedLocalExport).not.toHaveBeenCalled();
+    expect(await screen.findByText(/12 records/)).toBeVisible();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Replace local data with this backup',
+      }),
+    );
+    await waitFor(() =>
+      expect(storage.restoreVerifiedLocalExport).toHaveBeenCalledWith(preview),
+    );
+    expect(navigation.replace).toHaveBeenCalledWith('/dashboard');
   });
 });

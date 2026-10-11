@@ -52,6 +52,11 @@ table and page citation. The source values and interpretation were checked
 against the [National Academies' DRI summary tables](https://www.nationalacademies.org/read/25353/chapter/28),
 linked by the [NIH Office of Dietary Supplements](https://ods.od.nih.gov/healthinformation/nutrientrecommendations.aspx).
 
+The [recorded-intake registry](food-component-registry.md) contains 112 food
+components. Its 27 target-policy concepts form a source-attributed subset;
+other components can have recorded amounts while their personal target remains
+explicitly unavailable.
+
 The committed USDA crosswalk records exact source nutrient IDs, names, and
 observation units from the active Foundation/SR Legacy food catalog. Copper's
 source DRI micrograms are represented as milligrams to match the USDA

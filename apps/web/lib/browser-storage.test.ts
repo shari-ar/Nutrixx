@@ -9,6 +9,8 @@ import {
   requestBrowserPersistence,
 } from './browser-storage';
 
+import type * as CanonicalSchema from '@nutrixx/canonical-schema';
+
 const adapter = vi.hoisted(() => ({
   assessStoragePressure: vi.fn(),
   createCache: vi.fn(),
@@ -17,7 +19,8 @@ const adapter = vi.hoisted(() => ({
   sha256Canonical: vi.fn(),
 }));
 
-vi.mock('@nutrixx/canonical-schema', () => ({
+vi.mock('@nutrixx/canonical-schema', async (importOriginal) => ({
+  ...(await importOriginal<typeof CanonicalSchema>()),
   verifyCanonicalRecordV1: vi.fn(),
 }));
 

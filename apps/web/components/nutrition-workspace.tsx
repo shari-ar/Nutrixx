@@ -1,7 +1,8 @@
 'use client';
 
 import {
-  NUTRIENT_CROSSWALK_V1,
+  FOOD_COMPONENTS_V1,
+  findFoodComponentV1,
   type NutrientIntakeStateV1,
   type TargetSelectionV1,
 } from '@nutrixx/nutrition-engine';
@@ -29,10 +30,7 @@ const featuredNutrients = new Set([
 ]);
 
 function nutrientName(nutrientId: string): string {
-  const entry = NUTRIENT_CROSSWALK_V1.find(
-    (candidate) => candidate.nutrientId === nutrientId,
-  );
-  return entry?.usdaFdcName ?? nutrientId;
+  return findFoodComponentV1(nutrientId)?.name ?? nutrientId;
 }
 
 function targetLabel(target: TargetSelectionV1, unit: string): string {
@@ -42,7 +40,9 @@ function targetLabel(target: TargetSelectionV1, unit: string): string {
       : 'More profile detail is needed for a target.';
   }
   if (target.status === 'OUT_OF_SCOPE') {
-    return 'A matching target is unavailable.';
+    return target.reason === 'target-unavailable'
+      ? 'No applicable personal intake reference is defined.'
+      : 'A matching target is unavailable.';
   }
   const value = target.rule.value;
   if (value.kind !== 'point') return 'A point target is unavailable.';
@@ -82,7 +82,10 @@ function relationLabel(nutrient: NutrientIntakeStateV1): string {
   if (nutrient.comparison === 'recorded-below-reference') {
     return 'Recorded intake below the selected reference';
   }
-  return 'Comparison remains indeterminate';
+  return nutrient.target.status === 'OUT_OF_SCOPE' &&
+    nutrient.target.reason === 'target-unavailable'
+    ? 'Recorded amount only; no personal target comparison'
+    : 'Comparison remains indeterminate';
 }
 
 function NutritionCard({
@@ -119,9 +122,14 @@ function NutritionCard({
   return (
     <article className="rounded-[1.5rem] border border-separator bg-surface/75 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold">
-          {nutrientName(nutrient.nutrientId)}
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold">
+            {nutrientName(nutrient.nutrientId)}
+          </h3>
+          <p className="text-xs text-muted">
+            {findFoodComponentV1(nutrient.nutrientId)?.category ?? 'Other'}
+          </p>
+        </div>
         <span className="rounded-full bg-background px-3 py-1 text-xs text-muted">
           {nutrient.evidence === 'incomplete'
             ? 'Composition incomplete'
@@ -300,6 +308,8 @@ export function NutritionWorkspace({ store }: { store?: NutritionStore }) {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [componentCategory, setComponentCategory] = useState('all');
+  const [componentSearch, setComponentSearch] = useState('');
   const [selectedTimeZone, setSelectedTimeZone] = useState<string | null>(null);
   const [reviewTimeZone, setReviewTimeZone] = useState<string | null>(null);
 
@@ -620,7 +630,7 @@ export function NutritionWorkspace({ store }: { store?: NutritionStore }) {
                   className="text-2xl font-semibold"
                   id="nutrition-results-heading"
                 >
-                  Nutrients from recorded meals
+                  Food components from recorded meals
                 </h2>
                 <p className="mt-2 text-sm text-muted">
                   {
@@ -628,8 +638,19 @@ export function NutritionWorkspace({ store }: { store?: NutritionStore }) {
                       (day) => day.recordedMealCount > 0,
                     ).length
                   }{' '}
-                  of 7 completed days include a meal record. Each nutrient keeps
+                  of 7 completed days include a meal record. The full register
+                  contains {FOOD_COMPONENTS_V1.length} components; each keeps
                   its own evidence coverage.
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  {
+                    FOOD_COMPONENTS_V1.filter(
+                      (entry) => entry.usdaFdcNutrientIds.length > 0,
+                    ).length
+                  }{' '}
+                  components have exact USDA source mappings. Others can use
+                  compatible custom food facts; unavailable amounts remain
+                  unknown rather than zero.
                 </p>
               </div>
               <button
@@ -637,15 +658,59 @@ export function NutritionWorkspace({ store }: { store?: NutritionStore }) {
                 onClick={() => setShowAll((value) => !value)}
                 type="button"
               >
-                {showAll ? 'Show key nutrients' : 'Show all nutrients'}
+                {showAll ? 'Show key components' : 'Browse all 112 components'}
               </button>
             </div>
+            {showAll ? (
+              <div className="mt-5 flex flex-wrap gap-4">
+                <label className="text-sm font-medium">
+                  Category
+                  <select
+                    className="mt-2 block rounded-xl border border-separator bg-background px-3 py-2"
+                    onChange={(event) =>
+                      setComponentCategory(event.target.value)
+                    }
+                    value={componentCategory}
+                  >
+                    <option value="all">All categories</option>
+                    {Array.from(
+                      new Set(
+                        FOOD_COMPONENTS_V1.map((entry) => entry.category),
+                      ),
+                    ).map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm font-medium">
+                  Find a component
+                  <input
+                    className="mt-2 block rounded-xl border border-separator bg-background px-3 py-2"
+                    onChange={(event) => setComponentSearch(event.target.value)}
+                    placeholder="Name or code"
+                    type="search"
+                    value={componentSearch}
+                  />
+                </label>
+              </div>
+            ) : null}
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {snapshot.window.current.nutrients
-                .filter(
-                  (nutrient) =>
-                    showAll || featuredNutrients.has(nutrient.nutrientId),
-                )
+                .filter((nutrient) => {
+                  if (!showAll)
+                    return featuredNutrients.has(nutrient.nutrientId);
+                  const component = findFoodComponentV1(nutrient.nutrientId);
+                  const query = componentSearch.trim().toLowerCase();
+                  return (
+                    (componentCategory === 'all' ||
+                      component?.category === componentCategory) &&
+                    (!query ||
+                      component?.name.toLowerCase().includes(query) ||
+                      component?.accessCode.toLowerCase().includes(query))
+                  );
+                })
                 .map((nutrient) => (
                   <NutritionCard
                     key={nutrient.nutrientId}

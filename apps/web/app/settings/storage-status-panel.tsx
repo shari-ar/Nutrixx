@@ -1,13 +1,17 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
   clearAllLocalData,
   downloadVerifiedLocalExport,
+  inspectLocalExport,
   readBrowserStorageSnapshot,
   requestBrowserPersistence,
+  restoreVerifiedLocalExport,
   type BrowserStorageSnapshot,
+  type VerifiedLocalRestoreV1,
 } from '@/lib/browser-storage';
 
 const pressureStyles = {
@@ -50,9 +54,14 @@ function statusCopy(snapshot: BrowserStorageSnapshot) {
 }
 
 export function StorageStatusPanel() {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<BrowserStorageSnapshot | null>(null);
-  const [busy, setBusy] = useState<'clear' | 'export' | 'persist' | null>(null);
+  const [busy, setBusy] = useState<
+    'clear' | 'export' | 'inspect' | 'persist' | 'restore' | null
+  >(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [restorePreview, setRestorePreview] =
+    useState<VerifiedLocalRestoreV1 | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -95,6 +104,42 @@ export function StorageStatusPanel() {
       setBusy(null);
     }
   };
+
+  async function inspectBackup(file: File) {
+    setBusy('inspect');
+    setMessage(null);
+    setRestorePreview(null);
+    try {
+      setRestorePreview(await inspectLocalExport(file));
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'The selected backup could not be verified.',
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function restoreBackup() {
+    if (restorePreview === null) return;
+    setBusy('restore');
+    setMessage(null);
+    try {
+      await restoreVerifiedLocalExport(restorePreview);
+      window.dispatchEvent(new Event('nutrixx:onboarding-profile-saved'));
+      router.replace('/dashboard');
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'The backup could not be restored. Existing data remains available.',
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
 
   if (snapshot === null) {
     return (
@@ -285,6 +330,77 @@ export function StorageStatusPanel() {
             </div>
           )}
         </article>
+      </section>
+
+      <section className="rounded-[1.5rem] border border-separator bg-surface/75 p-5 sm:p-6">
+        <h2 className="text-xl font-semibold">Restore a verified backup</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Select a Nutrixx JSON export for full integrity verification. Review
+          its contents before replacing this browser&apos;s canonical data. The
+          separate offline food catalog may need installation afterward.
+        </p>
+        <label
+          className="mt-5 block text-sm font-semibold"
+          htmlFor="restore-file"
+        >
+          Nutrixx export file
+        </label>
+        <input
+          accept=".json,application/json"
+          className="mt-2 block w-full max-w-xl rounded-xl border border-separator p-2 text-sm"
+          disabled={busy !== null}
+          id="restore-file"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) inspectBackup(file).catch(() => undefined);
+            event.target.value = '';
+          }}
+          type="file"
+        />
+        {busy === 'inspect' ? (
+          <p className="mt-3 text-sm" role="status">
+            Verifying backup…
+          </p>
+        ) : null}
+        {restorePreview ? (
+          <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <p className="font-semibold">Verified backup ready to restore</p>
+            <p className="mt-2 text-sm text-muted">
+              Exported {formatDate(restorePreview.artifact.manifest.exportedAt)}
+              {' · '}
+              {restorePreview.artifact.manifest.recordCount} records
+              {' · '}
+              {restorePreview.artifact.manifest.transactionCount} transactions.
+            </p>
+            <p className="mt-3 text-sm">
+              Confirming replaces all current Nutrixx user records and their
+              transaction history in this browser. Download a current export
+              first if you want to keep them.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-50"
+                disabled={busy !== null}
+                onClick={() => {
+                  restoreBackup().catch(() => undefined);
+                }}
+                type="button"
+              >
+                {busy === 'restore'
+                  ? 'Restoring…'
+                  : 'Replace local data with this backup'}
+              </button>
+              <button
+                className="rounded-xl border border-separator px-4 py-2.5 text-sm font-semibold"
+                disabled={busy !== null}
+                onClick={() => setRestorePreview(null)}
+                type="button"
+              >
+                Cancel restore
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-[1.5rem] border border-separator bg-surface/50 p-5 text-sm text-muted">

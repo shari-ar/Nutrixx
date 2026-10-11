@@ -4,10 +4,11 @@ import {
 } from '@nutrixx/consumption';
 
 import type { HealthContextSnapshotV1 } from './health-context.js';
+import { NUTRIENT_CROSSWALK_V1 } from './nutrient-crosswalk.js';
 import {
-  NUTRIENT_CROSSWALK_V1,
-  resolveNutrientConceptV1,
-} from './nutrient-crosswalk.js';
+  FOOD_COMPONENTS_V1,
+  resolveFoodComponentV1,
+} from './nutrient-registry.js';
 import type { NutritionPeriodV1 } from './nutrition-period.js';
 import {
   selectTargetV1,
@@ -15,7 +16,11 @@ import {
   type TargetSelectionV1,
 } from './target-policy.js';
 
-export const NUTRITION_STATE_RULE_VERSION_V1 = 'recorded-intake-v1' as const;
+export const NUTRITION_STATE_RULE_VERSION_V2 = 'recorded-intake-v2' as const;
+
+const targetConceptIds = new Set(
+  NUTRIENT_CROSSWALK_V1.map((entry) => entry.nutrientId),
+);
 
 type ComparisonV1 =
   | 'recorded-below-reference'
@@ -46,7 +51,7 @@ export interface NutrientIntakeStateV1 {
 }
 
 export interface DailyNutritionStateV1 {
-  readonly ruleVersion: typeof NUTRITION_STATE_RULE_VERSION_V1;
+  readonly ruleVersion: typeof NUTRITION_STATE_RULE_VERSION_V2;
   readonly ownerSubjectId: string;
   readonly period: NutritionPeriodV1;
   readonly calculatedAt: string;
@@ -64,7 +69,7 @@ export interface DailyNutritionStateV1 {
 }
 
 export interface RollingNutritionStateV1 {
-  readonly ruleVersion: typeof NUTRITION_STATE_RULE_VERSION_V1;
+  readonly ruleVersion: typeof NUTRITION_STATE_RULE_VERSION_V2;
   readonly ownerSubjectId: string;
   readonly completedPeriodIds: readonly string[];
   readonly status: 'COMPLETE' | 'PARTIAL' | 'NEEDS_INPUT' | 'OUT_OF_SCOPE';
@@ -189,7 +194,7 @@ export function calculateDailyNutritionStateV1(options: {
       'Current meal revisions must have one owner and identity.',
     );
   }
-  const nutrients: NutrientIntakeStateV1[] = NUTRIENT_CROSSWALK_V1.map(
+  const nutrients: NutrientIntakeStateV1[] = FOOD_COMPONENTS_V1.map(
     (concept) => {
       const contributingMeals: NutrientIntakeStateV1['contributingMeals'][number][] =
         [];
@@ -198,8 +203,10 @@ export function calculateDailyNutritionStateV1(options: {
       for (const meal of meals) {
         const matches = (meal.nutrition ?? []).filter(
           (value) =>
-            value.nutrientId === concept.nutrientId ||
-            value.nutrientId === `source.usda-fdc.${concept.usdaFdcNutrientId}`,
+            value.nutrientId === concept.componentId ||
+            concept.usdaFdcNutrientIds.some(
+              (id) => value.nutrientId === `source.usda-fdc.${id}`,
+            ),
         );
         const value = matches[0];
         if (matches.length !== 1 || value === undefined) {
@@ -214,9 +221,9 @@ export function calculateDailyNutritionStateV1(options: {
         }
         if (
           value.unit?.system !== 'ucum' ||
-          value.unit.code !== concept.observationUnit ||
-          resolveNutrientConceptV1(value.nutrientId, value.unit.code) !==
-            concept.nutrientId
+          value.unit.code !== concept.unit ||
+          resolveFoodComponentV1(value.nutrientId, value.unit.code) !==
+            concept.componentId
         ) {
           missingMealIds.push(meal.mealId);
           for (const item of meal.items) missingItemIds.add(item.itemId);
@@ -240,51 +247,64 @@ export function calculateDailyNutritionStateV1(options: {
       const knownRecordedSubtotal = sumDecimals(
         contributingMeals.map((value) => value.amount),
       );
-      const target = selectTargetV1({
-        release,
-        context,
-        nutrientId: concept.nutrientId,
-        query: 'intake-reference',
-        ...(options.marketCode === undefined
-          ? {}
-          : { marketCode: options.marketCode }),
-      });
+      const target: TargetSelectionV1 = targetConceptIds.has(
+        concept.componentId,
+      )
+        ? selectTargetV1({
+            release,
+            context,
+            nutrientId: concept.componentId,
+            query: 'intake-reference',
+            ...(options.marketCode === undefined
+              ? {}
+              : { marketCode: options.marketCode }),
+          })
+        : { status: 'OUT_OF_SCOPE', reason: 'target-unavailable' };
       const comparison = comparisonFor(
         knownRecordedSubtotal,
         incomplete,
         target,
         period.travelAdjusted,
-        concept.observationUnit,
+        concept.unit,
       );
-      const upperLimit = selectTargetV1({
-        release,
-        context,
-        nutrientId: concept.nutrientId,
-        query: 'UL',
-        ...(options.marketCode === undefined
-          ? {}
-          : { marketCode: options.marketCode }),
-      });
+      const upperLimit: TargetSelectionV1 = targetConceptIds.has(
+        concept.componentId,
+      )
+        ? selectTargetV1({
+            release,
+            context,
+            nutrientId: concept.componentId,
+            query: 'UL',
+            ...(options.marketCode === undefined
+              ? {}
+              : { marketCode: options.marketCode }),
+          })
+        : { status: 'OUT_OF_SCOPE', reason: 'target-unavailable' };
       const upperLimitComparison = comparisonFor(
         knownRecordedSubtotal,
         incomplete,
         upperLimit,
         period.travelAdjusted,
-        concept.observationUnit,
+        concept.unit,
       );
-      const energyShareTarget = selectTargetV1({
-        release,
-        context,
-        nutrientId: concept.nutrientId,
-        query: 'AMDR',
-        ...(options.marketCode === undefined
-          ? {}
-          : { marketCode: options.marketCode }),
-      });
+      const energyShareTarget: TargetSelectionV1 = targetConceptIds.has(
+        concept.componentId,
+      )
+        ? selectTargetV1({
+            release,
+            context,
+            nutrientId: concept.componentId,
+            query: 'AMDR',
+            ...(options.marketCode === undefined
+              ? {}
+              : { marketCode: options.marketCode }),
+          })
+        : { status: 'OUT_OF_SCOPE', reason: 'target-unavailable' };
       const limitations = [
         ...(incomplete ? ['recorded-composition-incomplete'] : []),
         ...(period.travelAdjusted ? ['travel-period-comparison-withheld'] : []),
-        ...(target.status === 'READY'
+        ...(target.status === 'READY' ||
+        !targetConceptIds.has(concept.componentId)
           ? []
           : ['target-unavailable-or-ambiguous']),
         ...(energyShareTarget.status === 'READY'
@@ -292,8 +312,8 @@ export function calculateDailyNutritionStateV1(options: {
           : []),
       ];
       return {
-        nutrientId: concept.nutrientId,
-        unit: concept.observationUnit,
+        nutrientId: concept.componentId,
+        unit: concept.unit,
         knownRecordedSubtotal,
         evidence: incomplete ? 'incomplete' : 'known-for-recorded-meals',
         contributingMeals,
@@ -318,11 +338,15 @@ export function calculateDailyNutritionStateV1(options: {
         : meals.length === 0 ||
             period.travelAdjusted ||
             nutrients.some((nutrient) => nutrient.evidence === 'incomplete') ||
-            nutrients.some((nutrient) => nutrient.target.status !== 'READY')
+            nutrients.some(
+              (nutrient) =>
+                targetConceptIds.has(nutrient.nutrientId) &&
+                nutrient.target.status !== 'READY',
+            )
           ? 'PARTIAL'
           : 'COMPLETE';
   return {
-    ruleVersion: NUTRITION_STATE_RULE_VERSION_V1,
+    ruleVersion: NUTRITION_STATE_RULE_VERSION_V2,
     ownerSubjectId: options.ownerSubjectId,
     period,
     calculatedAt: options.calculatedAt,
@@ -401,7 +425,7 @@ export function calculateRollingNutritionStateV1(
     excludedDayCount: 7 - group.amounts.length,
   }));
   return {
-    ruleVersion: NUTRITION_STATE_RULE_VERSION_V1,
+    ruleVersion: NUTRITION_STATE_RULE_VERSION_V2,
     ownerSubjectId: owner,
     completedPeriodIds: daily.map((day) => day.period.periodId),
     status: daily.some((day) => day.status === 'OUT_OF_SCOPE')

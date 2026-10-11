@@ -15,6 +15,10 @@ verification policy lives under [quality](../quality/README.md).
 [Stage 3 target policy version 1](target-policy-v1.md) defines the versioned
 target-release contract, minimum-input applicability, and activation boundary.
 
+[Food component registry](food-component-registry.md) defines the 112-concept
+recorded-intake scope and its evidence boundary separately from personal
+target coverage.
+
 Every material scientific claim MUST cite a primary authoritative source,
 population/applicability, source version, effective date, and accountable
 author. Expert review is recorded before public launch. Changes are released

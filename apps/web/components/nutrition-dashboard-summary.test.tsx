@@ -22,7 +22,7 @@ describe('nutrition dashboard summary', () => {
     render(<NutritionDashboardSummary store={{ load: async () => value }} />);
     expect(
       await screen.findByText(/2 meal\(s\) recorded today/),
-    ).toHaveTextContent('1 of 2 nutrients have complete composition');
+    ).toHaveTextContent('1 of 2 food components have complete composition');
     expect(screen.getByText(/Choose a reference region/i)).toBeInTheDocument();
   });
 });

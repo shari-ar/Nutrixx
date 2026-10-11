@@ -1,9 +1,20 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { FoodChoice, SaveRecipeInput } from '@/lib/browser-stage-two';
 
 import { RecipeWorkspace } from './recipe-workspace';
+
+import type {
+  CurrentRecipeV1,
+  RecipeVersionV1,
+} from '@nutrixx/recipe-knowledge';
 
 const food: FoodChoice = {
   key: 'food:test-release:test-food:1',
@@ -23,6 +34,89 @@ const food: FoodChoice = {
 };
 
 describe('recipe workspace', () => {
+  it('shows historical ingredients, cooking factors, steps, and nutrient output', async () => {
+    const recipeId = '20000000-0000-4000-8000-000000000001';
+    const first = {
+      recipeId,
+      version: 1,
+      names: [{ value: 'Oat bowl' }],
+      publishedAt: '2026-10-06T00:00:00.000Z',
+      yield: {
+        servings: '2',
+        finalEdibleGramWeight: '160',
+        determination: 'measured',
+      },
+      ingredients: [
+        {
+          ingredientId: '30000000-0000-4000-8000-000000000001',
+          label: 'Oats',
+          edibleGramWeight: '80',
+          cookingYieldFactor: '2',
+          cookingYieldRule: { component: 'usda-yield', version: '1' },
+          retentionFactors: [
+            {
+              nutrientId: 'protein',
+              factor: '0.8',
+              rule: { component: 'retention.usda', version: '1' },
+            },
+          ],
+        },
+      ],
+      preparationSteps: [{ position: 1, instruction: 'Cook the oats.' }],
+      outputFood: {
+        nutrition: {
+          nutrients: [
+            {
+              nutrientId: 'protein',
+              state: 'known',
+              perServing: { amount: '8', unit: { code: 'g' } },
+            },
+          ],
+        },
+      },
+    } as unknown as RecipeVersionV1;
+    const second: RecipeVersionV1 = {
+      ...first,
+      version: 2,
+      names: [{ ...first.names[0]!, value: 'Creamy oat bowl' }],
+    };
+    const recipeHistory = vi.fn(async () => [first, second]);
+    render(
+      <RecipeWorkspace
+        store={{
+          listRecipes: vi.fn(async () => [
+            { identity: { recipeId }, version: second } as CurrentRecipeV1,
+          ]),
+          recipeHistory,
+          recipeChoices: vi.fn(async () => []),
+          saveRecipe: vi.fn(async () => recipeId),
+          searchFoods: vi.fn(async () => []),
+        }}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'View Creamy oat bowl version history',
+      }),
+    );
+    const list = await screen.findByRole('list', {
+      name: 'Creamy oat bowl version history',
+    });
+    expect(recipeHistory).toHaveBeenCalledWith(recipeId);
+    expect(within(list).getByText('Version 1 · Oat bowl')).toBeInTheDocument();
+    expect(
+      within(list).getAllByText('Cooking yield factor 2 · usda-yield 1'),
+    ).toHaveLength(2);
+    expect(
+      within(list).getAllByText('protein: retention 0.8 · retention.usda 1'),
+    ).toHaveLength(2);
+    expect(within(list).getAllByText('Cook the oats.')).toHaveLength(2);
+    fireEvent.click(
+      within(list).getByText('Nutrition per serving for version 1'),
+    );
+    expect(within(list).getAllByText('protein: 8 g')).toHaveLength(2);
+  });
+
   it('enables an automatic weight estimate after a unique linked cooking step', async () => {
     const rice: FoodChoice = {
       ...food,
@@ -35,6 +129,7 @@ describe('recipe workspace', () => {
       <RecipeWorkspace
         store={{
           listRecipes: vi.fn(async () => []),
+          recipeHistory: vi.fn(async () => []),
           recipeChoices: vi.fn(async () => []),
           saveRecipe: vi.fn(async () => '20000000-0000-4000-8000-000000000001'),
           searchFoods: vi.fn(async () => [rice]),
@@ -93,6 +188,7 @@ describe('recipe workspace', () => {
       <RecipeWorkspace
         store={{
           listRecipes: vi.fn(async () => []),
+          recipeHistory: vi.fn(async () => []),
           recipeChoices: vi.fn(async () => []),
           saveRecipe,
           searchFoods: vi.fn(async () => [beef]),
@@ -137,6 +233,7 @@ describe('recipe workspace', () => {
       <RecipeWorkspace
         store={{
           listRecipes: vi.fn(async () => []),
+          recipeHistory: vi.fn(async () => []),
           recipeChoices: vi.fn(async () => []),
           saveRecipe,
           searchFoods: vi.fn(async () => [food]),
