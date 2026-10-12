@@ -54,7 +54,9 @@ Only independently validated solutions are `FEASIBLE`. `OPTIMAL` and a
 numerical optimality gap require a proven search bound; the Free heuristic
 reports `optimalityGap: null`. `INFEASIBLE` requires a direct contradiction or
 exhaustion of the complete finite candidate/portion space under the declared
-scope. A pruned or timed-out search with no validated plan is `SEARCH_LIMIT`.
+scope. A pruned search with no draft reports `SEARCH_LIMIT` with a
+`beam-pruning` reason. An expansion-capped or timed-out search reports its own
+limit and reserves publication for an independently validated complete plan.
 The application keeps `NEEDS_INPUT`, `OUT_OF_SCOPE`, and `ERROR` distinct.
 A search-limit result retains its own status and reason. This distinction
 follows established solver-status semantics.

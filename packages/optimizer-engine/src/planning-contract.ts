@@ -435,6 +435,7 @@ const SearchTraceV1Schema = z.strictObject({
     'direct-contradiction',
     'finite-exhaustion',
     'expansion-limit',
+    'beam-pruning',
     'watchdog',
     'eligibility',
     'error',
@@ -484,7 +485,7 @@ export const PlanningOutcomeV1Schema = z.discriminatedUnion('status', [
     format: z.literal('nutrixx.local-planning-outcome'),
     schemaVersion: z.literal(1),
     status: z.literal('SEARCH_LIMIT'),
-    limit: z.enum(['expansion-limit', 'watchdog']),
+    limit: z.enum(['expansion-limit', 'beam-pruning', 'watchdog']),
     reasonCodes: ReasonCodesSchema,
   }),
   z.strictObject({

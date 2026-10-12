@@ -33,3 +33,11 @@ export {
   type CandidateDecisionV1,
   type CandidateSourceV1,
 } from './candidate-selection.js';
+
+export {
+  FREE_SCORING_POLICY_VERSION_V1,
+  LocalSearchResultV1Schema,
+  searchLocalPlanV1,
+  type LocalSearchOptionsV1,
+  type LocalSearchResultV1,
+} from './local-search.js';

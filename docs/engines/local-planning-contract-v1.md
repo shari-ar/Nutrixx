@@ -44,7 +44,7 @@ numeric decision. The input also records the fixed Free search profile:
 one candidate and portion for every open slot, `FEASIBLE` solver status,
 `optimalityGap: null`, and an independent-validation report. `INFEASIBLE`
 holds a direct-contradiction or complete finite-exhaustion proof.
-`SEARCH_LIMIT` identifies the expansion or watchdog bound. Other outcomes
+`SEARCH_LIMIT` identifies beam pruning, the expansion cap, or the watchdog bound. Other outcomes
 carry actionable reason codes. Recorded slots remain consumption facts.
 
 `PlanningRunV1` carries its own schema version and stores the frozen input, exact outcome, input/output SHA-256
@@ -86,3 +86,30 @@ candidate-selection order favors pinned eligible items, stronger nutrient
 evidence, explicit preferences, and then practical fit, with semantic-key
 tie-breakers. The retained snapshot is sorted by semantic key for replay.
 Every excluded or capped source retains a reason in the preparation report.
+
+## Bounded local search
+
+`searchLocalPlanV1` consumes a prepared snapshot as a self-contained local
+computation. It expands at most 30,000 candidate/portion states, retains at most
+128 ranked states per slot, checks cancellation, and observes the 5,000 ms
+watchdog. The caller runs it inside a dedicated worker when connecting the web
+experience. The worker owns the abort signal and can terminate a stalled run.
+
+Every expansion sums approved all-intake daily upper limits across recorded
+intake and all previously selected slots with exact decimal arithmetic.
+Known, compatible hard-limit evidence is required for a proposed choice.
+Soft ranking is lexicographic: supported nutrient targets and normalized
+distance, pinned and favored/avoided candidates, known preparation and price
+fit, diversity, and a stable semantic-key tie-breaker. Supported point targets
+use exact nutrient totals; optional missing facts stay explicitly unresolved.
+Unsupported soft target types and incomplete observations produce limitation
+codes. This heuristic reports `optimalityGap: null` until a proven bound exists.
+
+The search returns `DRAFT`; its selection and score require the
+independent validator in the next work package. Direct baseline contradiction
+or exhaustive finite rejection can return `INFEASIBLE`. Missing mandatory
+evidence returns `NEEDS_INPUT`. A run with an incomplete infeasibility proof after beam
+pruning reports `SEARCH_LIMIT` with `beam-pruning`; expansion and watchdog
+limits are separate. Cancellation returns `CANCELLED` and leaves planning
+outcome. The elapsed-time trace is observational; semantic ordering and choices
+are replayable from the frozen snapshot.
