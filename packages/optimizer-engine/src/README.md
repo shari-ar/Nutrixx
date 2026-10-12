@@ -20,3 +20,6 @@ The search produces a draft. The review path recomputes the full selection and
 promotes it to a `READY` outcome after every hard rule and explanation claim
 passes validation. Each suggested replacement receives the same full-plan
 validation.
+`reviewLocalSelectionsV1` applies the same independent validation and
+explanation checks to a user-selected alternative without claiming a new
+search score.

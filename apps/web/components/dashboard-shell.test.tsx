@@ -19,6 +19,10 @@ vi.mock('@/components/nutrition-dashboard-summary', () => ({
   NutritionDashboardSummary: () => <span>Recorded nutrition summary</span>,
 }));
 
+vi.mock('@/components/planning-dashboard-summary', () => ({
+  PlanningDashboardSummary: () => <span>Next meal planning summary</span>,
+}));
+
 const profile: StartingProfileV1 = {
   profileId: '10000000-0000-4000-8000-000000000001',
   ownerSubjectId: '20000000-0000-4000-8000-000000000001',
@@ -49,7 +53,7 @@ describe('DashboardShell', () => {
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
     expect(destinations).toEqual([
-      '/meals',
+      '/planning',
       '/nutrition',
       '/activity',
       '/hydration',

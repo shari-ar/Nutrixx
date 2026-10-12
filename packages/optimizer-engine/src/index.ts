@@ -49,6 +49,7 @@ export {
   explainValidatedLocalPlanV1,
   findValidatedAlternativesV1,
   reviewLocalSearchDraftV1,
+  reviewLocalSelectionsV1,
   validateLocalPlanV1,
   verifyLocalExplanationV1,
   type LocalPlanExplanationV1,

@@ -6,6 +6,7 @@ export const siteConfig = {
     'Personalized nutrition guidance built from food, activity, and optional health data.',
   navigation: [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/planning', label: 'Planning' },
     { href: '/meals', label: 'Meals' },
     { href: '/foods', label: 'Foods' },
     { href: '/recipes', label: 'Recipes' },

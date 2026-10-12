@@ -137,5 +137,7 @@ against the independent report and rechecks alternative plans.
 `reviewLocalSearchDraftV1` joins these gates. It returns an approved `READY`
 outcome after validation and claim verification pass; the outcome keeps
 `optimalityGap: null`. An unsuccessful review returns explicit rejection codes
-and leaves the search draft unpublished. The application persists the review
-evidence with an accepted local plan during the next Stage 4 work package.
+and leaves the search draft unpublished. The browser application stores the
+sealed run and validated review with a local draft. Explicit acceptance creates
+an immutable plan revision; the dashboard presents its next meal only while
+the source fingerprint and planning day remain current.

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { CatalogInstaller } from '@/components/catalog-installer';
 import { DashboardCard } from '@/components/dashboard-card';
 import { NutritionDashboardSummary } from '@/components/nutrition-dashboard-summary';
+import { PlanningDashboardSummary } from '@/components/planning-dashboard-summary';
 import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
 
 import type { StartingProfileV1 } from '@nutrixx/user-context';
@@ -138,11 +139,11 @@ export function DashboardShell({ store }: { store?: OnboardingReader }) {
         <DashboardCard
           accent="orange"
           eyebrow="Meals"
-          href="/meals"
+          href="/planning"
           icon="meal"
-          title="Log or review meals"
+          title="Your next suggested meal"
         >
-          Record what you eat, then revisit previous and upcoming meals.
+          <PlanningDashboardSummary />
         </DashboardCard>
         <DashboardCard
           accent="green"

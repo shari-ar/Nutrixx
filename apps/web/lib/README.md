@@ -46,3 +46,11 @@ unchanged; custom foods can store the same optional field in local user data.
 The examples are Fuji apple (`$0.4`), fresh whole egg (`$0.6`), and whole milk
 without added vitamins (`$0.2`) per 100 g. These values demonstrate the field
 as fixed product examples.
+
+`planning-input.ts` assembles an immutable one-day Free planning snapshot from
+the starting profile, effective nutrition-day policy, recorded meals, current
+local food/recipe references, and applicable nutrient targets.
+`browser-planning.ts` runs the local planner in a bounded Web Worker, stores
+sealed runs and validated drafts in the canonical user repository, and requires
+explicit acceptance before publishing a plan revision. It verifies source
+freshness, scientific releases, and independent review evidence on reuse.

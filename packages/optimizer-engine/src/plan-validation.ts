@@ -318,11 +318,15 @@ function validateParsedLocalPlanV1(
     chosen.push({ selection, candidate, edibleGrams: portion.edibleGrams });
     const restriction = restrictionIssue(input, candidate);
     if (restriction) issues.push({ code: restriction, slotId: slot.slotId });
+    const catalogReleaseId =
+      candidate.sourceReference.kind === 'food'
+        ? candidate.sourceReference.catalogReleaseId
+        : null;
     if (
-      candidate.sourceReference.kind === 'food' &&
-      input.referenceReleases.find(
-        (release) => release.component === 'food-catalog',
-      )?.releaseId !== candidate.sourceReference.catalogReleaseId
+      catalogReleaseId !== null &&
+      !input.referenceReleases.some(
+        (release) => release.releaseId === catalogReleaseId,
+      )
     )
       issues.push({ code: 'catalog-release-mismatch', slotId: slot.slotId });
   }
@@ -814,7 +818,27 @@ export function reviewLocalSearchDraftV1(
     LocalSearchResultV1Schema.parse(rawSearch);
   if (search.status !== 'DRAFT' || search.trace.termination !== 'draft')
     return { status: 'REJECTED', reasonCodes: ['search-result-is-not-draft'] };
-  const validation = validateParsedLocalPlanV1(input, search.selections);
+  return reviewLocalSelectionsV1(
+    input,
+    search.selections,
+    search.limitationCodes,
+    validatedAt,
+  );
+}
+
+/** Rechecks a user-selected alternative without inventing a solver score. */
+export function reviewLocalSelectionsV1(
+  rawInput: unknown,
+  rawSelections: unknown,
+  limitationCodes: readonly string[],
+  validatedAt: string,
+): LocalPlanReviewV1 {
+  const input = PlanningInputV1Schema.parse(rawInput);
+  const selections = PlanSelectionV1Schema.array()
+    .min(1)
+    .max(4)
+    .parse(rawSelections);
+  const validation = validateParsedLocalPlanV1(input, selections);
   if (validation.status !== 'passed')
     return {
       status: 'REJECTED',
@@ -823,12 +847,12 @@ export function reviewLocalSearchDraftV1(
       ].sort(),
       validation,
     };
-  const alternatives = findValidatedAlternativesV1(input, search.selections);
+  const alternatives = findValidatedAlternativesV1(input, selections);
   const explanation = explainValidatedLocalPlanV1(
     input,
     validation,
     alternatives,
-    search.limitationCodes,
+    limitationCodes,
   );
   if (!verifyLocalExplanationV1(input, validation, alternatives, explanation))
     return {
@@ -842,7 +866,7 @@ export function reviewLocalSearchDraftV1(
     status: 'READY',
     solverOutcome: 'FEASIBLE',
     optimalityGap: null,
-    draft: { selections: search.selections },
+    draft: { selections },
     validation: {
       status: 'passed',
       validatorVersion: FREE_VALIDATOR_VERSION_V1,

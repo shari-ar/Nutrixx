@@ -4,23 +4,25 @@ Reusable, application-local React components shared by multiple routes.
 
 ## Current shared components
 
-| Component                   | Responsibility                                                  |
-| --------------------------- | --------------------------------------------------------------- |
-| `Navbar`                    | Responsive global navigation                                    |
-| `StarterForm`               | Shared minimum-input onboarding form                            |
-| `PageHeader`                | Consistent route introduction                                   |
-| `DashboardCard`             | Accessible domain entry card                                    |
-| `ProductIcon`               | Small product-specific icon vocabulary                          |
-| `BrandLogo`                 | Canonical brand asset rendering                                 |
-| `ThemeSwitch`               | Light and dark appearance control                               |
-| `FoodPicker`                | Local food and recipe reference search                          |
-| `CatalogInstaller`          | Dashboard-only catalog installation                             |
-| `FoodWorkspace`             | Food details, categories, portions, and custom-food corrections |
-| `RecipeWorkspace`           | Versioned recipes, cooking-loss inputs, steps, and output foods |
-| `MealWorkspace`             | Manual local meal ledger                                        |
-| `MealDetail`                | Retained meal history and nutrition                             |
-| `NutritionWorkspace`        | Recorded-intake results, evidence, targets, and seven-day trend |
-| `NutritionDashboardSummary` | Live local summary of recorded-meal composition coverage        |
+| Component                   | Responsibility                                                   |
+| --------------------------- | ---------------------------------------------------------------- |
+| `Navbar`                    | Responsive global navigation                                     |
+| `StarterForm`               | Shared minimum-input onboarding form                             |
+| `PageHeader`                | Consistent route introduction                                    |
+| `DashboardCard`             | Accessible domain entry card                                     |
+| `ProductIcon`               | Small product-specific icon vocabulary                           |
+| `BrandLogo`                 | Canonical brand asset rendering                                  |
+| `ThemeSwitch`               | Light and dark appearance control                                |
+| `FoodPicker`                | Local food and recipe reference search                           |
+| `CatalogInstaller`          | Dashboard-only catalog installation                              |
+| `FoodWorkspace`             | Food details, categories, portions, and custom-food corrections  |
+| `RecipeWorkspace`           | Versioned recipes, cooking-loss inputs, steps, and output foods  |
+| `MealWorkspace`             | Manual local meal ledger                                         |
+| `MealDetail`                | Retained meal history and nutrition                              |
+| `NutritionWorkspace`        | Recorded-intake results, evidence, targets, and seven-day trend  |
+| `NutritionDashboardSummary` | Live local summary of recorded-meal composition coverage         |
+| `PlanningWorkspace`         | One-day local plan request, review, acceptance, and alternatives |
+| `PlanningDashboardSummary`  | Next proposed meal from a current accepted local plan            |
 
 ## Conventions
 
