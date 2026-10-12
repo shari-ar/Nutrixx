@@ -41,3 +41,19 @@ export {
   type LocalSearchOptionsV1,
   type LocalSearchResultV1,
 } from './local-search.js';
+
+export {
+  FREE_EXPLANATION_VERSION_V1,
+  FREE_VALIDATOR_VERSION_V1,
+  PlanSelectionV1Schema,
+  explainValidatedLocalPlanV1,
+  findValidatedAlternativesV1,
+  reviewLocalSearchDraftV1,
+  validateLocalPlanV1,
+  verifyLocalExplanationV1,
+  type LocalPlanExplanationV1,
+  type LocalPlanReviewV1,
+  type LocalPlanValidationV1,
+  type PlanSelectionV1,
+  type ValidatedAlternativeV1,
+} from './plan-validation.js';

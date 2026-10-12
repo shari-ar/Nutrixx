@@ -1,10 +1,11 @@
 # Optimizer engine
 
 This package owns the versioned, storage-neutral Free local planning contract.
-Stage 4 steps 2–4 define typed input snapshots, typed outcomes, immutable run
-records, candidate preparation, hard/soft separation, and bounded deterministic
-local search. Independent validation, persistence adapters, and user views arrive
-in their dedicated Stage 4 steps.
+Stage 4 steps 2–5 define typed input snapshots, typed outcomes, immutable run
+records, candidate preparation, hard/soft separation, bounded deterministic
+local search, independent validation, eligible alternatives, and evidence-linked
+explanation. Persistence adapters and user views arrive in their dedicated
+Stage 4 steps.
 
 The source map is in [`src/README.md`](src/README.md). The normative behavior
 is in the accepted Stage 4 ADRs and the

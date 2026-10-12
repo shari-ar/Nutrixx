@@ -54,10 +54,10 @@ owning context. Fingerprint helpers use canonical JSON and a caller-provided
 SHA-256 implementation, keeping browser and Node hashing compatible.
 
 The schema verifies identity, bounds, ordering, references, and lifecycle
-shapes. The independent solver-result validator in the next Stage 4 work
-packages recomputes nutrients and hard constraints before a `READY` result is
-published. A later plan-lifecycle package persists accepted plan revisions
-separately from immutable runs and recorded meals.
+shapes. The independent solver-result validator recomputes nutrients and hard
+constraints before a `READY` result is published. A later plan-lifecycle
+package persists accepted plan revisions separately from immutable runs and
+recorded meals.
 
 ## Candidate preparation
 
@@ -105,11 +105,37 @@ use exact nutrient totals; optional missing facts stay explicitly unresolved.
 Unsupported soft target types and incomplete observations produce limitation
 codes. This heuristic reports `optimalityGap: null` until a proven bound exists.
 
-The search returns `DRAFT`; its selection and score require the
-independent validator in the next work package. Direct baseline contradiction
-or exhaustive finite rejection can return `INFEASIBLE`. Missing mandatory
-evidence returns `NEEDS_INPUT`. A run with an incomplete infeasibility proof after beam
-pruning reports `SEARCH_LIMIT` with `beam-pruning`; expansion and watchdog
-limits are separate. Cancellation returns `CANCELLED` and leaves planning
-outcome. The elapsed-time trace is observational; semantic ordering and choices
-are replayable from the frozen snapshot.
+The search returns `DRAFT`; its selection and score require the independent
+validator. Direct baseline contradiction or exhaustive finite rejection can
+return `INFEASIBLE`. Missing mandatory evidence returns `NEEDS_INPUT`. A run
+with an incomplete infeasibility proof after beam pruning reports
+`SEARCH_LIMIT` with `beam-pruning`; expansion and watchdog limits are separate.
+Cancellation returns `CANCELLED` and leaves the planning outcome unpublished.
+The elapsed-time trace is observational; semantic ordering and choices are
+replayable from the frozen snapshot.
+
+## Independent validation and explanation
+
+`validateLocalPlanV1` receives the frozen input and a complete ordered set of
+selections. It independently resolves each slot, candidate, and edible portion;
+checks health and planning-day eligibility, declared exclusions, catalog
+release, and supported hard-rule scope; then recomputes nutrient totals from
+recorded intake and selected portions using exact decimal arithmetic. A passed
+report includes the selected facts, known totals with source evidence, and the
+result of each approved upper-limit check. Rejected reports carry specific
+issue codes. Current source revisions and policy changes are checked again by
+the application freshness gate before publication.
+
+`findValidatedAlternativesV1` tests candidate and portion replacements against
+the entire remaining plan. It returns at most three validated alternatives per
+open slot in stable candidate order. `explainValidatedLocalPlanV1` creates typed
+selection reasons, target comparisons, source release references, and exact
+nutrient differences for those alternatives. Unknown nutrient composition stays
+visible as a limitation. `verifyLocalExplanationV1` checks numerical claims
+against the independent report and rechecks alternative plans.
+
+`reviewLocalSearchDraftV1` joins these gates. It returns an approved `READY`
+outcome after validation and claim verification pass; the outcome keeps
+`optimalityGap: null`. An unsuccessful review returns explicit rejection codes
+and leaves the search draft unpublished. The application persists the review
+evidence with an accepted local plan during the next Stage 4 work package.
