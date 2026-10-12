@@ -15,5 +15,5 @@
 This table maps the current source files during Stage 4 realignment. The
 accepted target is a complete, classified local-catalog ranking for one next
 meal, with independently validated results and explicit consumption logging.
-See the [Stage 4 decisions](../../../docs/decisions/README.md). Stage 4 step 2
-defines the canonical engine contract for subsequent source changes.
+See the [Free next-meal contract](../../../docs/engines/next-meal-contract.md)
+for the canonical engine boundary guiding subsequent source changes.

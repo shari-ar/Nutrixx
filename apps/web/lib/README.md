@@ -48,8 +48,8 @@ without added vitamins (`$0.2`) per 100 g. These values demonstrate the field
 as fixed product examples.
 
 `planning-input.ts` and `browser-planning.ts` are the current browser-local
-planning integration points. Stage 4 steps 2–5 align them with the accepted
+planning integration points. Stage 4 steps 3–6 align them with the accepted
 next-meal design: source-backed recorded-intake history, full-catalog
 classification and ranking, independently validated results, optional personal
 inventory, and explicit confirmation of actual consumption. See the
-[Stage 4 decisions](../../../docs/decisions/README.md).
+[Free next-meal contract](../../../docs/engines/next-meal-contract.md).

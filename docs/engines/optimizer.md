@@ -51,9 +51,10 @@ The accepted Stage 4 Free policy is specified by
 [complete ranking and replay](../decisions/ADR-0017-complete-local-next-meal-ranking.md),
 [next-meal lifecycle and inventory](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
 and the [capability and quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
-These ADRs define the active Free planning design. The canonical next-meal
-engine contract is the next Stage 4 work item. The mixed-integer model below
-remains a candidate for the later full optimizer.
+These ADRs define the active Free planning design. The
+[Free next-meal contract](next-meal-contract.md) specifies its typed boundary,
+outcomes, invariants, and replay. The mixed-integer model below remains a
+candidate for the later full optimizer.
 
 ## Full optimizer planning context
 

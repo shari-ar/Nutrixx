@@ -36,8 +36,9 @@ immutable and later changes receive a new decision record.
 ADR-0008 and ADR-0010 accept conservative implementation policies. ADR-0011
 updates their review timing: provisional policies support private MVP
 evaluation, and qualified scientific review precedes public launch.
-ADRs 0016–0019 define the active Stage 4 Free next-meal planning design.
-The canonical engine contract is the next Stage 4 work item.
+ADRs 0016–0019 define the active Stage 4 Free next-meal planning design. The
+[Free next-meal contract](../engines/next-meal-contract.md) specifies its
+storage-neutral engine boundary.
 
 Statuses: Proposed, Accepted, Rejected, Deprecated, Superseded.
 
