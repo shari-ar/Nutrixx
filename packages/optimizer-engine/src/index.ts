@@ -1,6 +1,12 @@
 export {
   FREE_SEARCH_PROFILE_V1,
   PlanningInputV1Schema,
+  PlanningCandidateBaseV1Schema,
+  PlanningCandidateV1Schema,
+  PlanningNutrientObservationV1Schema,
+  PlanningPortionBoundsV1Schema,
+  PlanningRestrictionEvidenceV1Schema,
+  PlanningSourceReferenceV1Schema,
   PlanningOutcomeV1Schema,
   PlanningRunRecordV1Schema,
   PlanningRunRecordDraftV1Schema,
@@ -10,6 +16,20 @@ export {
   sealPlanningRunRecordV1,
   verifyPlanningRunRecordV1,
   type PlanningInputV1,
+  type PlanningCandidateV1,
+  type PlanningSourceReferenceV1,
   type PlanningOutcomeV1,
   type PlanningRunV1,
 } from './planning-contract.js';
+
+export {
+  FREE_CANDIDATE_POLICY_VERSION_V1,
+  CandidatePoolRequestV1Schema,
+  CandidateSourceV1Schema,
+  prepareLocalCandidateSetV1,
+  type CandidatePoolRequestV1,
+  type CandidatePreparationV1,
+  type CandidateSlotReportV1,
+  type CandidateDecisionV1,
+  type CandidateSourceV1,
+} from './candidate-selection.js';

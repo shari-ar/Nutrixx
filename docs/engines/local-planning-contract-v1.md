@@ -18,12 +18,15 @@ Free, one-day, offline planner governed by
 
 ## Input snapshot
 
-`PlanningInputV1` captures one effective nutrition day, owner and request IDs,
+`PlanningInputV1` captures one effective nutrition day, the request-time zone,
+owner and request IDs,
 profile eligibility and revision, declared restrictions and revision,
-recorded-intake nutrients, applicable target rules, reference releases, and
+user preferences, recorded-intake nutrients, applicable target rules, the
+candidate-policy version, reference releases, and
 one to four ordered eating slots. Recorded slots retain meal revision links.
 Open slots retain up to 24 ordered candidates. Each candidate embeds its exact
-food or recipe revision, resolved ingredient/allergen evidence, nutrient
+food or recipe revision, source-attributed base serving, resolved
+ingredient/allergen evidence, nutrient
 observations with explicit known/unknown states, and up to four validated
 edible-gram portion options. This bounded snapshot carries the facts required
 to interpret a historical run after a reference-cache eviction.
@@ -55,3 +58,31 @@ shapes. The independent solver-result validator in the next Stage 4 work
 packages recomputes nutrients and hard constraints before a `READY` result is
 published. A later plan-lifecycle package persists accepted plan revisions
 separately from immutable runs and recorded meals.
+
+## Candidate preparation
+
+`CandidatePoolRequestV1` supplies the frozen base context, exact current source
+revisions, and up to 500 normalized food or recipe sources per open slot.
+`prepareLocalCandidateSetV1` validates the current or next nutrition day and
+health eligibility, generates half, base, one-and-a-half, and double serving
+options, then clips them to source-backed edible-gram bounds. It filters
+unavailable or stale revisions, uninstalled catalog releases, user-declared
+food, recipe, ingredient, and allergen exclusions, and unresolved restriction
+evidence where a declaration applies. Eligible user-pinned sources retain
+priority under the 24-candidate slot cap.
+
+Approved all-intake daily upper limits form an early portion-level safety
+precheck. Exact decimal arithmetic combines recorded intake with a candidate
+portion. Unknown composition, incompatible units, or an unresolved recorded
+baseline withhold that safety-sensitive option. Source-scoped upper limits
+yield a precise input-evidence result under this first policy. The later
+search and independent validator apply the full-day, multi-slot limit to the
+complete proposed plan.
+
+Soft signals report compatible nutrient-target coverage, explicit food
+preference, preparation time, and approximate price. Missing optional facts
+remain `unknown`; they contribute no invented value. The deterministic
+candidate-selection order favors pinned eligible items, stronger nutrient
+evidence, explicit preferences, and then practical fit, with semantic-key
+tie-breakers. The retained snapshot is sorted by semantic key for replay.
+Every excluded or capped source retains a reason in the preparation report.

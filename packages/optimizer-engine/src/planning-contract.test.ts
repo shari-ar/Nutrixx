@@ -33,6 +33,7 @@ function inputFixture() {
     requestId,
     ownerSubjectId: owner,
     capturedAt: '2026-10-12T09:00:00.000Z',
+    capturedTimeZone: 'UTC',
     day: {
       periodId: 'period-fixture',
       zonePolicyVersion: 'zone-v1',
@@ -54,8 +55,14 @@ function inputFixture() {
     restrictions: {
       sourceRecordId: '77777777-7777-4777-8777-777777777777',
       sourceRevision: 1,
+      excludedFoodIds: [],
+      excludedRecipeIds: [],
       excludedIngredientIds: [],
       excludedAllergenCodes: [],
+    },
+    preferences: {
+      favoredSemanticKeys: [],
+      avoidedSemanticKeys: [],
     },
     recordedIntake: {
       nutritionSnapshotId: '88888888-8888-4888-8888-888888888888',
@@ -71,6 +78,7 @@ function inputFixture() {
       ],
     },
     targetPolicyVersion: 'target-v1',
+    candidatePolicyVersion: 'free-candidate-policy-v1',
     targets: [
       {
         ruleId: 'energy-reference',
@@ -105,6 +113,12 @@ function inputFixture() {
               catalogReleaseId: 'fixture-release',
             },
             baseServingGrams: '100',
+            baseServingSource: source,
+            portionBounds: {
+              minimumEdibleGrams: '50',
+              maximumEdibleGrams: '200',
+              source,
+            },
             portions: [{ portionId: 'base', edibleGrams: '100' }],
             nutrientsPer100EdibleGrams: [
               {
@@ -235,6 +249,17 @@ describe('Free planning contract v1', () => {
     expect(PlanningInputV1Schema.safeParse(input).success).toBe(false);
     slot.candidates.pop();
     slot.candidates[0]!.portions[0]!.edibleGrams = '0';
+    expect(PlanningInputV1Schema.safeParse(input).success).toBe(false);
+  });
+
+  it('requires compatible target type, horizon, and ordered ranges', () => {
+    const input = PlanningInputV1Schema.parse(inputFixture());
+    input.targets[0]!.horizon = 'daily-limit';
+    expect(PlanningInputV1Schema.safeParse(input).success).toBe(false);
+    input.targets[0]!.horizon = 'daily-average';
+    input.targets[0]!.type = 'AMDR';
+    input.targets[0]!.horizon = 'energy-share';
+    input.targets[0]!.value = { kind: 'range', lower: '60', upper: '40' };
     expect(PlanningInputV1Schema.safeParse(input).success).toBe(false);
   });
 

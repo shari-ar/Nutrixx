@@ -26,7 +26,11 @@ export const FREE_SEARCH_PROFILE_V1 = {
   workerWatchdogMilliseconds: 5_000,
 } as const;
 
-const PositiveAmountSchema = NonnegativeCanonicalDecimalSchema.refine(
+export const FREE_CANDIDATE_POLICY_VERSION_V1 =
+  'free-candidate-policy-v1' as const;
+
+const PlanningAmountSchema = NonnegativeCanonicalDecimalSchema.max(64);
+const PositiveAmountSchema = PlanningAmountSchema.refine(
   (value) => value !== '0',
   'The amount must be positive.',
 );
@@ -40,28 +44,31 @@ const UniqueCodesSchema = z
     'Codes must be unique.',
   );
 
-const NutrientObservationV1Schema = z.discriminatedUnion('state', [
-  z.strictObject({
-    state: z.literal('known'),
-    nutrientId: CanonicalCodeSchema,
-    amount: NonnegativeCanonicalDecimalSchema,
-    unit: UnitV1Schema,
-    source: EvidenceSourceV1Schema,
-  }),
-  z.strictObject({
-    state: z.literal('unknown'),
-    nutrientId: CanonicalCodeSchema,
-    reason: z.enum([
-      'not-measured',
-      'not-provided',
-      'not-resolvable',
-      'unsupported',
-    ]),
-  }),
-]);
+export const PlanningNutrientObservationV1Schema = z.discriminatedUnion(
+  'state',
+  [
+    z.strictObject({
+      state: z.literal('known'),
+      nutrientId: CanonicalCodeSchema,
+      amount: PlanningAmountSchema,
+      unit: UnitV1Schema,
+      source: EvidenceSourceV1Schema,
+    }),
+    z.strictObject({
+      state: z.literal('unknown'),
+      nutrientId: CanonicalCodeSchema,
+      reason: z.enum([
+        'not-measured',
+        'not-provided',
+        'not-resolvable',
+        'unsupported',
+      ]),
+    }),
+  ],
+);
 
 const NutrientsSchema = z
-  .array(NutrientObservationV1Schema)
+  .array(PlanningNutrientObservationV1Schema)
   .max(112)
   .refine(
     (values) =>
@@ -69,7 +76,7 @@ const NutrientsSchema = z
     'Nutrient IDs must be unique within one observation set.',
   );
 
-const SourceReferenceV1Schema = z.discriminatedUnion('kind', [
+export const PlanningSourceReferenceV1Schema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('food'),
     foodId: CanonicalIdSchema,
@@ -83,39 +90,94 @@ const SourceReferenceV1Schema = z.discriminatedUnion('kind', [
   }),
 ]);
 
-const RestrictionEvidenceV1Schema = z.discriminatedUnion('state', [
-  z.strictObject({
-    state: z.literal('verified'),
-    ingredientIds: z.array(CanonicalIdSchema).max(256),
-    allergenCodes: UniqueCodesSchema,
-    source: EvidenceSourceV1Schema,
-  }),
-  z.strictObject({
-    state: z.literal('unknown'),
-    reasonCode: CanonicalCodeSchema,
-  }),
-]);
+export const PlanningRestrictionEvidenceV1Schema = z.discriminatedUnion(
+  'state',
+  [
+    z.strictObject({
+      state: z.literal('verified'),
+      ingredientIds: z.array(CanonicalIdSchema).max(256),
+      allergenCodes: UniqueCodesSchema,
+      source: EvidenceSourceV1Schema,
+    }),
+    z.strictObject({
+      state: z.literal('unknown'),
+      reasonCode: CanonicalCodeSchema,
+    }),
+  ],
+);
 
 const PortionOptionV1Schema = z.strictObject({
   portionId: CanonicalCodeSchema,
   edibleGrams: PositiveAmountSchema,
 });
 
-const CandidateV1Schema = z
-  .strictObject({
-    candidateId: CanonicalIdSchema,
-    semanticKey: CanonicalCodeSchema,
-    displayNameSnapshot: z.string().trim().min(1).max(500),
-    sourceReference: SourceReferenceV1Schema,
-    baseServingGrams: PositiveAmountSchema,
-    portions: z.array(PortionOptionV1Schema).min(1).max(4),
-    nutrientsPer100EdibleGrams: NutrientsSchema,
-    restrictionEvidence: RestrictionEvidenceV1Schema,
-    preparationMinutes: z.int().nonnegative().optional(),
-    approximatePriceUsd: NonnegativeCanonicalDecimalSchema.optional(),
-    pinnedByUser: z.boolean(),
-  })
-  .superRefine((candidate, context) => {
+export const PlanningPortionBoundsV1Schema = z.strictObject({
+  minimumEdibleGrams: PositiveAmountSchema,
+  maximumEdibleGrams: PositiveAmountSchema,
+  source: EvidenceSourceV1Schema,
+});
+
+function compareNonnegativeDecimal(left: string, right: string): number {
+  const [leftWhole = '0', leftFraction = ''] = left.split('.');
+  const [rightWhole = '0', rightFraction = ''] = right.split('.');
+  if (leftWhole.length !== rightWhole.length)
+    return leftWhole.length < rightWhole.length ? -1 : 1;
+  if (leftWhole !== rightWhole) return leftWhole < rightWhole ? -1 : 1;
+  const width = Math.max(leftFraction.length, rightFraction.length);
+  const a = leftFraction.padEnd(width, '0');
+  const b = rightFraction.padEnd(width, '0');
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+export const PlanningCandidateBaseV1Schema = z.strictObject({
+  candidateId: CanonicalIdSchema,
+  semanticKey: CanonicalCodeSchema,
+  displayNameSnapshot: z.string().trim().min(1).max(500),
+  sourceReference: PlanningSourceReferenceV1Schema,
+  baseServingGrams: PositiveAmountSchema,
+  baseServingSource: EvidenceSourceV1Schema,
+  portionBounds: PlanningPortionBoundsV1Schema,
+  portions: z.array(PortionOptionV1Schema).min(1).max(4),
+  nutrientsPer100EdibleGrams: NutrientsSchema,
+  restrictionEvidence: PlanningRestrictionEvidenceV1Schema,
+  preparationMinutes: z.int().nonnegative().optional(),
+  approximatePriceUsd: PlanningAmountSchema.optional(),
+  pinnedByUser: z.boolean(),
+});
+
+export const PlanningCandidateV1Schema =
+  PlanningCandidateBaseV1Schema.superRefine((candidate, context) => {
+    if (
+      compareNonnegativeDecimal(
+        candidate.portionBounds.minimumEdibleGrams,
+        candidate.portionBounds.maximumEdibleGrams,
+      ) > 0
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['portionBounds'],
+        message: 'Portion bounds must be ordered.',
+      });
+    }
+    if (
+      candidate.portions.some(
+        (portion) =>
+          compareNonnegativeDecimal(
+            portion.edibleGrams,
+            candidate.portionBounds.minimumEdibleGrams,
+          ) < 0 ||
+          compareNonnegativeDecimal(
+            portion.edibleGrams,
+            candidate.portionBounds.maximumEdibleGrams,
+          ) > 0,
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['portions'],
+        message: 'Portions must stay within source-backed bounds.',
+      });
+    }
     if (
       new Set(candidate.portions.map((portion) => portion.portionId)).size !==
       candidate.portions.length
@@ -152,7 +214,7 @@ const PlanningSlotV1Schema = z.discriminatedUnion('state', [
     slotId: CanonicalIdSchema,
     position: z.int().min(1).max(4),
     label: z.string().trim().min(1).max(80),
-    candidates: z.array(CandidateV1Schema).max(24),
+    candidates: z.array(PlanningCandidateV1Schema).max(24),
   }),
 ]);
 
@@ -167,31 +229,64 @@ const PlanningDayV1Schema = z.strictObject({
   travelAdjusted: z.boolean(),
 });
 
-const ApplicableTargetV1Schema = z.strictObject({
-  ruleId: z.string().min(1).max(128),
-  nutrientId: CanonicalCodeSchema,
-  type: z.enum(['RDA', 'AI', 'EAR', 'UL', 'AMDR']),
-  value: z.discriminatedUnion('kind', [
-    z.strictObject({
-      kind: z.literal('point'),
-      amount: NonnegativeCanonicalDecimalSchema,
-    }),
-    z.strictObject({
-      kind: z.literal('range'),
-      lower: NonnegativeCanonicalDecimalSchema,
-      upper: NonnegativeCanonicalDecimalSchema,
-    }),
-  ]),
-  unit: UnitV1Schema,
-  horizon: z.enum(['daily-average', 'daily-limit', 'energy-share']),
-  sourceScope: z.enum([
-    'all-intake',
-    'fortified-and-supplemental',
-    'preformed-vitamin-a',
-  ]),
-  sourceReleaseId: z.string().min(1).max(128),
-  hardLimitApproved: z.boolean(),
-});
+const ApplicableTargetV1Schema = z
+  .strictObject({
+    ruleId: z.string().min(1).max(128),
+    nutrientId: CanonicalCodeSchema,
+    type: z.enum(['RDA', 'AI', 'EAR', 'UL', 'AMDR']),
+    value: z.discriminatedUnion('kind', [
+      z.strictObject({
+        kind: z.literal('point'),
+        amount: PlanningAmountSchema,
+      }),
+      z.strictObject({
+        kind: z.literal('range'),
+        lower: PlanningAmountSchema,
+        upper: PlanningAmountSchema,
+      }),
+    ]),
+    unit: UnitV1Schema,
+    horizon: z.enum(['daily-average', 'daily-limit', 'energy-share']),
+    sourceScope: z.enum([
+      'all-intake',
+      'fortified-and-supplemental',
+      'preformed-vitamin-a',
+    ]),
+    sourceReleaseId: z.string().min(1).max(128),
+    hardLimitApproved: z.boolean(),
+  })
+  .superRefine((target, context) => {
+    const expectedHorizon =
+      target.type === 'UL'
+        ? 'daily-limit'
+        : target.type === 'AMDR'
+          ? 'energy-share'
+          : 'daily-average';
+    if (target.horizon !== expectedHorizon) {
+      context.addIssue({
+        code: 'custom',
+        path: ['horizon'],
+        message: 'The target horizon must match its type.',
+      });
+    }
+    if ((target.type === 'AMDR') !== (target.value.kind === 'range')) {
+      context.addIssue({
+        code: 'custom',
+        path: ['value'],
+        message: 'AMDR uses a range; other target types use a point.',
+      });
+    }
+    if (
+      target.value.kind === 'range' &&
+      compareNonnegativeDecimal(target.value.lower, target.value.upper) > 0
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['value'],
+        message: 'Target range bounds must be ordered.',
+      });
+    }
+  });
 
 export const PlanningInputV1Schema = z
   .strictObject({
@@ -200,6 +295,7 @@ export const PlanningInputV1Schema = z
     requestId: CanonicalIdSchema,
     ownerSubjectId: CanonicalIdSchema,
     capturedAt: UtcInstantSchema,
+    capturedTimeZone: IanaTimeZoneSchema,
     day: PlanningDayV1Schema,
     eligibility: z.strictObject({
       status: z.enum(['READY', 'NEEDS_INPUT', 'OUT_OF_SCOPE']),
@@ -212,8 +308,16 @@ export const PlanningInputV1Schema = z
     restrictions: z.strictObject({
       sourceRecordId: CanonicalIdSchema,
       sourceRevision: z.int().positive(),
+      excludedFoodIds: z.array(CanonicalIdSchema).max(256),
+      excludedRecipeIds: z.array(CanonicalIdSchema).max(256),
       excludedIngredientIds: z.array(CanonicalIdSchema).max(256),
       excludedAllergenCodes: UniqueCodesSchema,
+    }),
+    preferences: z.strictObject({
+      favoredSemanticKeys: UniqueCodesSchema,
+      avoidedSemanticKeys: UniqueCodesSchema,
+      maximumPreparationMinutes: z.int().nonnegative().optional(),
+      maximumApproximatePriceUsd: PlanningAmountSchema.optional(),
     }),
     recordedIntake: z.strictObject({
       nutritionSnapshotId: CanonicalIdSchema,
@@ -221,6 +325,7 @@ export const PlanningInputV1Schema = z
       nutrients: NutrientsSchema,
     }),
     targetPolicyVersion: z.string().min(1).max(128),
+    candidatePolicyVersion: z.literal(FREE_CANDIDATE_POLICY_VERSION_V1),
     targets: z.array(ApplicableTargetV1Schema).max(112),
     referenceReleases: z
       .array(
@@ -293,6 +398,17 @@ export const PlanningInputV1Schema = z
         code: 'custom',
         path: ['targets'],
         message: 'Target rule IDs must be unique.',
+      });
+    }
+    if (
+      input.preferences.favoredSemanticKeys.some((key) =>
+        input.preferences.avoidedSemanticKeys.includes(key),
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['preferences'],
+        message: 'A candidate preference must have one direction.',
       });
     }
     if (
@@ -539,6 +655,10 @@ export const PlanningRunRecordV1Schema =
   RunRecordBase.superRefine(matchingEnvelope);
 
 export type PlanningInputV1 = z.infer<typeof PlanningInputV1Schema>;
+export type PlanningCandidateV1 = z.infer<typeof PlanningCandidateV1Schema>;
+export type PlanningSourceReferenceV1 = z.infer<
+  typeof PlanningSourceReferenceV1Schema
+>;
 export type PlanningOutcomeV1 = z.infer<typeof PlanningOutcomeV1Schema>;
 export type PlanningRunV1 = z.infer<typeof PlanningRunV1Schema>;
 
