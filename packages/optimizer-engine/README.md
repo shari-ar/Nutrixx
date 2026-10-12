@@ -1,19 +1,17 @@
 # Optimizer engine
 
-Reserved package boundary for generating explainable food recommendations under
-nutrient, preference, safety, availability, and feasibility constraints.
+This package owns the versioned, storage-neutral Free local planning contract.
+Stage 4 step 2 defines typed input snapshots, typed outcomes, and immutable run
+records. Search, independent validation, persistence adapters, and user views
+arrive in their dedicated Stage 4 steps.
 
-## Intended responsibilities
-
-- Typed optimization inputs, constraints, objectives, and result diagnostics.
-- Reproducible solver configuration and deterministic tie-breaking.
-- Feasibility analysis, trade-off reporting, and confidence propagation.
+The source map is in [`src/README.md`](src/README.md). The normative behavior
+is in the accepted Stage 4 ADRs and the
+[local planning contract](../../docs/engines/local-planning-contract-v1.md).
 
 ## Rules
 
 - Keep database and network access behind callers or injected adapters.
-- Distinguish hard constraints from weighted objectives.
-- Return infeasibility reasons instead of silently relaxing safety constraints.
-- Record solver version, inputs, configuration, and model version for auditability.
-
-Add implementation only after objective semantics and validation fixtures exist.
+- Keep hard constraints distinct from weighted objectives.
+- Preserve input, policy, engine, and solver versions for reproducible runs.
+- Return explicit feasibility and search-limit diagnostics.

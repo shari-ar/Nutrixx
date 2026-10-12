@@ -53,6 +53,8 @@ The accepted Stage 4 Free policy is specified by
 and the [capability and quality floor](../decisions/ADR-0015-free-local-planner-boundary.md).
 These ADRs govern the Free implementation. The mixed-integer model below
 remains a candidate for the later full optimizer.
+The [local planning contract v1](local-planning-contract-v1.md) defines the
+Stage 4 Free input snapshot, outcome, and replay record.
 
 ## Planning context
 

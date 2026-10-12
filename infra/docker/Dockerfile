@@ -19,6 +19,7 @@ COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/consumption/package.json packages/consumption/package.json
 COPY packages/food-knowledge/package.json packages/food-knowledge/package.json
 COPY packages/nutrition-engine/package.json packages/nutrition-engine/package.json
+COPY packages/optimizer-engine/package.json packages/optimizer-engine/package.json
 COPY packages/persistence/package.json packages/persistence/package.json
 COPY packages/persistence-indexeddb/package.json packages/persistence-indexeddb/package.json
 COPY packages/persistence-postgresql/package.json packages/persistence-postgresql/package.json
