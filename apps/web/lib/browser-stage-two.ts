@@ -33,6 +33,10 @@ import {
 } from './browser-nutrition-state';
 import { BrowserOnboardingStore } from './browser-onboarding';
 import { exampleUsdPricePer100g } from './food-price-examples';
+import {
+  buildNextMealCatalogSnapshot,
+  type NextMealCatalogSnapshot,
+} from './next-meal-catalog';
 import { loadNutritionContextV1 } from './nutrition-context';
 import {
   LOCAL_USER_DATABASE_NAME,
@@ -268,6 +272,38 @@ export class BrowserStageTwoStore {
         (await cache.listReleases()).find((release) => release.active)
           ?.releaseId ?? null
       );
+    } finally {
+      await cache.close();
+    }
+  }
+
+  public async enumerateNextMealCatalog(): Promise<NextMealCatalogSnapshot> {
+    const [customFoods, recipes] = await Promise.all([
+      this.listCustomFoods(),
+      this.listRecipes(),
+    ]);
+    const cache = await IndexedDbReferenceDatasetCache.create({
+      databaseName: REFERENCE_CACHE_DATABASE_NAME,
+      indexedDB: this.dependencies.indexedDB,
+    });
+    try {
+      const active = (await cache.listReleases()).find(
+        (release) => release.active,
+      );
+      const catalog =
+        active === undefined
+          ? null
+          : (
+              await new CachedFoodKnowledgeRepositoryV1(
+                cache,
+              ).loadActiveCatalog()
+            ).payload;
+      return buildNextMealCatalogSnapshot({
+        activeReleaseId: active?.releaseId ?? null,
+        catalog,
+        customFoods,
+        recipes,
+      });
     } finally {
       await cache.close();
     }

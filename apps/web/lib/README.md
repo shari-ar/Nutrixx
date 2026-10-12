@@ -13,6 +13,9 @@ offering an explicit replacement confirmation.
 `browser-onboarding.ts` owns the one-time starting profile. `browser-stage-two.ts`
 owns verified catalog installation and the local custom-food, recipe, and meal
 workflows. Both remain browser-only and use the shared canonical repository.
+`next-meal-catalog.ts` enumerates the entire active installed food catalog and
+current user-food and recipe revisions for next-meal classification. Its sorted
+manifest covers every source entry, including entries with incomplete evidence.
 `browser-nutrition-state.ts` connects the meal ledger and starting profile to
 versioned local daily and rolling calculations. The optional US/Canada
 reference-region choice and effective-dated nutrition-day time zone are retained

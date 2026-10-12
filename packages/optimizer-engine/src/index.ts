@@ -35,6 +35,20 @@ export {
 } from './candidate-selection.js';
 
 export {
+  NextMealCandidateRequestSchema,
+  NextMealCandidateSourceSchema,
+  NextMealSourceReferenceSchema,
+  classifyNextMealCatalog,
+  nextMealSourceKey,
+  type NextMealCandidateCensus,
+  type NextMealCandidateClassification,
+  type NextMealCandidateDecision,
+  type NextMealCandidateRequest,
+  type NextMealCandidateSource,
+  type NextMealSourceReference,
+} from './next-meal-candidates.js';
+
+export {
   FREE_SCORING_POLICY_VERSION_V1,
   LocalSearchResultV1Schema,
   searchLocalPlanV1,
