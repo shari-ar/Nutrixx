@@ -12,14 +12,8 @@
 | `plan-validation.test.ts`     | Hard-limit, exclusion, alternative, and claim fixtures    |
 | `index.ts`                    | Public package surface                                    |
 
-The schemas describe frozen facts and references. Candidate preparation applies
-eligibility, declared exclusions, source freshness, supported hard upper-limit
-prechecks, and evidence-qualified soft ordering. A separate validator establishes
-full-plan scientific and safety validity before a plan reaches the user.
-The search produces a draft. The review path recomputes the full selection and
-promotes it to a `READY` outcome after every hard rule and explanation claim
-passes validation. Each suggested replacement receives the same full-plan
-validation.
-`reviewLocalSelectionsV1` applies the same independent validation and
-explanation checks to a user-selected alternative without claiming a new
-search score.
+This table maps the current source files during Stage 4 realignment. The
+accepted target is a complete, classified local-catalog ranking for one next
+meal, with independently validated results and explicit consumption logging.
+See the [Stage 4 decisions](../../../docs/decisions/README.md). Stage 4 step 2
+defines the canonical engine contract for subsequent source changes.

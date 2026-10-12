@@ -5,7 +5,7 @@
 | Status        | Accepted                              |
 | Audience      | Data, API, engine engineers           |
 | Owner         | Nutrixx Data and Domain Working Group |
-| Last reviewed | 2026-09-29                            |
+| Last reviewed | 2026-10-12                            |
 
 ## Foundational value types
 
@@ -141,7 +141,8 @@ Represent quality through these explicit dimensions:
 
 - Published recipe versions, consumed meal-item facts, nutrition states, and
   optimizer runs are immutable.
-- A plan item and a consumed meal item are different entities.
+- A next-meal ranked candidate, selected intention, and consumed meal item
+  retain distinct identities and revisions.
 - Missing logs preserve an unknown intake state.
 - A daily nutrition state estimates dietary intake against targets, while
   qualified clinical assessment determines physiological nutrient stores.

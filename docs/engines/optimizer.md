@@ -5,41 +5,41 @@
 | Status        | Proposed target design                            |
 | Audience      | Optimization, nutrition science, product, quality |
 | Owner         | Nutrixx Optimization Engineering                  |
-| Last reviewed | 2026-09-27                                        |
+| Last reviewed | 2026-10-12                                        |
 
 ## Contract
 
-The optimizer receives one immutable, eligible planning context and returns a
-typed result. The application supplies immutable state and publishes validated
-results to the user.
+The Free recommendation engine receives one immutable, eligible next-meal
+context and returns a complete, classified local-catalog ranking. The
+application supplies immutable state and publishes validated results to the
+user.
 
 ```text
-ContextSnapshot
+NextMealContextSnapshot
 → Eligibility
-→ CandidateSet
-→ HardConstraints
-→ Feasibility
-→ SoftObjectives
-→ Solve
-→ IndependentResultValidation
-→ Predictions
-→ Rank + Explain
-→ ClaimValidation + FreshnessGate
-→ PlanDraft
+→ Full local catalog census
+→ Candidate classification + hard-rule validation
+→ Evidence-qualified portion evaluation
+→ Deterministic ranking
+→ Independent result validation
+→ Explanation + freshness gate
+→ Ranked next-meal options
+→ User selection → explicit consumption confirmation
 ```
 
-Possible statuses are READY, NEEDS_INPUT, INFEASIBLE, SEARCH_LIMIT,
-OUT_OF_SCOPE, and ERROR. FEASIBLE and OPTIMAL are separate solver outcomes.
-SEARCH_LIMIT means bounded search ended without a validated plan and without
-proof of infeasibility.
+Free result statuses are READY, PARTIAL, NEEDS_INPUT, INFEASIBLE,
+SEARCH_LIMIT, OUT_OF_SCOPE, CANCELLED, and ERROR. READY indicates a complete
+catalog census with validated ranking. PARTIAL includes measured coverage and
+the remaining evaluation count. SEARCH_LIMIT records a bounded run that ended
+before a complete validated ranking.
 
 ## Capability profiles
 
-| Profile                 | Eligibility                 | Boundary                                                                                                                        |
-| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Free local approximate  | Free, on a supported device | Deterministic bounded candidate set and approved local heuristics; no hosted inference and no AI-dependent optimizer capability |
-| Pro full optimizer      | Pro entitlement             | Complete eligible cloud optimization contract without requiring the user's API key                                              |
-| Ultimate full optimizer | Ultimate entitlement        | Same scientific/safety contract as Pro; higher hosted-AI capture allowances and assistant access preserve full validation       |
+| Profile                 | Eligibility                 | Boundary                                                                                                                  |
+| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Free local approximate  | Free, on a supported device | Complete next-meal catalog classification and evidence-qualified local ranking under a measured device envelope           |
+| Pro full optimizer      | Pro entitlement             | Complete eligible cloud optimization contract without requiring the user's API key                                        |
+| Ultimate full optimizer | Ultimate entitlement        | Same scientific/safety contract as Pro; higher hosted-AI capture allowances and assistant access preserve full validation |
 
 Experimental Local Processing may help parse input into a draft. The full paid
 optimizer and optimizer authority require their dedicated entitlement.
@@ -47,18 +47,17 @@ Entitlement differences affect available compute/capabilities while safety
 constraints and nutrient meanings remain universal.
 
 The accepted Stage 4 Free policy is specified by
-[constraint semantics](../decisions/ADR-0012-local-planner-constraint-policy.md),
-[bounded search and replay](../decisions/ADR-0013-local-planner-search-and-replay.md),
-[one-day lifecycle](../decisions/ADR-0014-free-plan-horizon-and-lifecycle.md),
-and the [capability and quality floor](../decisions/ADR-0015-free-local-planner-boundary.md).
-These ADRs govern the Free implementation. The mixed-integer model below
+[history-aware constraints](../decisions/ADR-0016-history-aware-next-meal-constraints.md),
+[complete ranking and replay](../decisions/ADR-0017-complete-local-next-meal-ranking.md),
+[next-meal lifecycle and inventory](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
+and the [capability and quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
+These ADRs define the active Free planning design. The canonical next-meal
+engine contract is the next Stage 4 work item. The mixed-integer model below
 remains a candidate for the later full optimizer.
-The [local planning contract v1](local-planning-contract-v1.md) defines the
-Stage 4 Free input snapshot, outcome, and replay record.
 
-## Planning context
+## Full optimizer planning context
 
-The snapshot includes horizon/meal slots, nutrition state, applicable target
+The later paid full-optimizer snapshot includes horizon/meal slots, nutrition state, applicable target
 and safety policy, foods/recipes and exact revisions, portions/availability,
 allergens/restrictions, preferences, culture/cuisine, budget, preparation time,
 inventory/waste when supported, prior-plan stability, and all data quality

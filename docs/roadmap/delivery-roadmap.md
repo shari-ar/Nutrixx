@@ -5,7 +5,7 @@
 | Status        | Proposed                                         |
 | Audience      | Product, engineering, science, quality, security |
 | Owner         | Nutrixx Product                                  |
-| Last reviewed | 2026-09-27                                       |
+| Last reviewed | 2026-10-12                                       |
 
 Work is sequenced around one rule: finish the useful local product before cloud
 custody or paid hosted capabilities. Each stage has independently reviewable
@@ -62,15 +62,19 @@ remains useful offline.
 
 ## Stage 4 — Complete Free local planning
 
-Deliver deterministic local approximate planning, eligibility, hard/soft
-constraints appropriate to the profile, independent validation, infeasibility,
-safe alternatives, and evidence-linked explanation.
+Deliver a deterministic, fully local ranking for the next meal across the
+active food and recipe catalog. Nutrient-specific historical intake context,
+eligibility, hard/soft constraints, optional personal inventory, independent
+validation, evidence-linked explanation, and explicit consumed-meal logging
+form the Free experience.
 
-Stage 4 starts from the accepted Free
-[constraint](../decisions/ADR-0012-local-planner-constraint-policy.md),
-[search](../decisions/ADR-0013-local-planner-search-and-replay.md),
-[lifecycle](../decisions/ADR-0014-free-plan-horizon-and-lifecycle.md), and
-[capability](../decisions/ADR-0015-free-local-planner-boundary.md) decisions.
+Stage 4 follows the accepted Free
+[history-aware constraints](../decisions/ADR-0016-history-aware-next-meal-constraints.md),
+[complete local ranking](../decisions/ADR-0017-complete-local-next-meal-ranking.md),
+[next-meal lifecycle and inventory](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
+and [quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
+The next-meal engine contract and implementation are subsequent Stage 4 work
+items.
 
 Exit: the complete advertised Free contract passes; mandatory fixtures show
 zero escaped hard violations. AI-dependent optimizer features remain excluded.

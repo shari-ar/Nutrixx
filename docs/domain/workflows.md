@@ -5,7 +5,7 @@
 | Status        | Proposed target state            |
 | Audience      | Product, engineering, quality    |
 | Owner         | Nutrixx Product and Architecture |
-| Last reviewed | 2026-09-27                       |
+| Last reviewed | 2026-10-12                       |
 
 ## Responsibility model
 
@@ -59,27 +59,35 @@ Manual meal and recipe entry has no product quota in any plan. AI-assisted
 capture is an optional draft-producing path documented in
 [AI-assisted capture](../engines/ai-assisted-capture.md).
 
-## Planning
+## Free next-meal planning
 
 ```mermaid
 flowchart LR
     A[Planning request] --> B{Eligibility}
     B -->|out of scope| X[Safe limitation]
     B -->|critical data missing| Q[Request minimal input]
-    B -->|ready| C[Immutable context snapshot]
-    C --> D[Candidate generation]
-    D --> E[Hard-feasibility check]
-    E -->|infeasible| F[Conflict diagnostics]
-    E -->|feasible| G[Optimize soft objectives]
-    G --> H[Independent safety validation]
-    H -->|reject| R[Quarantine and investigate]
-    H -->|pass| I[Rank and explain]
-    I --> J[User-visible plan]
+    B -->|ready| C[Immutable next-meal context]
+    C --> D[Classify full local catalog]
+    D --> E[Apply hard rules and optional inventory]
+    E --> F[Evaluate evidence-qualified portions]
+    F --> G[Rank comparable eligible entries]
+    G --> H[Independent validation and freshness check]
+    H -->|pass| I[Show ranked options and coverage]
+    H -->|requires review| R[Show limited status and reason]
+    I --> J[User chooses an option]
+    J --> K[Confirm actual meal and amount]
+    K --> L[Record consumed meal]
 ```
 
-The user can accept, substitute, or reject a recommendation. Every substitution
-is solved or validated again; replacements require the same deterministic
-validation pathway.
+The engine uses applicable recorded-intake history at each source-backed
+temporal horizon. The user can browse the complete classified catalog and
+choose any eligible option. Selection creates a revisable intention;
+consumption becomes authoritative only after explicit confirmation of the
+actual food, amount, and time. An optional user-enabled inventory mode limits
+recommendations to declared available foods and recipe ingredients. Every
+published ranking reports complete or partial coverage and its evidence
+limits. See [the Free planning decisions](../decisions/README.md) and
+[optimizer engine](../engines/optimizer.md).
 
 ## Data publication
 

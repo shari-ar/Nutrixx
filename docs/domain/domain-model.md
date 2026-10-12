@@ -5,7 +5,7 @@
 | Status        | Proposed target model           |
 | Audience      | Architecture, engineering, data |
 | Owner         | Nutrixx Architecture            |
-| Last reviewed | 2026-09-27                      |
+| Last reviewed | 2026-10-12                      |
 
 ## Aggregates and invariants
 
@@ -18,7 +18,7 @@
 | Consumption             | Meal                                                       | Items preserve the consumed quantity and referenced version known at the event time. User corrections append audit history.        |
 | Nutrition Science       | NutrientDefinition, TargetPolicy, RuleSet                  | Definitions and policies are versioned, reviewed, applicable to named populations, and effective-dated.                            |
 | Nutrition State         | StateSnapshot                                              | A snapshot records its period, input watermark, engine/rule/data versions, completeness, and uncertainty.                          |
-| Planning                | PlanningRequest, OptimizerRun, Plan                        | Eligible, independently validated results become user-visible. Hard constraints retain absolute precedence.                        |
+| Planning                | NextMealRequest, RecommendationRun, NextMealIntention      | Free runs classify and rank one upcoming meal; selection and confirmed consumption remain separate. Hard constraints lead ranking. |
 | Data Publication        | ImportBatch, DatasetRelease                                | Untrusted source records remain quarantined until mapped, validated, licensed, and approved. Published releases are immutable.     |
 | Audit & Provenance      | EvidenceTrace                                              | Important decisions can be reconstructed without reading mutable operational tables.                                               |
 | Commerce & Entitlements | Subscription, EntitlementGrant, UsageReservation           | Grants are effective-dated and server-authoritative; one action reaches exactly one consumed or released terminal state.           |
@@ -47,8 +47,10 @@ erDiagram
     FOOD ||--o{ MEAL_ITEM : captures
     MEAL ||--o{ NUTRITION_STATE : contributes
     TARGET_POLICY ||--o{ NUTRITION_STATE : evaluates
-    NUTRITION_STATE ||--o{ OPTIMIZER_RUN : informs
-    OPTIMIZER_RUN ||--o{ PLAN : produces
+    NUTRITION_STATE ||--o{ RECOMMENDATION_RUN : informs
+    RECOMMENDATION_RUN ||--o{ RANKED_CANDIDATE : classifies
+    RECOMMENDATION_RUN ||--o| NEXT_MEAL_INTENTION : informs
+    NEXT_MEAL_INTENTION o|--o| MEAL : may_lead_to
     ACCOUNT ||--o{ ENTITLEMENT_GRANT : receives
     ENTITLEMENT_GRANT ||--o{ USAGE_RESERVATION : governs
     USER_PROFILE ||--o{ MIGRATION_SESSION : migrates
@@ -72,8 +74,9 @@ and mutation authority remains with the owning context.
 | DatasetReleasePublished                     | Data Publication        | Food Knowledge, recomputation coordinator                |
 | RuleSetActivated                            | Nutrition Science       | Nutrition State, Planning, impact analysis               |
 | NutritionStateComputed                      | Nutrition State         | Web notifications, Planning, Audit                       |
-| PlanRequested                               | Planning                | Optimizer worker                                         |
-| PlanValidated / PlanRejected                | Planning                | Web, Audit, evaluation pipeline                          |
+| NextMealRankingRequested                    | Planning                | Recommendation worker                                    |
+| NextMealRankingValidated / Limited          | Planning                | Web, Audit, evaluation pipeline                          |
+| NextMealIntentionSelected                   | Planning                | Web, Audit                                               |
 | ConsentRevoked                              | Identity & Consent      | Integration shutdown, deletion/retention workflow        |
 | EntitlementChanged                          | Commerce & Entitlements | API authorization, capability refresh, audit             |
 | UsageReserved / Consumed / Released         | Commerce & Entitlements | AI orchestration, billing reconciliation, support        |

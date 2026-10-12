@@ -1,8 +1,8 @@
 # Planning route
 
-The planning page hosts the Free browser-only one-day planner. It receives the
-user's selected foods and meal slots, runs the bounded search in a Web Worker,
-shows independently validated drafts and alternatives, and records explicit
-acceptance as a separate local plan revision. Recorded meals remain in the
-consumption ledger. The browser planning store checks source freshness before
-publication and before presenting an accepted plan as current.
+The planning page is the Free browser-local entry point for a ranked next-meal
+recommendation. Its accepted target is a complete, classified food and recipe
+catalog view with optional personal inventory, evidence-qualified explanations,
+and explicit logging of actual consumption. The source is being aligned during
+Stage 4 steps 2–5. The [Stage 4 decisions](../../../../docs/decisions/README.md)
+govern the target behavior.
