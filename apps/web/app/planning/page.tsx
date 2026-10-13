@@ -5,9 +5,9 @@ export default function PlanningPage() {
   return (
     <div className="py-12 sm:py-16">
       <PageHeader
-        eyebrow="Local day planning"
-        title="Your food plan"
-        description="Create and review a one-day proposal using food data stored in this browser."
+        eyebrow="Local next-meal planning"
+        title="Your next meal"
+        description="Review a complete local ranking for your next eating occasion, choose a food, and record what you actually ate."
       />
       <div className="mt-10">
         <PlanningWorkspace />

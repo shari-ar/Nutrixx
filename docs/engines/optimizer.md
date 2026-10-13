@@ -2,10 +2,10 @@
 
 | Field         | Value                                             |
 | ------------- | ------------------------------------------------- |
-| Status        | Proposed target design                            |
+| Status        | Active Free contract; future paid design          |
 | Audience      | Optimization, nutrition science, product, quality |
 | Owner         | Nutrixx Optimization Engineering                  |
-| Last reviewed | 2026-10-12                                        |
+| Last reviewed | 2026-10-13                                        |
 
 ## Contract
 

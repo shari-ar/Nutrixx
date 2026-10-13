@@ -50,9 +50,10 @@ The examples are Fuji apple (`$0.4`), fresh whole egg (`$0.6`), and whole milk
 without added vitamins (`$0.2`) per 100 g. These values demonstrate the field
 as fixed product examples.
 
-`planning-input.ts` and `browser-planning.ts` are the current browser-local
-planning integration points. Stage 4 steps 3–6 align them with the accepted
-next-meal design: source-backed recorded-intake history, full-catalog
-classification and ranking, independently validated results, optional personal
-inventory, and explicit confirmation of actual consumption. See the
+`next-meal-input.ts` builds the one-next-meal request from the local catalog,
+recorded intake, applicable daily reference targets, and optional inventory.
+`browser-planning.ts` owns recommendation, selection, freshness, and the explicit
+actual-consumption handoff to the meal ledger. The background worker computes
+the ranking; the browser service independently reviews it before persistence.
+See the
 [Free next-meal contract](../../../docs/engines/next-meal-contract.md).

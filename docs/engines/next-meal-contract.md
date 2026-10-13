@@ -5,7 +5,7 @@
 | Status        | Accepted target contract                      |
 | Audience      | Engine, web, data, quality, nutrition science |
 | Owner         | Nutrixx Optimization Engineering              |
-| Last reviewed | 2026-10-12                                    |
+| Last reviewed | 2026-10-13                                    |
 
 This is the single normative Stage 4 contract for the Free local recommendation
 engine. It specializes [the optimizer overview](optimizer.md) and implements
@@ -116,7 +116,9 @@ approved row, explanation facts identify the candidate and portion, applied
 temporal rule, comparison window, reference release, accepted meal IDs, and
 exact recorded, projected, and normalized amounts. Evidence-limited and
 excluded rows retain classification reasons without a numeric suitability
-claim. Application publication and persistence follow in Stage 4 integration.
+claim. The browser integration publishes and persists only independently
+approved rankings, keeps selection separate, and links actual consumption to
+the meal ledger. Measured device-envelope sign-off remains a conformance task.
 
 ## Typed outcome
 

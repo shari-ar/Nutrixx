@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { FoodPicker } from '@/components/food-picker';
@@ -7,39 +8,45 @@ import {
   BrowserPlanningStore,
   type LocalPlanningSnapshotV1,
 } from '@/lib/browser-planning';
-import { BrowserStageTwoStore, type FoodChoice } from '@/lib/browser-stage-two';
+import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
+import type { DeclaredInventoryItemV1 } from '@/lib/next-meal-input';
 
-import type { PlanningRunV1 } from '@nutrixx/optimizer-engine';
+import type { NextMealCandidateExplanationV1 } from '@nutrixx/optimizer-engine';
 
-const defaultLabels = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-const slotKeys = ['breakfast-slot', 'lunch-slot', 'dinner-slot', 'snack-slot'];
+const PAGE_SIZE = 30;
 
-function selectedMeals(run: PlanningRunV1) {
-  if (run.outcome.status !== 'READY') return [];
-  return run.outcome.draft.selections.flatMap((selection) => {
-    const slot = run.input.slots.find(
-      (item) => item.slotId === selection.slotId,
-    );
-    const candidate =
-      slot?.state === 'open'
-        ? slot.candidates.find(
-            (item) => item.candidateId === selection.candidateId,
-          )
-        : undefined;
-    const portion = candidate?.portions.find(
-      (item) => item.portionId === selection.portionId,
-    );
-    return slot && candidate && portion
-      ? [
-          {
-            ...selection,
-            slotLabel: slot.label,
-            name: candidate.displayNameSnapshot,
-            grams: portion.edibleGrams,
-          },
-        ]
-      : [];
-  });
+function amount(ratio: { numerator: string; denominator: string }): string {
+  const scaled =
+    (BigInt(ratio.numerator) * BigInt(100)) / BigInt(ratio.denominator);
+  const digits = scaled.toString().padStart(3, '0');
+  return `${digits.slice(0, -2)}.${digits.slice(-2)}`.replace(/\.0+$/, '');
+}
+
+function explanationLabel(explanation: NextMealCandidateExplanationV1): string {
+  return explanation.reasonCodes.join(', ').replaceAll('-', ' ');
+}
+
+function inputGuidance(reasonCodes: readonly string[]): string {
+  const guidance: Record<string, string> = {
+    'nutrition-market-required':
+      'Choose your nutrition reference region before requesting a recommendation.',
+    'local-catalog-required':
+      'Install the offline food catalog from the dashboard first.',
+    'unverified-food-restrictions':
+      'Your food restrictions require verified ingredient and allergen evidence before a safe ranking can be shown.',
+    'travel-day-reference-unavailable':
+      'Review the pending travel-day nutrition reference before ranking.',
+    'comparable-nutrient-evidence-required':
+      'The recorded meals or local catalog lack enough comparable nutrient evidence for a ranked recommendation.',
+    'inventory-source-changed':
+      'An available ingredient changed. Select it again from the current catalog.',
+    'local-worker-limit':
+      'This device could not complete the full local catalog review within the time limit.',
+    'next-meal-worker-error': 'Local ranking could not complete. Please retry.',
+  };
+  return reasonCodes
+    .map((code) => guidance[code] ?? code.replaceAll('-', ' '))
+    .join(' ');
 }
 
 export function PlanningWorkspace() {
@@ -54,12 +61,20 @@ export function PlanningWorkspace() {
   const [snapshot, setSnapshot] = useState<LocalPlanningSnapshotV1 | null>(
     null,
   );
-  const [choices, setChoices] = useState<FoodChoice[]>([]);
-  const [day, setDay] = useState<'today' | 'tomorrow'>('today');
-  const [labels, setLabels] = useState(defaultLabels.slice(0, 3));
+  const [inventoryOnly, setInventoryOnly] = useState(false);
+  const [inventory, setInventory] = useState<DeclaredInventoryItemV1[]>([]);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [visibleUnranked, setVisibleUnranked] = useState(PAGE_SIZE);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [inputLink, setInputLink] = useState<'nutrition' | 'dashboard' | null>(
+    null,
+  );
+  const [mealType, setMealType] = useState<
+    'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other'
+  >('other');
+  const [actualGrams, setActualGrams] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -71,7 +86,7 @@ export function PlanningWorkspace() {
       .catch(() => {
         if (active)
           setError(
-            'Local plans could not be opened. Retry or review Storage Settings.',
+            'The saved recommendation could not be opened. Review Storage Settings.',
           );
       });
     return () => {
@@ -79,17 +94,14 @@ export function PlanningWorkspace() {
     };
   }, [planning]);
 
-  async function refresh() {
-    setSnapshot(await planning.load());
-  }
-
-  async function perform(operation: () => Promise<void>) {
+  async function perform(action: () => Promise<void>): Promise<void> {
     setBusy(true);
     setError(null);
     setNotice(null);
+    setInputLink(null);
     try {
-      await operation();
-      await refresh();
+      await action();
+      setSnapshot(await planning.load());
     } catch (failure) {
       setError(
         failure instanceof Error
@@ -101,147 +113,124 @@ export function PlanningWorkspace() {
     }
   }
 
-  function run(operation: () => Promise<void>): void {
-    perform(operation).catch((failure: unknown) => {
-      setError(
-        failure instanceof Error
-          ? failure.message
-          : 'Local planning is unavailable.',
-      );
-      setBusy(false);
-    });
-  }
-
-  const draftMeals = snapshot?.draftRun ? selectedMeals(snapshot.draftRun) : [];
-  const activeMeals = snapshot?.activeRun
-    ? selectedMeals(snapshot.activeRun)
-    : [];
+  const run = snapshot?.run;
+  const ranked = run?.result.ranked ?? [];
+  const explanations = new Map(
+    run?.explanations.map((item) => [item.candidateKey, item]) ?? [],
+  );
+  const selected = ranked.find(
+    (row) => row.candidateKey === snapshot?.intention?.candidateKey,
+  );
 
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-separator bg-surface p-6 sm:p-8">
-        <h2 className="text-2xl font-semibold">Request a local day plan</h2>
+        <h2 className="text-2xl font-semibold">Find your next meal</h2>
         <p className="mt-2 text-sm text-muted">
-          Select a day and some foods or recipes you would consider. The planner
-          checks local nutrient evidence and proposes one validated option per
-          open slot.
+          Nutrixx ranks the installed local catalog using your recorded meals
+          and available reference targets.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <label className="text-sm font-medium">
-            Planning day
-            <select
-              className="mt-2 block rounded-xl border border-separator bg-background px-3 py-2"
-              value={day}
-              onChange={(event) =>
-                setDay(event.target.value as 'today' | 'tomorrow')
-              }
-            >
-              <option value="today">Today</option>
-              <option value="tomorrow">Tomorrow</option>
-            </select>
-          </label>
-          <label className="text-sm font-medium">
-            Open meal slots
-            <select
-              className="mt-2 block rounded-xl border border-separator bg-background px-3 py-2"
-              value={labels.length}
-              onChange={(event) =>
-                setLabels((current) =>
-                  defaultLabels
-                    .slice(0, Number(event.target.value))
-                    .map((label, index) => current[index] ?? label),
+        <label className="mt-5 flex items-center gap-3 text-sm">
+          <input
+            checked={inventoryOnly}
+            onChange={(event) => setInventoryOnly(event.target.checked)}
+            type="checkbox"
+          />
+          Use only ingredients I have available
+        </label>
+        {inventoryOnly ? (
+          <div className="mt-5 space-y-4">
+            <FoodPicker
+              includeRecipes
+              label="Add a food or ingredient you have"
+              onSelect={(choice) =>
+                setInventory((current) =>
+                  current.some((item) => item.choice.key === choice.key)
+                    ? current
+                    : [
+                        ...current,
+                        { choice, edibleGrams: choice.defaultGramWeight },
+                      ],
                 )
               }
-            >
-              {[1, 2, 3, 4].map((count) => (
-                <option key={count} value={count}>
-                  {count}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {labels.map((label, index) => (
-            <label className="text-sm font-medium" key={slotKeys[index]}>
-              Slot {index + 1}
-              <input
-                className="mt-2 block w-full rounded-xl border border-separator bg-background px-3 py-2"
-                maxLength={80}
-                onChange={(event) =>
-                  setLabels((current) =>
-                    current.map((value, position) =>
-                      position === index ? event.target.value : value,
-                    ),
-                  )
-                }
-                value={label}
-              />
-            </label>
-          ))}
-        </div>
-        <div className="mt-6">
-          <FoodPicker
-            includeRecipes
-            label="Search candidate foods or recipes"
-            onSelect={(choice) =>
-              setChoices((current) =>
-                current.some((item) => item.key === choice.key)
-                  ? current
-                  : [...current, choice].slice(0, 24),
-              )
-            }
-            store={foods}
-          />
-        </div>
-        {choices.length > 0 ? (
-          <ul
-            aria-label="Selected planning candidates"
-            className="mt-5 flex flex-wrap gap-2"
-          >
-            {choices.map((choice) => (
-              <li
-                className="flex items-center gap-2 rounded-xl border border-separator px-3 py-2 text-sm"
-                key={choice.key}
-              >
-                {choice.name}
-                <button
-                  aria-label={`Remove ${choice.name}`}
-                  className="font-bold text-muted"
-                  onClick={() =>
-                    setChoices((current) =>
-                      current.filter((item) => item.key !== choice.key),
-                    )
-                  }
-                  type="button"
+              store={foods}
+            />
+            <ul className="space-y-2" aria-label="Available ingredients">
+              {inventory.map((item) => (
+                <li
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-separator p-3"
+                  key={item.choice.key}
                 >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <span className="min-w-32 flex-1">{item.choice.name}</span>
+                  <label className="text-sm">
+                    Available edible grams
+                    <input
+                      className="ml-2 w-28 rounded-lg border border-separator bg-background px-2 py-1"
+                      inputMode="decimal"
+                      value={item.edibleGrams}
+                      onChange={(event) =>
+                        setInventory((current) =>
+                          current.map((entry) =>
+                            entry.choice.key === item.choice.key
+                              ? { ...entry, edibleGrams: event.target.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <button
+                    className="text-sm text-muted underline"
+                    type="button"
+                    onClick={() =>
+                      setInventory((current) =>
+                        current.filter(
+                          (entry) => entry.choice.key !== item.choice.key,
+                        ),
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
         <button
           className="mt-6 rounded-xl bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:opacity-50"
-          disabled={busy || choices.length === 0}
-          onClick={() =>
-            run(async () => {
-              const result = await planning.createDraft({
-                day,
-                openSlotLabels: labels,
-                choices,
+          disabled={busy || (inventoryOnly && inventory.length === 0)}
+          type="button"
+          onClick={() => {
+            perform(async () => {
+              const result = await planning.createRecommendation({
+                inventory: inventoryOnly ? inventory : null,
               });
               if (result.status !== 'READY') {
-                setNotice(
-                  `A validated plan is unavailable: ${result.reasonCodes.join(', ')}.`,
+                setNotice(inputGuidance(result.reasonCodes));
+                setInputLink(
+                  result.reasonCodes.includes('local-catalog-required')
+                    ? 'dashboard'
+                    : result.reasonCodes.some(
+                          (code) =>
+                            code === 'nutrition-market-required' ||
+                            code === 'travel-day-reference-unavailable',
+                        )
+                      ? 'nutrition'
+                      : null,
                 );
               }
-            })
-          }
-          type="button"
+              setVisible(PAGE_SIZE);
+              setVisibleUnranked(PAGE_SIZE);
+            }).catch(() => setError('Local planning is unavailable.'));
+          }}
         >
-          {busy ? 'Checking local plan…' : 'Build local plan'}
+          {busy ? 'Ranking the local catalog…' : 'Find my next meal'}
         </button>
+        <p className="mt-3 text-xs text-muted">
+          The recommendation is a general wellness estimate. Review the actual
+          food and amount before recording a meal.
+        </p>
       </section>
 
       {error ? (
@@ -254,203 +243,227 @@ export function PlanningWorkspace() {
       ) : null}
       {notice ? (
         <p className="rounded-xl border border-separator p-4" role="status">
-          {notice}
+          {notice}{' '}
+          {inputLink ? (
+            <Link className="underline" href={`/${inputLink}`}>
+              Open {inputLink === 'nutrition' ? 'Nutrition' : 'Dashboard'}
+            </Link>
+          ) : null}
         </p>
       ) : null}
 
-      {snapshot?.draft && snapshot.draftRun ? (
-        <section className="rounded-[2rem] border border-accent/40 bg-surface p-6 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">
-            Validated draft
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold">
-            Review your proposed meals
+      {run ? (
+        <section className="rounded-[2rem] border border-separator bg-surface p-6 sm:p-8">
+          <h2 className="text-2xl font-semibold">
+            Ranked foods for your next meal
           </h2>
-          {!snapshot.draftFresh ? (
+          <p className="mt-2 text-sm text-muted">
+            {run.result.processed} of {run.result.total} catalog entries
+            reviewed · {ranked.length} comparable.
+          </p>
+          {!snapshot?.fresh ? (
             <p className="mt-3 text-danger">
-              This draft is stale. Request a new plan before accepting it.
+              Your recorded data or catalog changed. Request a fresh
+              recommendation.
             </p>
           ) : null}
-          <ul className="mt-5 space-y-3">
-            {draftMeals.map((meal) => (
-              <li className="rounded-xl bg-background/60 p-4" key={meal.slotId}>
-                <strong>
-                  {meal.slotLabel}: {meal.name}
-                </strong>
-                <span className="ml-2 text-sm text-muted">
-                  {meal.grams} g edible
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-sm text-muted">
-            One feasible option from a bounded local search. Nutrient amounts
-            are shown only when source evidence is complete.
-          </p>
-          {snapshot.draft.review.explanation.nutrientClaims.length > 0 ? (
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {snapshot.draft.review.explanation.nutrientClaims
-                .slice(0, 8)
-                .map((claim) => (
+          {ranked.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">
+              Available evidence did not support a comparable option. Review the
+              reasons below.
+            </p>
+          ) : null}
+          <ol className="mt-5 space-y-3">
+            {ranked.slice(0, visible).map((row) => {
+              const explanation = explanations.get(row.candidateKey);
+              return (
+                <li
+                  className="rounded-xl border border-separator bg-background/60 p-4"
+                  key={row.candidateKey}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">
+                        {row.rank}.{' '}
+                        {explanation?.displayName ?? row.candidateKey}
+                      </h3>
+                      <p className="mt-1 text-sm text-muted">
+                        Suggested portion: {row.edibleGrams} g edible
+                      </p>
+                    </div>
+                    <button
+                      className="rounded-xl border border-separator px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                      disabled={
+                        busy ||
+                        !snapshot?.fresh ||
+                        snapshot.loggedMealId !== null
+                      }
+                      onClick={() => {
+                        perform(async () => {
+                          await planning.select(run.runId, row.candidateKey);
+                          setActualGrams(row.edibleGrams);
+                        }).catch(() =>
+                          setError('The selected food could not be saved.'),
+                        );
+                      }}
+                      type="button"
+                    >
+                      {snapshot?.intention?.candidateKey === row.candidateKey
+                        ? 'Selected'
+                        : 'Choose this food'}
+                    </button>
+                  </div>
+                  {explanation?.comparisons?.length ? (
+                    <details className="mt-3 text-sm">
+                      <summary className="cursor-pointer font-medium">
+                        Why this rank?
+                      </summary>
+                      <ul className="mt-2 space-y-1 text-muted">
+                        {explanation.comparisons.map((fact) => (
+                          <li key={fact.ruleId}>
+                            {fact.nutrientId
+                              .replace('nutrient.', '')
+                              .replaceAll('-', ' ')}
+                            : recorded {amount(fact.recordedAmount)}, projected{' '}
+                            {amount(fact.projectedAmount)} {fact.unit.code} for
+                            a {fact.targetAmount} {fact.unit.code}{' '}
+                            {fact.referenceType} reference.
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2 text-xs text-muted">
+                        Only documented rules and recorded intake contribute to
+                        this order.
+                      </p>
+                    </details>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+          {visible < ranked.length ? (
+            <button
+              className="mt-4 rounded-xl border border-separator px-4 py-2 text-sm"
+              onClick={() => setVisible((count) => count + PAGE_SIZE)}
+              type="button"
+            >
+              Show more ranked foods
+            </button>
+          ) : null}
+          {run.result.unranked.length ? (
+            <details className="mt-6">
+              <summary className="cursor-pointer font-semibold">
+                Other catalog entries and evidence limits (
+                {run.result.unranked.length})
+              </summary>
+              <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto text-sm">
+                {run.result.unranked.slice(0, visibleUnranked).map((item) => (
                   <li
-                    className="rounded-xl border border-separator p-3 text-sm"
-                    key={claim.ruleId}
+                    key={item.candidateKey}
+                    className="rounded-lg border border-separator p-3"
                   >
-                    {claim.nutrientId}: {claim.observedAmount} {claim.unit.code}{' '}
-                    {claim.relation} {claim.targetAmount} {claim.unit.code}
+                    {explanations.get(item.candidateKey)?.displayName ??
+                      item.candidateKey}{' '}
+                    · {item.classification.toLowerCase().replaceAll('_', ' ')}
+                    <span className="ml-2 text-muted">
+                      {explanationLabel(
+                        explanations.get(item.candidateKey) ?? {
+                          candidateKey: item.candidateKey,
+                          displayName: item.candidateKey,
+                          classification: item.classification,
+                          reasonCodes: item.reasonCodes,
+                        },
+                      )}
+                    </span>
                   </li>
                 ))}
-            </ul>
-          ) : null}
-          {snapshot.draft.review.explanation.limitationCodes.length > 0 ? (
-            <p className="mt-4 text-sm text-muted">
-              Evidence limits:{' '}
-              {snapshot.draft.review.explanation.limitationCodes
-                .slice(0, 8)
-                .join(', ')}
-            </p>
-          ) : null}
-          {snapshot.draft.review.alternatives.length > 0 ? (
-            <div className="mt-5">
-              <h3 className="font-semibold">Validated alternatives</h3>
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {snapshot.draft.review.alternatives.map((item) => {
-                  const slot = snapshot.draftRun!.input.slots.find(
-                    (entry) => entry.slotId === item.slotId,
-                  );
-                  const candidate =
-                    slot?.state === 'open'
-                      ? slot.candidates.find(
-                          (entry) =>
-                            entry.candidateId === item.replacement.candidateId,
-                        )
-                      : undefined;
-                  return (
-                    <li
-                      key={`${item.slotId}:${item.replacement.candidateId}:${item.replacement.portionId}`}
-                    >
-                      <button
-                        className="rounded-xl border border-separator px-3 py-2 text-sm"
-                        disabled={busy || !snapshot.draftFresh}
-                        onClick={() =>
-                          run(async () => {
-                            await planning.substitute(
-                              snapshot.draft!.draftId,
-                              item.slotId,
-                              item.replacement.candidateId,
-                              item.replacement.portionId,
-                            );
-                          })
-                        }
-                        type="button"
-                      >
-                        Use {candidate?.displayNameSnapshot ?? 'alternative'}{' '}
-                        instead
-                      </button>
-                    </li>
-                  );
-                })}
               </ul>
-            </div>
+              {visibleUnranked < run.result.unranked.length ? (
+                <button
+                  className="mt-3 text-sm underline"
+                  onClick={() =>
+                    setVisibleUnranked((count) => count + PAGE_SIZE)
+                  }
+                  type="button"
+                >
+                  Show more catalog entries
+                </button>
+              ) : null}
+            </details>
           ) : null}
-          <div className="mt-6 flex gap-3">
-            <button
-              className="rounded-xl bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:opacity-50"
-              disabled={busy || !snapshot.draftFresh}
-              onClick={() =>
-                run(() => planning.accept(snapshot.draft!.draftId))
-              }
-              type="button"
-            >
-              Accept plan
-            </button>
-            <button
-              className="rounded-xl border border-separator px-5 py-3 font-semibold"
-              disabled={busy}
-              onClick={() =>
-                run(() => planning.discard(snapshot.draft!.draftId))
-              }
-              type="button"
-            >
-              Discard draft
-            </button>
-          </div>
         </section>
       ) : null}
 
-      {snapshot?.active && snapshot.activeRun ? (
-        <section className="rounded-[2rem] border border-separator bg-surface p-6 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">
-            Accepted plan · revision {snapshot.active.revision}
+      {selected &&
+      snapshot?.intention &&
+      snapshot.fresh &&
+      !snapshot.loggedMealId ? (
+        <section className="rounded-[2rem] border border-accent/40 bg-surface p-6 sm:p-8">
+          <h2 className="text-xl font-semibold">
+            Record what you actually ate
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Selected: {explanations.get(selected.candidateKey)?.displayName} ·
+            suggested {selected.edibleGrams} g.
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Your day plan</h2>
-          {!snapshot.activeFresh ? (
-            <p className="mt-3 text-danger">
-              This plan is historical because the day or source data changed.
-              Build a new plan for a current suggestion.
-            </p>
-          ) : null}
-          <ul className="mt-5 space-y-3">
-            {activeMeals.map((meal) => (
-              <li className="rounded-xl bg-background/60 p-4" key={meal.slotId}>
-                {meal.slotLabel}: <strong>{meal.name}</strong> · {meal.grams} g
-                edible
-              </li>
-            ))}
-          </ul>
-          {snapshot.activeFresh &&
-          snapshot.activeReview?.alternatives.length ? (
-            <div className="mt-5">
-              <h3 className="font-semibold">Change a proposed meal</h3>
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {snapshot.activeReview.alternatives.map((item) => {
-                  const slot = snapshot.activeRun!.input.slots.find(
-                    (entry) => entry.slotId === item.slotId,
-                  );
-                  const candidate =
-                    slot?.state === 'open'
-                      ? slot.candidates.find(
-                          (entry) =>
-                            entry.candidateId === item.replacement.candidateId,
-                        )
-                      : undefined;
-                  return (
-                    <li
-                      key={`${item.slotId}:${item.replacement.candidateId}:${item.replacement.portionId}`}
-                    >
-                      <button
-                        className="rounded-xl border border-separator px-3 py-2 text-sm"
-                        disabled={busy}
-                        onClick={() =>
-                          run(async () => {
-                            await planning.substitute(
-                              snapshot.active!.draftId,
-                              item.slotId,
-                              item.replacement.candidateId,
-                              item.replacement.portionId,
-                            );
-                          })
-                        }
-                        type="button"
-                      >
-                        Review {candidate?.displayNameSnapshot ?? 'alternative'}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
-          <p className="mt-4 text-sm text-muted">
-            Logging a meal records what you actually ate in the separate meal
-            ledger.
-          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <label className="text-sm">
+              Meal type
+              <select
+                className="mt-1 block rounded-xl border border-separator bg-background px-3 py-2"
+                value={mealType}
+                onChange={(event) =>
+                  setMealType(event.target.value as typeof mealType)
+                }
+              >
+                {['breakfast', 'lunch', 'dinner', 'snack', 'other'].map(
+                  (kind) => (
+                    <option key={kind} value={kind}>
+                      {kind}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+            <label className="text-sm">
+              Actual edible grams
+              <input
+                className="mt-1 block rounded-xl border border-separator bg-background px-3 py-2"
+                inputMode="decimal"
+                value={actualGrams}
+                onChange={(event) => setActualGrams(event.target.value)}
+              />
+            </label>
+          </div>
+          <button
+            className="mt-5 rounded-xl bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:opacity-50"
+            disabled={busy || !actualGrams}
+            onClick={() => {
+              perform(async () => {
+                const mealId = await planning.logAsEaten({
+                  intentionId: snapshot.intention!.intentionId,
+                  mealType,
+                  occurredAt: new Date().toISOString(),
+                  edibleGrams: actualGrams,
+                });
+                setNotice(`Meal recorded: ${mealId}`);
+              }).catch(() => setError('The meal could not be recorded.'));
+            }}
+            type="button"
+          >
+            Record as eaten
+          </button>
         </section>
       ) : null}
-      {snapshot && snapshot.history.length > 1 ? (
-        <p className="text-sm text-muted">
-          {snapshot.history.length} accepted plan revisions are retained in
-          local history and export.
+      {snapshot?.loggedMealId ? (
+        <p
+          className="rounded-xl border border-separator p-4 text-sm"
+          role="status"
+        >
+          Your actual meal was recorded.{' '}
+          <Link className="underline" href={`/meals/${snapshot.loggedMealId}`}>
+            View the meal
+          </Link>
         </p>
       ) : null}
     </div>

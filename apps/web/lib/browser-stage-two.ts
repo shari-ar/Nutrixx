@@ -130,6 +130,7 @@ export interface SaveRecipeInput {
 
 export interface SaveMealInput {
   readonly mealId?: string;
+  readonly planningIntentionId?: string;
   readonly mealType: MealRevisionV1['mealType'];
   readonly occurredAt: string;
   readonly note?: string;
@@ -957,6 +958,9 @@ export class BrowserStageTwoStore {
         localDate: localDate(occurredAt, timeZone),
         timeZone,
         mealType: input.mealType,
+        ...(input.planningIntentionId
+          ? { planningIntentionId: input.planningIntentionId }
+          : {}),
         items,
         nutrition,
         ...(input.note?.trim() ? { note: input.note.trim() } : {}),

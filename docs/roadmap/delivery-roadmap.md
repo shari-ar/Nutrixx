@@ -74,8 +74,8 @@ Stage 4 follows the accepted Free
 [next-meal lifecycle and inventory](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
 and [quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
 The [next-meal engine contract](../engines/next-meal-contract.md) defines the
-Stage 4 boundary. Candidate preparation, ranking, validation, and web
-integration follow in subsequent work items.
+Stage 4 boundary. Candidate preparation, ranking, validation, and browser
+integration are implemented; conformance and measured quality sign-off remain.
 
 Exit: the complete advertised Free contract passes; mandatory fixtures show
 zero escaped hard violations. AI-dependent optimizer features remain excluded.

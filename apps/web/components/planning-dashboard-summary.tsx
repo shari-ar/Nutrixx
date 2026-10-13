@@ -14,32 +14,28 @@ export function PlanningDashboardSummary() {
       .load()
       .then((snapshot) => {
         if (!active) return;
-        if (
-          !snapshot.activeFresh ||
-          !snapshot.activeRun ||
-          snapshot.activeRun.outcome.status !== 'READY'
-        ) {
-          setSummary(
-            snapshot.active
-              ? 'Your previous plan needs a fresh review.'
-              : 'Build and accept a local day plan.',
-          );
+        if (!snapshot.run) {
+          setSummary('Find your next meal from the local catalog.');
           return;
         }
-        const selection = snapshot.activeRun.outcome.draft.selections[0];
-        const slot = snapshot.activeRun.input.slots.find(
-          (item) => item.slotId === selection?.slotId,
+        if (snapshot.loggedMealId) {
+          setSummary('Your selected meal was recorded. Find a new next meal.');
+          return;
+        }
+        if (!snapshot.fresh) {
+          setSummary('Your nutrition context changed. Refresh your next meal.');
+          return;
+        }
+        const key =
+          snapshot.intention?.candidateKey ??
+          snapshot.run.result.ranked[0]?.candidateKey;
+        const candidate = snapshot.run.explanations.find(
+          (item) => item.candidateKey === key,
         );
-        const candidate =
-          slot?.state === 'open'
-            ? slot.candidates.find(
-                (item) => item.candidateId === selection?.candidateId,
-              )
-            : undefined;
         setSummary(
           candidate
-            ? `${slot?.label}: ${candidate.displayNameSnapshot}`
-            : 'Open your current day plan.',
+            ? `${snapshot.intention ? 'Selected' : 'Top ranked'}: ${candidate.displayName}`
+            : 'Open the ranked catalog to review available foods.',
         );
       })
       .catch(() => {

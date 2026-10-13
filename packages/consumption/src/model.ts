@@ -89,6 +89,7 @@ export const MealRevisionV1Schema = z
     localDate: z.iso.date(),
     timeZone: IanaTimeZoneSchema,
     mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other']),
+    planningIntentionId: CanonicalIdSchema.optional(),
     items: z.array(MealItemV1Schema),
     nutrition: z
       .array(

@@ -171,7 +171,9 @@ function mapCustomFoods(
         item.value.basis === 'per-100-gram-edible'
           ? {
               state: 'known' as const,
-              nutrientId: item.nutrientId,
+              nutrientId:
+                resolveFoodComponentV1(item.nutrientId, item.value.unit.code) ??
+                item.nutrientId,
               amountPer100EdibleGrams: item.value.amount,
               unit: item.value.unit,
               source: {
