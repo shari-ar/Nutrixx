@@ -17,8 +17,8 @@ linting, tests, contract build, API build, and Web build all succeed.
 Execution order:
 
 1. use the local locked npm toolchain when available;
-2. otherwise use the running `api` DevContainer;
-3. otherwise block the commit with recovery instructions.
+2. otherwise use the running `web` DevContainer, which has the Web workspace dependencies required by the complete gate;
+3. otherwise block the push with recovery instructions.
 
 Husky is installed by the root `prepare` lifecycle through
 `scripts/install-git-hooks.mjs`. CI, production installs, and Docker build

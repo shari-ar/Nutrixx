@@ -97,6 +97,19 @@ A `READY` first item means highest-ranked among evaluated comparable entries
 under the frozen policy. It is a general-wellness planning estimate. Foods
 with incomplete evidence remain discoverable through their classification.
 
+The `free-next-meal-weighted-distance-v1` policy scores only complete,
+source-backed temporal comparisons. Each rule supplies its own UTC window,
+coverage, reference target, unit, weight, and exact accepted-meal observations.
+For each supported portion, the engine minimizes the sum of weighted,
+normalized target distances using exact rational arithmetic. A `minimum`
+target has zero distance after it is met; a `preferred` target measures distance
+on either side. Verified hard limits already restrict supported portions. Equal
+scores use the smallest maximum rule distance, then the smaller edible portion,
+source identity, and portion identity. Missing historical evidence moves an
+otherwise comparable entry to `EVIDENCE_LIMITED` until a supported comparison
+is available. Independent validation and publication status follow in later
+Stage 4 work.
+
 ## Typed outcome
 
 `NextMealOutcome` is a strict discriminated union on `status`. Each outcome

@@ -49,6 +49,17 @@ export {
 } from './next-meal-candidates.js';
 
 export {
+  NEXT_MEAL_RANKING_POLICY_VERSION_V1,
+  NextMealRankingRequestSchema,
+  rankNextMealCandidatesV1,
+  type ExactRatio,
+  type NextMealRankedCandidate,
+  type NextMealRankingRequest,
+  type NextMealRankingResult,
+  type NextMealRuleScore,
+} from './next-meal-ranking.js';
+
+export {
   FREE_SCORING_POLICY_VERSION_V1,
   LocalSearchResultV1Schema,
   searchLocalPlanV1,

@@ -1,4 +1,5 @@
 import {
+  JsonValueSchema,
   canonicalizeJson,
   sealCanonicalRecordV1,
   verifyCanonicalRecordV1,
@@ -14,6 +15,7 @@ import {
 } from '@nutrixx/nutrition-engine';
 import {
   FREE_SCORING_POLICY_VERSION_V1,
+  PlanningRunV1Schema,
   fingerprintPlanningInputV1,
   fingerprintPlanningOutcomeV1,
   reviewLocalSelectionsV1,
@@ -136,7 +138,7 @@ function runFromRecords(
   if (!record || record.recordType !== 'planning-run') {
     throw new TypeError('The planning run is unavailable.');
   }
-  return record.payload as unknown as PlanningRunV1;
+  return PlanningRunV1Schema.parse(record.payload);
 }
 
 function latestRecord(
@@ -569,7 +571,7 @@ export class BrowserPlanningStore {
         draftId,
         owner,
         DRAFT_TYPE,
-        draft as unknown as JsonValue,
+        JsonValueSchema.parse(draft),
         completedAt,
       );
       await repository.commit({
@@ -825,7 +827,7 @@ export class BrowserPlanningStore {
               planId,
               owner,
               PLAN_TYPE,
-              plan as unknown as JsonValue,
+              JsonValueSchema.parse(plan),
               now,
               plan.revision,
               previous?.planId,
@@ -1001,7 +1003,7 @@ export class BrowserPlanningStore {
             replacementDraftId,
             owner,
             DRAFT_TYPE,
-            replacementDraft as unknown as JsonValue,
+            JsonValueSchema.parse(replacementDraft),
             now,
           );
           await repository.commit({
