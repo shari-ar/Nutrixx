@@ -143,7 +143,15 @@ excluded rows retain classification reasons without a numeric suitability
 claim. The browser integration publishes and persists only independently
 approved rankings, the cited temporal-policy snapshot and applied rule spans,
 keeps selection separate, and links actual consumption to the meal ledger. The
-initial active release uses documented nutrition-day references. A tested
+planner shows a run-level summary of the recorded-intake assumption, active
+nutrient count, provisional-history count, request time, and expiry. Each ranked
+candidate exposes its relative order and combined target gap, followed by
+per-nutrient recorded and projected amounts, target, normalized gap, weight, applied
+and configured history windows, linked accepted meals, reference and horizon
+citations, and food-composition provenance. The gap is identified as a ranking
+comparison rather than a health score. Historical runs retain these frozen
+explanations after expiry. The initial active release uses documented
+nutrition-day references. A tested
 multi-day policy path accepts separately sourced horizons when such a release
 is published. Measured device-envelope sign-off remains a conformance task.
 
@@ -193,7 +201,8 @@ rather than `INFEASIBLE`.
    catalog coverage, ordering, and every material numeric explanation claim.
 7. A cached outcome is current only while profile, restriction, meal,
    inventory, food/recipe, catalog, reference, temporal, and policy revisions
-   match its frozen input. An older run remains historical.
+   match its frozen input and its time validity window remains open. An older
+   run remains historical.
 
 ## Run, replay, and user commands
 
@@ -203,6 +212,13 @@ typed outcome, output hash, independent validation report, and the minimum
 candidate/portion facts needed to interpret a selected recommendation after
 reference-cache eviction. Its canonical record envelope binds the run ID and
 owner. Hashes use canonical JSON and SHA-256 under the shared canonical model.
+The local Free policy expires a recommendation after 15 minutes, at the
+nutrition-day boundary, or when a recorded meal leaves an active elapsed-time
+window, whichever comes first. The exact UTC expiry is frozen with the run and
+recomputed during replay. A time-expired run stays readable as history; the
+application requires a new run before selection or consumption. One run can
+lead to at most one recorded eating occasion, including after the user revises
+their selection.
 Portable export includes user-owned run records and required replay evidence;
 reference releases remain identified by immutable manifest and digest.
 

@@ -177,6 +177,7 @@ describe('browser next-meal planning', () => {
         }) as unknown as BrowserNutritionSnapshotV1,
     };
     let linkedIntention: string | undefined;
+    let catalogRelease = 'fixture-release';
     const foods = {
       enumerateNextMealCatalog: async () => ({
         manifest: {
@@ -186,7 +187,7 @@ describe('browser next-meal planning', () => {
         },
         entries: [food],
       }),
-      activeCatalogRelease: async () => 'fixture-release',
+      activeCatalogRelease: async () => catalogRelease,
       listMeals: async () =>
         linkedIntention
           ? [
@@ -225,23 +226,46 @@ describe('browser next-meal planning', () => {
     );
     expect(ranked.run?.appliedTemporalRules).toHaveLength(1);
     expect(ranked.fresh).toBe(true);
-    const candidateKey = ranked.run!.result.ranked[0]!.candidateKey;
-    const intentionId = await planning.select(created.runId, candidateKey);
+    expect(ranked.run?.validUntil).toBe('2026-10-12T12:15:00.000Z');
+    catalogRelease = 'new-fixture-release';
+    expect((await planning.load()).fresh).toBe(false);
+    catalogRelease = 'fixture-release';
+    expect((await planning.load()).fresh).toBe(true);
+    vi.setSystemTime(new Date('2026-10-12T12:15:00.000Z'));
+    expect((await planning.load()).fresh).toBe(false);
+    await expect(
+      planning.select(
+        created.runId,
+        ranked.run!.result.ranked[0]!.candidateKey,
+      ),
+    ).rejects.toThrow('Refresh it');
+    const refreshed = await planning.createRecommendation({ inventory: null });
+    expect(refreshed.status).toBe('READY');
+    if (refreshed.status !== 'READY') return;
+    expect(refreshed.runId).not.toBe(created.runId);
+    const replay = await planning.load();
+    expect(replay.fresh).toBe(true);
+    expect(replay.run?.result).toEqual(ranked.run?.result);
+    const candidateKey = replay.run!.result.ranked[0]!.candidateKey;
+    const intentionId = await planning.select(refreshed.runId, candidateKey);
     expect((await planning.load()).intention?.intentionId).toBe(intentionId);
     await planning.logAsEaten({
       intentionId,
       mealType: 'lunch',
-      occurredAt: NOW,
+      occurredAt: new Date().toISOString(),
       edibleGrams: '90',
     });
     expect((await planning.load()).loggedMealId).toBe(
       '00000000-0000-4000-8000-000000000010',
     );
     await expect(
+      planning.select(refreshed.runId, candidateKey),
+    ).rejects.toThrow('Refresh it');
+    await expect(
       planning.logAsEaten({
         intentionId,
         mealType: 'lunch',
-        occurredAt: NOW,
+        occurredAt: new Date().toISOString(),
         edibleGrams: '90',
       }),
     ).rejects.toThrow('already logged');

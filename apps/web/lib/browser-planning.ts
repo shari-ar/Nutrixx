@@ -5,12 +5,16 @@ import {
   verifyCanonicalRecordV1,
   type CanonicalRecordV1,
 } from '@nutrixx/canonical-schema';
+import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
 import {
+  NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   NextMealRankingRequestSchema,
   NextMealRankingResultSchema,
   NextMealAppliedTemporalRuleV1Schema,
   NextMealTemporalPolicyReleaseV1Schema,
   reviewNextMealRankingV1,
+  nextMealIsCurrentV1,
+  nextMealValidUntilV1,
   verifyNextMealExplanationsV1,
   type NextMealCandidateExplanationV1,
   type NextMealRankingRequest,
@@ -49,6 +53,7 @@ export interface NextMealRunV1 {
   readonly runId: string;
   readonly ownerSubjectId: string;
   readonly createdAt: string;
+  readonly validUntil: string;
   readonly freshnessHash: string;
   readonly inputHash: string;
   readonly resultHash: string;
@@ -90,6 +95,7 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     data['runId'] !== record.recordId ||
     data['ownerSubjectId'] !== record.subjectId ||
     typeof data['createdAt'] !== 'string' ||
+    typeof data['validUntil'] !== 'string' ||
     typeof data['freshnessHash'] !== 'string' ||
     typeof data['inputHash'] !== 'string' ||
     typeof data['resultHash'] !== 'string'
@@ -106,6 +112,7 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     );
   if (
     appliedTemporalRules.length !== input.temporalRules.length ||
+    data['validUntil'] !== nextMealValidUntilV1(input, temporalPolicy) ||
     new Set(appliedTemporalRules.map((rule) => rule.ruleId)).size !==
       appliedTemporalRules.length ||
     appliedTemporalRules.some(
@@ -225,12 +232,16 @@ export class BrowserPlanningStore {
       )
       .map((record) => [record.recordId, record.integrity.value])
       .sort((a, b) => a[0]!.localeCompare(b[0]!));
+    const referenceRelease = getAdultDriBaselineReleaseV1();
     return sha256Canonical(
       canonicalizeJson({
         owner,
         records: relevant,
         activeCatalogRelease: await this.foods.activeCatalogRelease(),
         temporalPolicyVersion: NEXT_MEAL_DAILY_BASELINE_POLICY_VERSION_V1,
+        rankingPolicyVersion: NEXT_MEAL_RANKING_POLICY_VERSION_V1,
+        referenceReleaseId: referenceRelease.releaseId,
+        referencePolicyVersion: referenceRelease.policyVersion,
       }),
     );
   }
@@ -309,10 +320,19 @@ export class BrowserPlanningStore {
       throw new TypeError('The next-meal result failed independent review.');
     const runId = crypto.randomUUID();
     const completedAt = new Date().toISOString();
+    const validUntil = nextMealValidUntilV1(
+      built.request,
+      built.temporalPolicy,
+    );
     await this.withRepository(async (repository, owner) => {
       if (
         owner !== profile.ownerSubjectId ||
-        before !== (await this.freshnessHash(repository, owner))
+        before !== (await this.freshnessHash(repository, owner)) ||
+        !nextMealIsCurrentV1(
+          built.request.candidates.requestedAt,
+          validUntil,
+          new Date().toISOString(),
+        )
       )
         throw new TypeError(
           'Planning inputs changed. Request a fresh recommendation.',
@@ -323,6 +343,7 @@ export class BrowserPlanningStore {
         runId,
         ownerSubjectId: owner,
         createdAt: completedAt,
+        validUntil,
         freshnessHash: before,
         inputHash: await sha256Canonical(
           canonicalizeJson(JsonValueSchema.parse(built.request)),
@@ -393,17 +414,24 @@ export class BrowserPlanningStore {
           'The stored selection is absent from the validated ranking.',
         );
       const meals = await this.foods.listMeals();
-      const linked = intention
-        ? meals.find(
-            (meal) =>
-              meal.state === 'recorded' &&
-              meal.planningIntentionId === intention.intentionId,
-          )
-        : undefined;
+      const intentionIds = new Set(
+        currentIntentions.map((item) => item.intentionId),
+      );
+      const linked = meals.find(
+        (meal) =>
+          meal.state === 'recorded' &&
+          meal.planningIntentionId !== undefined &&
+          intentionIds.has(meal.planningIntentionId),
+      );
       return {
         run,
         fresh:
-          run.freshnessHash === (await this.freshnessHash(repository, owner)),
+          run.freshnessHash === (await this.freshnessHash(repository, owner)) &&
+          nextMealIsCurrentV1(
+            run.input.candidates.requestedAt,
+            run.validUntil,
+            new Date().toISOString(),
+          ),
         intention,
         loggedMealId: linked?.mealId ?? null,
       };
@@ -439,7 +467,12 @@ export class BrowserPlanningStore {
         await this.withRepository(async (repository, currentOwner) => {
           if (
             snapshot.run!.freshnessHash !==
-            (await this.freshnessHash(repository, currentOwner))
+              (await this.freshnessHash(repository, currentOwner)) ||
+            !nextMealIsCurrentV1(
+              snapshot.run!.input.candidates.requestedAt,
+              snapshot.run!.validUntil,
+              new Date().toISOString(),
+            )
           )
             throw new TypeError(
               'Planning inputs changed. Refresh the recommendation.',
@@ -515,6 +548,14 @@ export class BrowserPlanningStore {
           throw new TypeError(
             'Confirm a positive edible quantity for the selected food.',
           );
+        if (
+          !nextMealIsCurrentV1(
+            snapshot.run.input.candidates.requestedAt,
+            snapshot.run.validUntil,
+            new Date().toISOString(),
+          )
+        )
+          throw new TypeError('Refresh the expired recommendation first.');
         const choice: FoodChoice = {
           key: row.candidateKey,
           name: candidate.displayName,

@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { FoodPicker } from '@/components/food-picker';
 import {
+  NextMealExplanation,
+  NextMealRunOverview,
+} from '@/components/next-meal-explanation';
+import {
   BrowserPlanningStore,
   type LocalPlanningSnapshotV1,
 } from '@/lib/browser-planning';
@@ -14,13 +18,6 @@ import type { DeclaredInventoryItemV1 } from '@/lib/next-meal-input';
 import type { NextMealCandidateExplanationV1 } from '@nutrixx/optimizer-engine';
 
 const PAGE_SIZE = 30;
-
-function amount(ratio: { numerator: string; denominator: string }): string {
-  const scaled =
-    (BigInt(ratio.numerator) * BigInt(100)) / BigInt(ratio.denominator);
-  const digits = scaled.toString().padStart(3, '0');
-  return `${digits.slice(0, -2)}.${digits.slice(-2)}`.replace(/\.0+$/, '');
-}
 
 function explanationLabel(explanation: NextMealCandidateExplanationV1): string {
   return explanation.reasonCodes.join(', ').replaceAll('-', ' ');
@@ -91,6 +88,39 @@ export function PlanningWorkspace() {
       });
     return () => {
       active = false;
+    };
+  }, [planning]);
+
+  useEffect(() => {
+    const validUntil = snapshot?.run?.validUntil;
+    if (!validUntil || !snapshot?.fresh) return;
+    const timer = window.setTimeout(
+      () =>
+        setSnapshot((current) =>
+          current?.run?.validUntil === validUntil
+            ? { ...current, fresh: false }
+            : current,
+        ),
+      Math.max(0, Date.parse(validUntil) - Date.now()),
+    );
+    return () => window.clearTimeout(timer);
+  }, [snapshot?.fresh, snapshot?.run?.validUntil]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible')
+        void planning
+          .load()
+          .then(setSnapshot)
+          .catch(() => {
+            setError('The saved recommendation could not be opened.');
+          });
+    };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
   }, [planning]);
 
@@ -265,10 +295,11 @@ export function PlanningWorkspace() {
           </p>
           {!snapshot?.fresh ? (
             <p className="mt-3 text-danger">
-              Your recorded data or catalog changed. Request a fresh
-              recommendation.
+              Your recorded data, catalog, or the recommendation time window
+              changed. Request a fresh recommendation.
             </p>
           ) : null}
+          <NextMealRunOverview run={run} />
           {ranked.length === 0 ? (
             <p className="mt-4 text-sm text-muted">
               Available evidence did not support a comparable option. Review the
@@ -316,28 +347,11 @@ export function PlanningWorkspace() {
                     </button>
                   </div>
                   {explanation?.comparisons?.length ? (
-                    <details className="mt-3 text-sm">
-                      <summary className="cursor-pointer font-medium">
-                        Why this rank?
-                      </summary>
-                      <ul className="mt-2 space-y-1 text-muted">
-                        {explanation.comparisons.map((fact) => (
-                          <li key={fact.ruleId}>
-                            {fact.nutrientId
-                              .replace('nutrient.', '')
-                              .replaceAll('-', ' ')}
-                            : recorded {amount(fact.recordedAmount)}, projected{' '}
-                            {amount(fact.projectedAmount)} {fact.unit.code} for
-                            a {fact.targetAmount} {fact.unit.code}{' '}
-                            {fact.referenceType} reference.
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-2 text-xs text-muted">
-                        Only documented rules and recorded intake contribute to
-                        this order.
-                      </p>
-                    </details>
+                    <NextMealExplanation
+                      explanation={explanation}
+                      row={row}
+                      run={run}
+                    />
                   ) : null}
                 </li>
               );

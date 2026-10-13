@@ -45,3 +45,9 @@ export {
   type NextMealAppliedTemporalRuleV1,
   type NextMealTemporalPolicyReleaseV1,
 } from './next-meal-temporal-policy.js';
+
+export {
+  NEXT_MEAL_MAX_AGE_MINUTES_V1,
+  nextMealIsCurrentV1,
+  nextMealValidUntilV1,
+} from './next-meal-validity.js';
