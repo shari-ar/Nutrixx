@@ -76,6 +76,7 @@ RUN npm run build --workspace=@nutrixx/canonical-schema \
     && npm run build --workspace=@nutrixx/consumption \
     && npm run build --workspace=@nutrixx/user-context \
     && npm run build --workspace=@nutrixx/nutrition-engine \
+    && npm run build --workspace=@nutrixx/optimizer-engine \
     && npm run build --workspace=@nutrixx/web
 
 FROM ${NODE_IMAGE} AS web
