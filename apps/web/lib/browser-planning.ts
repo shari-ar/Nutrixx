@@ -8,11 +8,15 @@ import {
 import {
   NextMealRankingRequestSchema,
   NextMealRankingResultSchema,
+  NextMealAppliedTemporalRuleV1Schema,
+  NextMealTemporalPolicyReleaseV1Schema,
   reviewNextMealRankingV1,
   verifyNextMealExplanationsV1,
   type NextMealCandidateExplanationV1,
   type NextMealRankingRequest,
   type NextMealRankingResult,
+  type NextMealAppliedTemporalRuleV1,
+  type NextMealTemporalPolicyReleaseV1,
 } from '@nutrixx/optimizer-engine';
 import {
   IndexedDbCanonicalRecordRepository,
@@ -27,6 +31,7 @@ import {
   type SaveMealInput,
 } from './browser-stage-two';
 import {
+  NEXT_MEAL_DAILY_BASELINE_POLICY_VERSION_V1,
   buildNextMealInputV1,
   type DeclaredInventoryItemV1,
 } from './next-meal-input';
@@ -50,6 +55,8 @@ export interface NextMealRunV1 {
   readonly input: NextMealRankingRequest;
   readonly result: NextMealRankingResult;
   readonly explanations: readonly NextMealCandidateExplanationV1[];
+  readonly temporalPolicy: NextMealTemporalPolicyReleaseV1;
+  readonly appliedTemporalRules: readonly NextMealAppliedTemporalRuleV1[];
 }
 
 export interface NextMealIntentionV1 {
@@ -90,7 +97,29 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     throw new TypeError('A stored next-meal run is invalid.');
   const input = NextMealRankingRequestSchema.parse(data['input']);
   const result = NextMealRankingResultSchema.parse(data['result']);
+  const temporalPolicy = NextMealTemporalPolicyReleaseV1Schema.parse(
+    data['temporalPolicy'],
+  );
+  const appliedTemporalRules =
+    NextMealAppliedTemporalRuleV1Schema.array().parse(
+      data['appliedTemporalRules'],
+    );
   if (
+    appliedTemporalRules.length !== input.temporalRules.length ||
+    new Set(appliedTemporalRules.map((rule) => rule.ruleId)).size !==
+      appliedTemporalRules.length ||
+    appliedTemporalRules.some(
+      (applied) =>
+        !input.temporalRules.some(
+          (rule) =>
+            rule.ruleId === applied.ruleId &&
+            rule.windowStartInclusive === applied.appliedWindowStartInclusive &&
+            rule.windowEndExclusive === applied.windowEndExclusive &&
+            temporalPolicy.rules.some(
+              (policyRule) => policyRule.ruleId === applied.ruleId,
+            ),
+        ),
+    ) ||
     (await sha256Canonical(canonicalizeJson(JsonValueSchema.parse(input)))) !==
       data['inputHash'] ||
     (await sha256Canonical(canonicalizeJson(JsonValueSchema.parse(result)))) !==
@@ -201,6 +230,7 @@ export class BrowserPlanningStore {
         owner,
         records: relevant,
         activeCatalogRelease: await this.foods.activeCatalogRelease(),
+        temporalPolicyVersion: NEXT_MEAL_DAILY_BASELINE_POLICY_VERSION_V1,
       }),
     );
   }
@@ -264,6 +294,7 @@ export class BrowserPlanningStore {
       foodRestrictions: profile.foodRestrictions,
       inventory: options.inventory,
       now,
+      trackingStartedAt: profile.createdAt,
     });
     if (built.status !== 'READY') return built;
     const computed = await this.compute(built.request);
@@ -302,6 +333,8 @@ export class BrowserPlanningStore {
         input: built.request,
         result: review.ranking,
         explanations: review.explanations,
+        temporalPolicy: built.temporalPolicy,
+        appliedTemporalRules: built.appliedTemporalRules,
       };
       await repository.put(
         await this.record(

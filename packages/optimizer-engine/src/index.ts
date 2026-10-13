@@ -32,3 +32,16 @@ export {
   type NextMealCandidateExplanationV1,
   type NextMealRankingReviewV1,
 } from './next-meal-validation.js';
+
+export {
+  NEXT_MEAL_TEMPORAL_POLICY_SCHEMA_VERSION_V1,
+  NextMealTemporalHistoryEvidenceV1Schema,
+  NextMealAppliedTemporalRuleV1Schema,
+  NextMealTemporalPolicyReleaseV1Schema,
+  NextMealTemporalPolicyRuleV1Schema,
+  assessNextMealTemporalHistoryV1,
+  type NextMealTemporalHistoryDecisionV1,
+  type NextMealTemporalHistoryEvidenceV1,
+  type NextMealAppliedTemporalRuleV1,
+  type NextMealTemporalPolicyReleaseV1,
+} from './next-meal-temporal-policy.js';

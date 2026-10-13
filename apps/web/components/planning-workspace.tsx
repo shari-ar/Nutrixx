@@ -228,8 +228,10 @@ export function PlanningWorkspace() {
           {busy ? 'Ranking the local catalog…' : 'Find my next meal'}
         </button>
         <p className="mt-3 text-xs text-muted">
-          The recommendation is a general wellness estimate. Review the actual
-          food and amount before recording a meal.
+          Nutrixx assumes you have logged everything consumed. A short or
+          incomplete history makes the general-wellness estimate less reliable;
+          more recorded history can improve it. Review the actual food and
+          amount before recording a meal.
         </p>
       </section>
 

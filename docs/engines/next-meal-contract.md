@@ -44,17 +44,17 @@ implementation is replaced in place; Git history retains its earlier shape.
 `NextMealInput` is a strictly validated record. Its top-level fields and
 required nested facts are:
 
-| Field                   | Required facts                                                                                                                                                                                                               |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `request`               | Format, schema version, request/owner IDs, capture instant, effective nutrition-day policy and time zone, and one upcoming eating occasion.                                                                                  |
-| `eligibility`/`profile` | Exact profile/restriction revisions, eligibility result and reasons, declared exclusions, preferences, and their evidence.                                                                                                   |
-| `recordedIntake`        | Accepted meal and correction revisions overlapping the maximum active lookback, event instants, edible quantities, resolved nutrient observations, unknown reasons, and source revisions.                                    |
-| `temporalRules`         | Exact policy release; for each active nutrient/reference comparison: nutrient, population, reference type/release, source scope, time basis, window or period count, aggregation, unit, evidence citation, and rule version. |
-| `targets`               | Applicable targets and hard limits with their source scope, units, horizon, approval state, and release IDs.                                                                                                                 |
-| `catalogManifest`       | Every active installed food/recipe release and current user-food/user-recipe revision included in the census, with stable identity and content digest.                                                                       |
-| `candidateFacts`        | For every catalog entry: source identity/revision, preparation and edible basis, supported portions and bounds, composition and provenance, restriction evidence, and recipe ingredient requirements where applicable.       |
-| `inventory`             | Explicit `ALL_CATALOG` or `AVAILABLE_ONLY` mode; the latter carries exact inventory revision, item identity, edible quantity/unit, preparation state, and material matching uncertainty.                                     |
-| `policy`                | Exact classification, constraint, scoring, tie-break, validation, and worker-budget policy versions.                                                                                                                         |
+| Field                   | Required facts                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request`               | Format, schema version, request/owner IDs, capture instant, effective nutrition-day policy and time zone, and one upcoming eating occasion.                                                                                                                                                                         |
+| `eligibility`/`profile` | Exact profile/restriction revisions, eligibility result and reasons, declared exclusions, preferences, and their evidence.                                                                                                                                                                                          |
+| `recordedIntake`        | Accepted meal and correction revisions overlapping the maximum active lookback, event instants, edible quantities, resolved nutrient observations, unknown reasons, and source revisions.                                                                                                                           |
+| `temporalRules`         | Exact policy release; for each active nutrient/reference comparison: nutrient, population, reference type/release, source scope, time basis, window or period count, aggregation, unit, separate reference and horizon citations, minimum known-meal count, early-history treatment, limitations, and rule version. |
+| `targets`               | Applicable targets and hard limits with their source scope, units, horizon, approval state, and release IDs.                                                                                                                                                                                                        |
+| `catalogManifest`       | Every active installed food/recipe release and current user-food/user-recipe revision included in the census, with stable identity and content digest.                                                                                                                                                              |
+| `candidateFacts`        | For every catalog entry: source identity/revision, preparation and edible basis, supported portions and bounds, composition and provenance, restriction evidence, and recipe ingredient requirements where applicable.                                                                                              |
+| `inventory`             | Explicit `ALL_CATALOG` or `AVAILABLE_ONLY` mode; the latter carries exact inventory revision, item identity, edible quantity/unit, preparation state, and material matching uncertainty.                                                                                                                            |
+| `policy`                | Exact classification, constraint, scoring, tie-break, validation, and worker-budget policy versions.                                                                                                                                                                                                                |
 
 The catalog snapshot may use immutable content-addressed local blobs referenced
 by the manifest, while the input fingerprint covers their ordered identities
@@ -65,10 +65,29 @@ preserving the logical full-catalog snapshot.
 Recorded meals are the intake authority. Suggestions, intentions, and gaps in
 logging contribute no inferred intake. Each temporal comparison uses its own
 source-backed window; the effective nutrition-day boundary and elapsed-time
-windows are distinct. An unknown nutrient, unmatched unit, incomplete history,
-or unsupported reference produces an explicit evidence state. Biological
+windows are distinct. Short available history follows the rule's explicit
+`provisional-comparison` or `omit-rule` treatment after its minimum known-meal
+count is met. A provisional comparison retains its shorter observed span and
+qualification in the explanation. Unknown nutrient composition, unmatched
+units, and unsupported references produce explicit evidence states. Biological
 residence time alone supplies no intake-comparison rule. A hard upper limit
 uses its declared horizon and source scope, independently of earlier deficits.
+The published recommendation states the assumption of complete user logging
+without requesting a separate confirmation. Its dietary estimate makes no
+claim about measured body stores.
+An explicit `minimumKnownMeals: 0` rule can support a first-meal estimate from
+an empty accepted ledger under that displayed logging assumption. A recorded
+meal with unknown nutrient composition remains unresolved rather than becoming
+a zero-valued observation.
+
+The versioned temporal-policy contract classifies a rule's recorded evidence
+as full-horizon available, provisional short history, omitted short history,
+insufficient recorded intake, or unresolved composition. Full-horizon
+availability means tracking began by the window start; it remains an
+assumption about logging, rather than proof that every meal was recorded.
+An unresolved meal observation stays unknown. The rule-level decision is
+independent of the later full-catalog ranking, which alone publishes a
+recommendation after validation.
 
 ## Catalog classification and ranking
 
@@ -97,17 +116,22 @@ A `READY` first item means highest-ranked among evaluated comparable entries
 under the frozen policy. It is a general-wellness planning estimate. Foods
 with incomplete evidence remain discoverable through their classification.
 
-The `free-next-meal-weighted-distance-v1` policy scores only complete,
-source-backed temporal comparisons. Each rule supplies its own UTC window,
+The `free-next-meal-weighted-distance-v1` policy scores source-backed temporal
+comparisons with known recorded-meal composition. A short available history
+can enter the score through a policy-permitted provisional comparison; its
+applied span and qualification remain frozen with the run. Each rule supplies its own UTC window,
 coverage, reference target, unit, weight, and exact accepted-meal observations.
+The input builder evaluates the full eligible rule set in the active release
+against comparable catalog and recorded-intake evidence. Foods with incomplete
+required composition retain their evidence-limited classification.
 For each supported portion, the engine minimizes the sum of weighted,
 normalized target distances using exact rational arithmetic. A `minimum`
 target has zero distance after it is met; a `preferred` target measures distance
 on either side. Verified hard limits already restrict supported portions. Equal
 scores use the smallest maximum rule distance, then the smaller edible portion,
-source identity, and portion identity. Missing historical evidence moves an
-otherwise comparable entry to `EVIDENCE_LIMITED` until a supported comparison
-is available. The independent reviewer reconstructs the full census, safety
+source identity, and portion identity. Unresolved historical evidence moves an
+otherwise comparable entry to `EVIDENCE_LIMITED` when no policy-permitted
+comparison remains. The independent reviewer reconstructs the full census, safety
 gates, supported portions, exact score components, and total order from the
 frozen input without calling the ranking or classification implementation.
 It approves only a complete, matching ranking. A rejected review carries
@@ -117,8 +141,11 @@ temporal rule, comparison window, reference release, accepted meal IDs, and
 exact recorded, projected, and normalized amounts. Evidence-limited and
 excluded rows retain classification reasons without a numeric suitability
 claim. The browser integration publishes and persists only independently
-approved rankings, keeps selection separate, and links actual consumption to
-the meal ledger. Measured device-envelope sign-off remains a conformance task.
+approved rankings, the cited temporal-policy snapshot and applied rule spans,
+keeps selection separate, and links actual consumption to the meal ledger. The
+initial active release uses documented nutrition-day references. A tested
+multi-day policy path accepts separately sourced horizons when such a release
+is published. Measured device-envelope sign-off remains a conformance task.
 
 ## Typed outcome
 

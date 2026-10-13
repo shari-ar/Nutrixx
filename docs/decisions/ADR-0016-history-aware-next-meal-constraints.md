@@ -50,27 +50,36 @@ intake, and supported usual-intake summaries. The engine evaluates each rule
 against its own window; a 24-hour or 72-hour rule enters a release only with
 evidence for that exact comparison and its intended use.
 
-An initial private-MVP release can use the already sourced daily references
-for current-day comparisons and the seven-completed-day view as a labeled
-recent-intake signal. Additional nutrient-specific rolling rules join the
-ranking only when their sources, aggregation, and limitations are recorded in
-the policy release. This staged profile gives previous consumption a defined
-role while keeping unsupported physiological claims out of the score.
+An initial private-MVP release can use already sourced daily references for
+their documented planning purpose. Nutrient-specific rolling rules join the
+ranking when their reference source, horizon evidence, aggregation, minimum
+known-meal count, population, and limitations are recorded in the policy
+release. A calendar-day reference is distinct from a rolling 24-hour
+reference. The presence of a citation is a traceability requirement;
+scientific review must still confirm that it supports the selected horizon
+and intended use.
 
 Recorded consumption is the intake authority. Prior proposals, selected
-recommendations, and unlogged days contribute no invented intake. A missing
-meal, partial nutrient composition, incompatible unit, or incomplete window
-preserves an unknown state. Applicable hard limits use their own reference
-horizon and source scope; prior shortfalls provide no credit against a current
-upper-limit check. The independent validator recomputes every supported hard
-comparison from the same frozen facts. An unresolved safety-sensitive rule
-routes the candidate to an explicit evidence-limited outcome.
+recommendations, and unlogged days contribute no invented intake. Every
+recommendation states its assumption that the user has logged all consumption;
+the application requests no separate completeness attestation. A short history
+can support an explicitly provisional next-meal comparison when its rule allows
+that treatment and its minimum known-meal count is met. The recommendation
+identifies the shorter observed span and explains that more recorded history
+can improve it. Unknown nutrient composition, incompatible units, and
+unresolved safety-sensitive facts retain an explicit limited-evidence state.
+Applicable hard limits use their own reference horizon and source scope; prior
+shortfalls provide no credit against a current upper-limit check. The
+independent validator recomputes every supported hard comparison from the
+same frozen facts.
 
 Soft ordering uses only comparable, evidence-supported nutrient observations
-at their declared horizons. The score identifies a preference among eligible
-foods under the active policy; the UI presents it as a dietary planning
-estimate for general wellness. The UI exposes the time window, observed
-coverage, and material uncertainty behind nutrient-based explanations.
+at their declared horizons, including distinctly labeled provisional
+comparisons where the rule permits them. The score identifies a preference
+among eligible foods under the active policy; the UI presents it as a dietary
+planning estimate for general wellness, distinct from a measurement of nutrients
+stored in the body. The UI exposes the time window, observed coverage,
+material uncertainty, and rules actually influencing the ordering.
 Declared exclusions, edible portions, and applicable hard rules take priority
 over soft scores. The candidate inventory restriction in
 [ADR-0018](ADR-0018-next-meal-lifecycle-and-inventory.md) is an additional

@@ -127,6 +127,11 @@ describe('browser next-meal planning', () => {
         ({
           market: 'US',
           meals: [],
+          dayPolicy: {
+            policyVersion: 'nutrition-day-zone-v1',
+            initialTimeZone: 'UTC',
+            changes: [],
+          },
           window: {
             current: {
               period: {
@@ -144,11 +149,24 @@ describe('browser next-meal planning', () => {
                     releaseId: 'fixture-release',
                     rule: {
                       ruleId: 'iron-current-day',
+                      nutrientId: 'nutrient.iron',
                       type: 'RDA',
                       sourceScope: 'all-intake',
                       unit: { system: 'ucum', code: 'mg' },
                       value: { kind: 'point', amount: '18' },
-                      source: { authority: 'fixture', edition: '1' },
+                      population: {
+                        minimumAgeYears: 19,
+                        maximumAgeYears: 30,
+                        physiologicalReference: 'female',
+                        lifeStage: 'adult',
+                      },
+                      effectiveFrom: '2025-01-01T00:00:00.000Z',
+                      source: {
+                        authority: 'fixture',
+                        title: 'Fixture reference',
+                        edition: '1',
+                        url: 'https://example.org/fixture-reference',
+                      },
                     },
                   },
                   upperLimit: { status: 'UNAVAILABLE' },
@@ -202,6 +220,10 @@ describe('browser next-meal planning', () => {
     if (created.status !== 'READY') return;
     const ranked = await planning.load();
     expect(ranked.run?.result.ranked).toHaveLength(1);
+    expect(ranked.run?.temporalPolicy.releaseId).toBe(
+      'free-next-meal-daily-baseline-v1',
+    );
+    expect(ranked.run?.appliedTemporalRules).toHaveLength(1);
     expect(ranked.fresh).toBe(true);
     const candidateKey = ranked.run!.result.ranked[0]!.candidateKey;
     const intentionId = await planning.select(created.runId, candidateKey);

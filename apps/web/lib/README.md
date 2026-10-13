@@ -51,7 +51,10 @@ without added vitamins (`$0.2`) per 100 g. These values demonstrate the field
 as fixed product examples.
 
 `next-meal-input.ts` builds the one-next-meal request from the local catalog,
-recorded intake, applicable daily reference targets, and optional inventory.
+accepted meals within each cited temporal-rule window, applicable reference
+targets, and optional inventory. It applies the versioned temporal-policy
+contract, keeps short-history qualification with the frozen run, and uses the
+published daily-reference horizon until additional sourced rules are released.
 `browser-planning.ts` owns recommendation, selection, freshness, and the explicit
 actual-consumption handoff to the meal ledger. The background worker computes
 the ranking; the browser service independently reviews it before persistence.
