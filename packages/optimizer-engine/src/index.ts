@@ -60,6 +60,16 @@ export {
 } from './next-meal-ranking.js';
 
 export {
+  NEXT_MEAL_EXPLANATION_VERSION_V1,
+  NEXT_MEAL_VALIDATOR_VERSION_V1,
+  NextMealRankingResultSchema,
+  reviewNextMealRankingV1,
+  verifyNextMealExplanationsV1,
+  type NextMealCandidateExplanationV1,
+  type NextMealRankingReviewV1,
+} from './next-meal-validation.js';
+
+export {
   FREE_SCORING_POLICY_VERSION_V1,
   LocalSearchResultV1Schema,
   searchLocalPlanV1,

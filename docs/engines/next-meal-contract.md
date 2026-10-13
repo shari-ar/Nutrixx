@@ -107,8 +107,16 @@ on either side. Verified hard limits already restrict supported portions. Equal
 scores use the smallest maximum rule distance, then the smaller edible portion,
 source identity, and portion identity. Missing historical evidence moves an
 otherwise comparable entry to `EVIDENCE_LIMITED` until a supported comparison
-is available. Independent validation and publication status follow in later
-Stage 4 work.
+is available. The independent reviewer reconstructs the full census, safety
+gates, supported portions, exact score components, and total order from the
+frozen input without calling the ranking or classification implementation.
+It approves only a complete, matching ranking. A rejected review carries
+typed mismatch reasons and supplies no publishable explanations. For each
+approved row, explanation facts identify the candidate and portion, applied
+temporal rule, comparison window, reference release, accepted meal IDs, and
+exact recorded, projected, and normalized amounts. Evidence-limited and
+excluded rows retain classification reasons without a numeric suitability
+claim. Application publication and persistence follow in Stage 4 integration.
 
 ## Typed outcome
 

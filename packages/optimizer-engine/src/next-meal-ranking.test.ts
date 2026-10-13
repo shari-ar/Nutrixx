@@ -230,7 +230,7 @@ describe('next-meal ranking', () => {
         {
           ...base.temporalRules[0],
           target: {
-            ...base.temporalRules[0].target,
+            ...base.temporalRules[0]!.target,
             mode: 'minimum',
             referenceType: 'rda',
           },

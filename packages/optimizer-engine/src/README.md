@@ -10,6 +10,8 @@
 | `next-meal-candidates.test.ts` | Coverage, safety, inventory, and manifest fixtures         |
 | `next-meal-ranking.ts`         | Exact, history-aware scoring and deterministic total order |
 | `next-meal-ranking.test.ts`    | Window, completeness, portion, and ordering fixtures       |
+| `next-meal-validation.ts`      | Independent census, safety, score, and explanation audit   |
+| `next-meal-validation.test.ts` | Tampering, history, exclusion, and explanation fixtures    |
 | `local-search.ts`              | Bounded exact-hard, heuristic-soft local beam search       |
 | `local-search.test.ts`         | Feasibility, limit, cancellation, and replay fixtures      |
 | `plan-validation.ts`           | Independent plan validation, alternatives, and claims      |
