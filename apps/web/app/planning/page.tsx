@@ -1,3 +1,4 @@
+import { OutcomeFeedbackWorkspace } from '@/components/outcome-feedback-workspace';
 import { PageHeader } from '@/components/page-header';
 import { PlanningWorkspace } from '@/components/planning-workspace';
 
@@ -12,6 +13,7 @@ export default function PlanningPage() {
       <div className="mt-10">
         <PlanningWorkspace />
       </div>
+      <OutcomeFeedbackWorkspace />
     </div>
   );
 }

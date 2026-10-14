@@ -7,6 +7,7 @@ import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BrowserOnboardingStore } from './browser-onboarding';
+import { BrowserOutcomeFeedbackStore } from './browser-outcome-feedback';
 import { BrowserPlanningStore } from './browser-planning';
 
 import type { BrowserNutritionSnapshotV1 } from './browser-nutrition-state';
@@ -227,6 +228,19 @@ describe('browser next-meal planning', () => {
     expect(ranked.run?.appliedTemporalRules).toHaveLength(1);
     expect(ranked.fresh).toBe(true);
     expect(ranked.run?.validUntil).toBe('2026-10-12T12:15:00.000Z');
+    await new BrowserOutcomeFeedbackStore().saveWeight({
+      observedOn: '2026-10-12',
+      weightKilograms: '69.5',
+    });
+    expect((await planning.load()).fresh).toBe(true);
+    await new BrowserOutcomeFeedbackStore().saveLab({
+      observedOn: '2026-10-12',
+      testName: 'Ferritin',
+      result: '45',
+      unit: 'ng/mL',
+      laboratory: 'Example Lab',
+    });
+    expect((await planning.load()).fresh).toBe(true);
     catalogRelease = 'new-fixture-release';
     expect((await planning.load()).fresh).toBe(false);
     catalogRelease = 'fixture-release';

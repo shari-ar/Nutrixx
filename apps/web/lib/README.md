@@ -59,5 +59,8 @@ published daily-reference horizon until additional sourced rules are released.
 and the explicit actual-consumption handoff to the meal ledger. A run expires
 after 15 minutes or an earlier applicable temporal boundary. The background worker computes
 the ranking; the browser service independently reviews it before persistence.
+`browser-outcome-feedback.ts` stores optional weight and transcribed lab
+observations as separate local user-context records. Its descriptive summaries
+stay outside the next-meal input and recorded-intake calculation paths.
 See the
 [Free next-meal contract](../../../docs/engines/next-meal-contract.md).

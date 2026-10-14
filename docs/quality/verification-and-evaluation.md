@@ -85,6 +85,21 @@ separate gates. The dashboard describes data readiness rather than nutritional
 accuracy or physiological status. Unit tests exercise unknown-versus-zero,
 source-age, and target-mapping behavior on small deterministic fixtures.
 
+## Optional outcome feedback
+
+Stage 4 keeps dated, user-entered weight measurements and transcribed lab
+results as separate local user-context records. The weight view reports the
+arithmetic change between its first and latest entries. Lab history groups
+entries by the exact test name, reported unit, and laboratory; it presents the
+values chronologically as descriptive records. These observations
+support later evaluation and user review while recorded food intake, nutrient
+state, and next-meal ranking retain their own evidence paths. An observation
+retains its user-entered provenance and participates in verified local export.
+
+Laboratory methods and reference ranges can differ; the same laboratory and
+the original report provide the appropriate context for a clinician's review.
+Reference: [MedlinePlus, How to Understand Your Lab Results](https://medlineplus.gov/lab-tests/how-to-understand-your-lab-results/).
+
 ## Optimizer gates
 
 | Dimension    | Measures                                                                                                        |

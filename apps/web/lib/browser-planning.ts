@@ -46,6 +46,12 @@ import type { NextMealWorkerResultV1 } from '../workers/next-meal.worker';
 const RUN_TYPE = 'planning.next-meal-run';
 const INTENTION_TYPE = 'planning.next-meal-intention';
 const ENGINE_VERSION = 'free-next-meal-local-v1';
+const PLANNING_USER_CONTEXT_TYPES = new Set([
+  'user-context.starting-profile',
+  'user-context.nutrition-market',
+  'user-context.nutrition-day-policy',
+  'user-context.activity-level',
+]);
 
 export interface NextMealRunV1 {
   readonly format: 'nutrixx.next-meal-recommendation';
@@ -227,8 +233,10 @@ export class BrowserPlanningStore {
   ): Promise<string> {
     const records = await repository.listBySubject(owner);
     const relevant = records
-      .filter((record) =>
-        /^(?:user-context|food|recipe|consumption)\./.test(record.recordType),
+      .filter(
+        (record) =>
+          PLANNING_USER_CONTEXT_TYPES.has(record.recordType) ||
+          /^(?:food|recipe|consumption)\./.test(record.recordType),
       )
       .map((record) => [record.recordId, record.integrity.value])
       .sort((a, b) => a[0]!.localeCompare(b[0]!));

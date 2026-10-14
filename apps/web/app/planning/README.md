@@ -7,3 +7,7 @@ and explicit logging of actual consumption. The source is being aligned during
 Stage 4 steps 3–6. The
 [Free next-meal contract](../../../../docs/engines/next-meal-contract.md)
 governs the target behavior.
+
+The page also offers optional dated weight and user-transcribed lab feedback.
+These local observations support descriptive trend review and stay separate
+from meal ranking and recorded-nutrient calculations.

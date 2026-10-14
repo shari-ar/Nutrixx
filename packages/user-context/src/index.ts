@@ -12,3 +12,10 @@ export {
   type SaveStartingProfileResultV1,
   type StartingProfileServiceV1Options,
 } from './service.js';
+export {
+  OutcomeObservationV1Schema,
+  OutcomeObservationRecordV1Schema,
+  type OutcomeObservationV1,
+  type SaveOutcomeObservationV1,
+} from './outcome-observation.js';
+export { OutcomeObservationServiceV1 } from './outcome-observation-service.js';

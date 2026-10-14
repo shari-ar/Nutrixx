@@ -24,6 +24,7 @@ Reusable, application-local React components shared by multiple routes.
 | `PlanningWorkspace`         | One-next-meal ranking, selection, and consumption               |
 | `NextMealExplanation`       | Per-candidate score, history windows, and source trace          |
 | `PlanningDashboardSummary`  | Current next-meal recommendation summary                        |
+| `OutcomeFeedbackWorkspace`  | Optional local weight and lab history, separate from intake     |
 
 ## Conventions
 
