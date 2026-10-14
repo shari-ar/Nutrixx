@@ -5,11 +5,13 @@ stack instead of maintaining a second container definition.
 
 ## Contents
 
-| File                        | Responsibility                                                |
-| --------------------------- | ------------------------------------------------------------- |
-| `devcontainer.json`         | VS Code, Codespaces, ports, workspace, and lifecycle settings |
-| `wait-for-api.mjs`          | Bounded readiness check after the container starts            |
-| `prepare-local-catalog.mjs` | Retrieves and verifies the current offline catalog release    |
+| File                           | Responsibility                                                |
+| ------------------------------ | ------------------------------------------------------------- |
+| `devcontainer.json`            | VS Code, Codespaces, ports, workspace, and lifecycle settings |
+| `wait-for-api.mjs`             | Bounded readiness check after the container starts            |
+| `prepare-local-catalog.mjs`    | Retrieves and verifies the current offline catalog release    |
+| `start-data-quality-radar.mjs` | Builds the local radar report and starts its preview server   |
+| `serve-data-quality-radar.mjs` | Serves only the generated local radar and JSON report         |
 
 ## Operating rules
 
@@ -41,12 +43,21 @@ person an explicit one-click local installation into its reference cache. A
 temporary delivery outage leaves the development environment usable and prints
 a clear warning; retrying the Dev Container startup retries the artifact.
 
+On every Dev Container attach, the lifecycle hook also builds the internal data
+quality radar from the verified local catalog. Its development-only server runs
+inside the API container on port `3002`; VS Code and GitHub Codespaces forward
+that port and open the report in a browser automatically. The Web application
+continues to use port `3000`. A catalog or report error opens a clear local
+status page instead of displaying a stale report. Neither the preview server nor
+the generated report is part of the production Compose stack or public website.
+
 ## GitHub Codespaces
 
 The repository's default Codespaces configuration is this same Dev Container.
 It builds and runs the canonical development Compose stack, forwards the Web
-application on port `3000`, forwards the API on port `3001`, and keeps both
-ports private unless the codespace owner explicitly changes their visibility.
+application on port `3000`, forwards the API on port `3001`, and opens the data
+quality radar on port `3002`. All three ports remain private unless the
+codespace owner explicitly changes their visibility.
 
 Create a codespace from the default branch at
 <https://codespaces.new/shari-ar/Nutrixx?quickstart=1>.

@@ -27,6 +27,10 @@ npm run dev --workspace=@nutrixx/web
 Runtime settings are loaded from the repository root `.env` file. Start by
 copying `.env.example` to `.env` from the repository root.
 
+Next.js generates `next-env.d.ts` for the active development or production
+mode. The generated file is ignored by Git, and `npm run typecheck` generates
+route types before checking a fresh checkout.
+
 The web app runs on `http://localhost:3000` and expects the API at the URL set
 by `NEXT_PUBLIC_API_URL`.
 

@@ -5,7 +5,7 @@
 | Status        | Proposed target strategy                                 |
 | Audience      | Engineering, quality, nutrition science, product, safety |
 | Owner         | Nutrixx Quality                                          |
-| Last reviewed | 2026-09-27                                               |
+| Last reviewed | 2026-10-14                                               |
 
 ## Test layers
 
@@ -58,6 +58,32 @@ boundaries, and corrections.
 
 Numerical tolerances are defined per calculation and change through a reviewed
 scientific rationale.
+
+## Internal food data quality radar
+
+Run `npm run quality:data` inside the DevContainer after the approved local food
+catalog is installed. The command creates a private, reproducible HTML dashboard
+and JSON report in `.temp/data-quality-radar/`; these outputs stay outside the
+public website and Git history. The report names the catalog release, the source
+artifact digest, the evaluation instant, and the radar policy version.
+The DevContainer attach hook also generates the report from a receipt-verified
+catalog and opens its development-only preview on forwarded port `3002` in VS
+Code and GitHub Codespaces.
+
+The coverage score is the percentage of latest-food-by-component pairs with a
+known, unit-compatible, per-100-g edible observation. A recorded zero qualifies
+as known. Explicitly unknown values and absent observations appear in separate
+counts. Source traceability, method metadata, explicit quality grading, and
+source-release freshness remain separate indicators with visible denominators.
+The operational freshness alert window is 1,095 days from the source dataset
+release; republishing a catalog preserves the original source age.
+
+Catalog-side comparison potential counts foods with a portion and known values
+for every component in the published adult baseline target set. User-specific
+history, restrictions, recipe facts, and independent ranking validation remain
+separate gates. The dashboard describes data readiness rather than nutritional
+accuracy or physiological status. Unit tests exercise unknown-versus-zero,
+source-age, and target-mapping behavior on small deterministic fixtures.
 
 ## Optimizer gates
 

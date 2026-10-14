@@ -8,6 +8,14 @@ export {
   type FoodSearchResultV1,
 } from './catalog.js';
 export {
+  FOOD_DATA_QUALITY_RADAR_VERSION_V1,
+  FRESH_SOURCE_WINDOW_DAYS_V1,
+  auditFoodDataQualityV1,
+  type AuditedFoodComponentV1,
+  type FoodComponentQualityRowV1,
+  type FoodDataQualityReportV1,
+} from './data-quality-radar.js';
+export {
   FoodCatalogCoverageV1Schema,
   FoodCatalogManifestV1Schema,
   FoodCatalogPayloadV1Schema,

@@ -18,7 +18,7 @@
     "api",
     "web"
   ],
-  "forwardPorts": [3000, 3001],
+  "forwardPorts": [3000, 3001, 3002],
   "portsAttributes": {
     "3000": {
       "label": "Nutrixx Web",
@@ -27,14 +27,16 @@
     "3001": {
       "label": "Nutrixx API",
       "onAutoForward": "silent"
+    },
+    "3002": {
+      "label": "Nutrixx Data Quality Radar",
+      "onAutoForward": "openBrowser"
     }
   },
   "overrideCommand": false,
   "shutdownAction": "stopCompose",
-  "postStartCommand": [
-    "node .devcontainer/prepare-local-catalog.mjs",
-    "node .devcontainer/wait-for-api.mjs"
-  ],
+  "postStartCommand": "node .devcontainer/wait-for-api.mjs",
+  "postAttachCommand": "node .devcontainer/start-data-quality-radar.mjs",
   "waitFor": "postStartCommand",
   "remoteUser": "root",
   "updateRemoteUserUID": false

@@ -83,6 +83,9 @@ async function prepare() {
       unlink(temporaryArtifact),
       unlink(temporaryReceipt),
     ]);
+    if (error instanceof Error && error.message.includes('HTTP 403')) {
+      throw error;
+    }
     console.warn(
       `Catalog preparation skipped: ${error instanceof Error ? error.message : 'unknown error'}`,
     );

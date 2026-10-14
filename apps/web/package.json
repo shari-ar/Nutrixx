@@ -15,7 +15,7 @@
     "test": "vitest run --config ./vitest.config.ts",
     "test:cov": "vitest run --config ./vitest.config.ts --coverage",
     "test:watch": "vitest watch --config ./vitest.config.ts",
-    "typecheck": "tsc --noEmit --project tsconfig.json"
+    "typecheck": "next typegen && tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
     "@nutrixx/canonical-schema": "0.1.0",
