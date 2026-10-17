@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   LOCAL_USER_DATABASE_NAME,
+  PLANNING_CATALOG_CACHE_DATABASE_NAME,
+  PLANNING_VIEW_DATABASE_NAME,
   REFERENCE_CACHE_DATABASE_NAME,
   clearAllLocalData,
   downloadVerifiedLocalExport,
@@ -141,10 +143,20 @@ describe('browser storage service', () => {
     expect(adapter.deleteDatabase).toHaveBeenNthCalledWith(
       1,
       indexedDB,
-      REFERENCE_CACHE_DATABASE_NAME,
+      PLANNING_CATALOG_CACHE_DATABASE_NAME,
     );
     expect(adapter.deleteDatabase).toHaveBeenNthCalledWith(
       2,
+      indexedDB,
+      PLANNING_VIEW_DATABASE_NAME,
+    );
+    expect(adapter.deleteDatabase).toHaveBeenNthCalledWith(
+      3,
+      indexedDB,
+      REFERENCE_CACHE_DATABASE_NAME,
+    );
+    expect(adapter.deleteDatabase).toHaveBeenNthCalledWith(
+      4,
       indexedDB,
       LOCAL_USER_DATABASE_NAME,
     );

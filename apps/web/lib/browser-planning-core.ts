@@ -37,6 +37,10 @@ import {
   type SaveMealInput,
 } from './browser-stage-two';
 import {
+  projectPlanningSnapshot,
+  savePlanningView,
+} from './next-meal-display-cache';
+import {
   NEXT_MEAL_DAILY_BASELINE_POLICY_VERSION_V1,
   buildNextMealInputV1,
   type DeclaredInventoryItemV1,
@@ -81,8 +85,8 @@ export interface NextMealIntentionV1 {
   readonly selectedAt: string;
 }
 
-export interface LocalPlanningSnapshotV1 {
-  readonly run: NextMealRunV1 | null;
+export interface LocalPlanningSnapshotV1<TRun = NextMealRunV1> {
+  readonly run: TRun | null;
   readonly fresh: boolean;
   readonly intention: NextMealIntentionV1 | null;
   readonly loggedMealId: string | null;
@@ -353,6 +357,21 @@ export class BrowserPlanningStore {
           'calculated',
         ),
       );
+      try {
+        await savePlanningView(indexedDB, {
+          owner,
+          sequence: await repository.latestTransactionSequence(),
+          activeReleaseId: await this.foods.activeCatalogRelease(),
+          snapshot: projectPlanningSnapshot({
+            run,
+            fresh: true,
+            intention: null,
+            loggedMealId: null,
+          }),
+        });
+      } catch {
+        // The canonical run remains valid; a later load can rebuild this view.
+      }
     });
     return { status: 'READY', runId };
   }

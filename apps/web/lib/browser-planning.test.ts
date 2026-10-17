@@ -62,7 +62,11 @@ describe('browser next-meal planning', () => {
       foodRestrictions: [],
     });
     const posted: string[] = [];
+    let workersCreated = 0;
     class WorkerStub {
+      public constructor() {
+        workersCreated += 1;
+      }
       public onmessage:
         | ((event: MessageEvent<NextMealPreparationResultV1>) => void)
         | null = null;
@@ -107,6 +111,7 @@ describe('browser next-meal planning', () => {
       loggedMealId: null,
     });
     expect(posted).toEqual(['LOCAL_RECOMMENDATION', 'LOCAL_LOAD']);
+    expect(workersCreated).toBe(1);
   });
 
   it('starts without a recommendation and requests a nutrition market', async () => {

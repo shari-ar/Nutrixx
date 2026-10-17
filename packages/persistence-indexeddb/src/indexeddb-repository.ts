@@ -390,6 +390,23 @@ export class IndexedDbCanonicalRecordRepository
     return structuredClone(entries);
   }
 
+  /** A cheap revision token for derived browser views; no log payload is read. */
+  public async latestTransactionSequence(): Promise<number> {
+    this.#assertOpen();
+    const transaction = this.#database.transaction(
+      TRANSACTION_LOG_STORE,
+      'readonly',
+    );
+    const completion = transactionComplete(transaction);
+    const key = await requestResult(
+      transaction
+        .objectStore(TRANSACTION_LOG_STORE)
+        .openKeyCursor(null, 'prev'),
+    );
+    await completion;
+    return typeof key?.primaryKey === 'number' ? key.primaryKey : 0;
+  }
+
   public async exportLocalData(
     exportedAt = this.#now(),
   ): Promise<LocalDataExportArtifactV1> {

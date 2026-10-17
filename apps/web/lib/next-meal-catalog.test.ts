@@ -5,7 +5,10 @@ import {
 } from '@nutrixx/food-knowledge';
 import { describe, expect, it } from 'vitest';
 
-import { buildNextMealCatalogSnapshot } from './next-meal-catalog';
+import {
+  IncrementalNextMealCatalog,
+  buildNextMealCatalogSnapshot,
+} from './next-meal-catalog';
 
 import type { CurrentRecipeV1 } from '@nutrixx/recipe-knowledge';
 
@@ -104,5 +107,46 @@ describe('next-meal catalog enumeration', () => {
           entry.reference.recipeId === id(600),
       ),
     ).toBe(true);
+  });
+
+  it('reuses an immutable release and replaces only changed custom revisions', () => {
+    const builder = new IncrementalNextMealCatalog();
+    builder.useOwner('owner-1');
+    const firstFood = {
+      foodId: id(500),
+      revision: 1,
+      name: 'First name',
+      preparationState: 'prepared',
+      portions: [{ portionId: id(501), gramWeight: '80' }],
+      composition: [],
+    } as unknown as CustomFoodVersionV1;
+    const first = builder.build({
+      activeReleaseId: 'fixture-release',
+      catalog: catalog(3),
+      customFoods: [firstFood],
+      recipes: [],
+    });
+    expect(builder.hasRelease('fixture-release')).toBe(true);
+    const second = builder.build({
+      activeReleaseId: 'fixture-release',
+      catalog: null,
+      customFoods: [{ ...firstFood, revision: 2, name: 'Corrected name' }],
+      recipes: [],
+    });
+    expect(second.entries).toHaveLength(4);
+    expect(second.entries[0]).toBe(first.entries[0]);
+    expect(second.entries.at(-1)?.displayName).toBe('Corrected name');
+    expect(second.manifest.entryKeys).not.toContain(
+      `food:user-custom-v1:${firstFood.foodId}:1`,
+    );
+    const replaced = builder.build({
+      activeReleaseId: 'fixture-release',
+      catalog: null,
+      customFoods: [{ ...firstFood, revision: 2, name: 'Restored name' }],
+      recipes: [],
+    });
+    expect(replaced.entries.at(-1)?.displayName).toBe('Restored name');
+    builder.useOwner('owner-2');
+    expect(builder.hasRelease('fixture-release')).toBe(false);
   });
 });

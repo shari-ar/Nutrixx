@@ -6,7 +6,7 @@ elif command -v docker >/dev/null 2>&1; then
     docker compose \
     -f infra/compose/compose.yaml \
     -f infra/compose/compose.dev.yaml \
-    exec -T api xargs -0 -r npm exec --offline -- prettier --write --ignore-unknown --
+    run --rm --no-deps -T api xargs -0 -r npm exec --offline -- prettier --write --ignore-unknown --
 else
   echo 'Nutrixx pre-commit formatting could not run.' >&2
   echo 'Start the DevContainer or install the locked Node.js/npm toolchain.' >&2

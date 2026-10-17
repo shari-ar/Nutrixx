@@ -16,6 +16,12 @@ workflows. Both remain browser-only and use the shared canonical repository.
 `next-meal-catalog.ts` enumerates the entire active installed food catalog and
 current user-food and recipe revisions for next-meal classification. Its sorted
 manifest covers every source entry, including entries with incomplete evidence.
+The incremental catalog builder reuses the mapped immutable release inside the
+short-lived planning worker and remaps only changed custom-food and recipe
+revisions. `next-meal-catalog-cache.ts` keeps the verified mapping across page
+visits as disposable IndexedDB data, keyed by release and mapping version. A
+release change or owner change resets the worker mapping; low storage falls
+back to rebuilding it from the authoritative reference release.
 `browser-nutrition-state.ts` connects the meal ledger and starting profile to
 versioned local daily and rolling calculations. The optional US/Canada
 reference-region choice and effective-dated nutrition-day time zone are retained
@@ -61,7 +67,12 @@ selection, data and time freshness, independent review, persistence, and the
 explicit actual-consumption handoff to the meal ledger. The core runs inside
 the worker for creation and loading. A run expires after 15 minutes or an
 earlier applicable temporal boundary. `next-meal-preparation-client.ts` carries
-only compact outcomes across the UI boundary during creation.
+only compact outcomes across the UI boundary during creation. The worker is
+reused between requests and released after two idle minutes. The disposable
+`next-meal-display-cache.ts` stores a digest-checked UI projection that omits
+unranked candidate composition. A canonical transaction, active catalog
+release, policy release, or expiry invalidates its fast-load path; canonical
+data remains the authority and rebuilds a missing or invalid projection.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

@@ -1,4 +1,4 @@
-import type { LocalPlanningSnapshotV1 } from './browser-planning-core';
+import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
 import type { StartingProfileV1 } from '@nutrixx/user-context';
 
@@ -21,7 +21,10 @@ export type NextMealPreparationResultV1 =
             readonly reasonCodes: readonly string[];
           };
     }
-  | { readonly status: 'SNAPSHOT'; readonly snapshot: LocalPlanningSnapshotV1 }
+  | {
+      readonly status: 'SNAPSHOT';
+      readonly snapshot: NextMealDisplaySnapshotV1;
+    }
   | {
       readonly status: 'BENCHMARK';
       readonly measurement: {
@@ -38,29 +41,66 @@ export type NextMealPreparationResultV1 =
     }
   | { readonly status: 'FAILED'; readonly reasonCode: string };
 
-/** Keeps catalog preparation, ranking, review, and persistence off the UI thread. */
+let sharedWorker: Worker | null = null;
+let pending = Promise.resolve();
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Keeps the mapped catalog alive across requests in the same page. */
 export function prepareNextMealInWorker(
   request: NextMealPreparationRequestV1,
 ): Promise<NextMealPreparationResultV1> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL('../workers/next-meal-preparation.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-    const timer = setTimeout(() => {
-      worker.terminate();
-      reject(new TypeError('Local preparation exceeded its 90-second limit.'));
-    }, 90_000);
-    worker.onmessage = (event: MessageEvent<NextMealPreparationResultV1>) => {
-      clearTimeout(timer);
-      worker.terminate();
-      resolve(event.data);
-    };
-    worker.onerror = () => {
-      clearTimeout(timer);
-      worker.terminate();
-      reject(new TypeError('The local preparation worker could not complete.'));
-    };
-    worker.postMessage(request);
-  });
+  const result = pending.then(
+    () =>
+      new Promise<NextMealPreparationResultV1>((resolve, reject) => {
+        if (idleTimer !== null) clearTimeout(idleTimer);
+        idleTimer = null;
+        const worker =
+          sharedWorker ??
+          new Worker(
+            new URL(
+              '../workers/next-meal-preparation.worker.ts',
+              import.meta.url,
+            ),
+            { type: 'module' },
+          );
+        sharedWorker = worker;
+        const fail = (message: string) => {
+          clearTimeout(timer);
+          worker.terminate();
+          if (sharedWorker === worker) sharedWorker = null;
+          reject(new TypeError(message));
+        };
+        const timer = setTimeout(
+          () => fail('Local preparation exceeded its 90-second limit.'),
+          90_000,
+        );
+        worker.onmessage = (
+          event: MessageEvent<NextMealPreparationResultV1>,
+        ) => {
+          clearTimeout(timer);
+          if (event.data.status === 'FAILED') {
+            worker.terminate();
+            if (sharedWorker === worker) sharedWorker = null;
+            resolve(event.data);
+            return;
+          }
+          idleTimer = setTimeout(() => {
+            if (sharedWorker === worker) {
+              worker.terminate();
+              sharedWorker = null;
+            }
+            idleTimer = null;
+          }, 120_000);
+          resolve(event.data);
+        };
+        worker.onerror = () =>
+          fail('The local preparation worker could not complete.');
+        worker.postMessage(request);
+      }),
+  );
+  pending = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
 }

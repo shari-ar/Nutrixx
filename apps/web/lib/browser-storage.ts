@@ -19,10 +19,17 @@ import {
   LAST_EXPORT_STORAGE_KEY,
   LOCAL_USER_DATABASE_NAME,
   ONBOARDING_LOCATOR_STORAGE_KEY,
+  PLANNING_CATALOG_CACHE_DATABASE_NAME,
+  PLANNING_VIEW_DATABASE_NAME,
   REFERENCE_CACHE_DATABASE_NAME,
 } from './storage-constants';
 
-export { LOCAL_USER_DATABASE_NAME, REFERENCE_CACHE_DATABASE_NAME };
+export {
+  LOCAL_USER_DATABASE_NAME,
+  PLANNING_CATALOG_CACHE_DATABASE_NAME,
+  PLANNING_VIEW_DATABASE_NAME,
+  REFERENCE_CACHE_DATABASE_NAME,
+};
 
 export type RetentionStatus =
   | 'persistent'
@@ -106,6 +113,11 @@ export async function restoreVerifiedLocalExport(
     verifyRecord: (record) => verifyCanonicalRecordV1(record, sha256Canonical),
   });
   try {
+    await deleteIndexedDbDatabase(
+      indexedDB,
+      PLANNING_CATALOG_CACHE_DATABASE_NAME,
+    );
+    await deleteIndexedDbDatabase(indexedDB, PLANNING_VIEW_DATABASE_NAME);
     await repository.importLocalData(preview.artifact);
     localStorage.setItem(ONBOARDING_LOCATOR_STORAGE_KEY, locator);
     try {
@@ -232,6 +244,11 @@ export async function downloadVerifiedLocalExport(): Promise<void> {
 }
 
 export async function clearAllLocalData(): Promise<void> {
+  await deleteIndexedDbDatabase(
+    indexedDB,
+    PLANNING_CATALOG_CACHE_DATABASE_NAME,
+  );
+  await deleteIndexedDbDatabase(indexedDB, PLANNING_VIEW_DATABASE_NAME);
   await deleteIndexedDbDatabase(indexedDB, REFERENCE_CACHE_DATABASE_NAME);
   await deleteIndexedDbDatabase(indexedDB, LOCAL_USER_DATABASE_NAME);
   try {

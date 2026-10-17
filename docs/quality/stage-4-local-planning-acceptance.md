@@ -76,6 +76,16 @@ end-to-end latency needs optimization before release, even though the interface
 stays responsive. Additional device measurements and selection/logging evidence
 remain release work.
 
+After this measurement, a digest-checked display projection and an incremental,
+short-lived worker catalog were added. The view excludes unranked candidate
+composition and is invalidated by canonical transaction sequence, active
+catalog release, policy release, or expiry. The worker reuses the mapped
+immutable release and remaps changed local revisions. Its disposable mapped
+release cache also survives page visits without altering the verified USDA
+artifact. The 52.7 s and 16.9 s
+figures above are the pre-optimization baseline; a new browser measurement is
+required before claiming a latency improvement or closing the gate.
+
 ## Exit decision
 
 | Gate                                              | Evidence and disposition                                                                                                        |

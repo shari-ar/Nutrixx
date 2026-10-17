@@ -34,9 +34,13 @@ import {
 import { BrowserOnboardingStore } from './browser-onboarding';
 import { exampleUsdPricePer100g } from './food-price-examples';
 import {
-  buildNextMealCatalogSnapshot,
+  IncrementalNextMealCatalog,
   type NextMealCatalogSnapshot,
 } from './next-meal-catalog';
+import {
+  readMappedCatalog,
+  saveMappedCatalog,
+} from './next-meal-catalog-cache';
 import { loadNutritionContextV1 } from './nutrition-context';
 import {
   LOCAL_USER_DATABASE_NAME,
@@ -179,6 +183,24 @@ async function readArtifact(file: File): Promise<Record<string, unknown>> {
 
 export class BrowserStageTwoStore {
   private readonly dependencies: StageTwoDependencies;
+  private static readonly planningCatalogs = new WeakMap<
+    IDBFactory,
+    IncrementalNextMealCatalog
+  >();
+
+  private planningCatalog(): IncrementalNextMealCatalog {
+    let catalog = BrowserStageTwoStore.planningCatalogs.get(
+      this.dependencies.indexedDB,
+    );
+    if (!catalog) {
+      catalog = new IncrementalNextMealCatalog();
+      BrowserStageTwoStore.planningCatalogs.set(
+        this.dependencies.indexedDB,
+        catalog,
+      );
+    }
+    return catalog;
+  }
 
   public constructor(dependencies: StageTwoDependencies = defaults()) {
     this.dependencies = dependencies;
@@ -279,6 +301,8 @@ export class BrowserStageTwoStore {
   }
 
   public async enumerateNextMealCatalog(): Promise<NextMealCatalogSnapshot> {
+    const planningCatalog = this.planningCatalog();
+    planningCatalog.useOwner(await this.ownerSubjectId());
     const [customFoods, recipes] = await Promise.all([
       this.listCustomFoods(),
       this.listRecipes(),
@@ -291,20 +315,41 @@ export class BrowserStageTwoStore {
       const active = (await cache.listReleases()).find(
         (release) => release.active,
       );
+      const releaseId = active?.releaseId ?? null;
+      if (releaseId !== null && !planningCatalog.hasRelease(releaseId)) {
+        const mapped = await readMappedCatalog(
+          this.dependencies.indexedDB,
+          releaseId,
+        );
+        if (mapped !== null)
+          planningCatalog.useMappedRelease(releaseId, mapped);
+      }
       const catalog =
-        active === undefined
+        releaseId === null || planningCatalog.hasRelease(releaseId)
           ? null
           : (
               await new CachedFoodKnowledgeRepositoryV1(
                 cache,
               ).loadActiveCatalog()
             ).payload;
-      return buildNextMealCatalogSnapshot({
-        activeReleaseId: active?.releaseId ?? null,
+      const snapshot = planningCatalog.build({
+        activeReleaseId: releaseId,
         catalog,
         customFoods,
         recipes,
       });
+      if (catalog !== null && releaseId !== null) {
+        try {
+          await saveMappedCatalog(
+            this.dependencies.indexedDB,
+            releaseId,
+            planningCatalog.mappedReleaseEntries(),
+          );
+        } catch {
+          // Low storage must not prevent ranking from the verified catalog.
+        }
+      }
+      return snapshot;
     } finally {
       await cache.close();
     }

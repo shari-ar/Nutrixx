@@ -81,12 +81,14 @@ describe('IndexedDB atomic transaction log', () => {
     const repository = await IndexedDbCanonicalRecordRepository.create(
       options(indexedDB, databaseName),
     );
+    expect(await repository.latestTransactionSequence()).toBe(0);
     const result = await repository.commit(command);
     expect(result).toMatchObject({
       replayed: false,
       entry: { sequence: 1, commandId: command.commandId },
     });
     expect(await repository.listBySubject(first.subjectId)).toHaveLength(2);
+    expect(await repository.latestTransactionSequence()).toBe(1);
     await repository.close();
 
     const reopened = await IndexedDbCanonicalRecordRepository.create(

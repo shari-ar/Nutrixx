@@ -281,3 +281,108 @@ export function buildNextMealCatalogSnapshot(
   }
   return { manifest: { entryKeys }, entries };
 }
+
+/** Reuses immutable release mapping and only remaps changed local revisions. */
+export class IncrementalNextMealCatalog {
+  private owner: string | null = null;
+  private releaseId: string | null = null;
+  private catalogEntries: readonly NextMealCandidateSource[] = [];
+  private readonly customEntries = new Map<
+    string,
+    { readonly fingerprint: string; readonly source: NextMealCandidateSource }
+  >();
+  private readonly recipeEntries = new Map<
+    string,
+    { readonly fingerprint: string; readonly source: NextMealCandidateSource }
+  >();
+
+  public useOwner(owner: string): void {
+    if (this.owner === owner) return;
+    this.owner = owner;
+    this.releaseId = null;
+    this.catalogEntries = [];
+    this.customEntries.clear();
+    this.recipeEntries.clear();
+  }
+
+  public hasRelease(releaseId: string | null): boolean {
+    return this.releaseId === releaseId;
+  }
+
+  public useMappedRelease(
+    releaseId: string,
+    entries: readonly NextMealCandidateSource[],
+  ): void {
+    if (
+      entries.some(
+        (entry) =>
+          entry.reference.kind !== 'food' ||
+          entry.reference.catalogReleaseId !== releaseId,
+      )
+    )
+      throw new TypeError('The mapped catalog release is inconsistent.');
+    this.releaseId = releaseId;
+    this.catalogEntries = entries;
+  }
+
+  public mappedReleaseEntries(): readonly NextMealCandidateSource[] {
+    return this.catalogEntries;
+  }
+
+  public build(sources: NextMealCatalogSources): NextMealCatalogSnapshot {
+    if (
+      (sources.catalog === null) !== (sources.activeReleaseId === null) &&
+      this.releaseId !== sources.activeReleaseId
+    ) {
+      throw new TypeError('The active release and catalog payload must match.');
+    }
+    if (this.releaseId !== sources.activeReleaseId) {
+      if (sources.activeReleaseId !== null && sources.catalog === null)
+        throw new TypeError('The changed catalog release needs its payload.');
+      this.catalogEntries =
+        sources.catalog === null
+          ? []
+          : mapCatalogFoods(sources.activeReleaseId!, sources.catalog);
+      this.releaseId = sources.activeReleaseId;
+    }
+    const customKeys = new Set<string>();
+    for (const food of sources.customFoods) {
+      const key = `${food.foodId}:${food.revision}`;
+      const fingerprint = JSON.stringify(food);
+      customKeys.add(key);
+      if (this.customEntries.get(key)?.fingerprint !== fingerprint)
+        this.customEntries.set(key, {
+          fingerprint,
+          source: mapCustomFoods([food])[0]!,
+        });
+    }
+    for (const key of Array.from(this.customEntries.keys()))
+      if (!customKeys.has(key)) this.customEntries.delete(key);
+    const recipeKeys = new Set<string>();
+    for (const recipe of sources.recipes) {
+      const key = `${recipe.version.recipeId}:${recipe.version.version}`;
+      const fingerprint = JSON.stringify(recipe.version);
+      recipeKeys.add(key);
+      if (this.recipeEntries.get(key)?.fingerprint !== fingerprint)
+        this.recipeEntries.set(key, {
+          fingerprint,
+          source: mapRecipes([recipe])[0]!,
+        });
+    }
+    for (const key of Array.from(this.recipeEntries.keys()))
+      if (!recipeKeys.has(key)) this.recipeEntries.delete(key);
+    const entries = [
+      ...this.catalogEntries,
+      ...Array.from(this.customEntries.values(), (item) => item.source),
+      ...Array.from(this.recipeEntries.values(), (item) => item.source),
+    ];
+    const entryKeys = entries
+      .map((entry) => nextMealSourceKey(entry.reference))
+      .sort();
+    if (new Set(entryKeys).size !== entryKeys.length)
+      throw new TypeError(
+        'The active catalog contains duplicate source revisions.',
+      );
+    return { manifest: { entryKeys }, entries };
+  }
+}

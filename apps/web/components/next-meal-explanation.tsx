@@ -5,7 +5,7 @@ import {
 } from '@nutrixx/optimizer-engine';
 import Link from 'next/link';
 
-import type { NextMealRunV1 } from '@/lib/browser-planning';
+import type { NextMealDisplayRunV1 } from '@/lib/browser-planning';
 
 function decimal(ratio: { numerator: string; denominator: string }): string {
   const numerator = BigInt(ratio.numerator);
@@ -77,7 +77,11 @@ function Citation({
   );
 }
 
-export function NextMealRunOverview({ run }: { readonly run: NextMealRunV1 }) {
+export function NextMealRunOverview({
+  run,
+}: {
+  readonly run: NextMealDisplayRunV1;
+}) {
   const provisional = run.appliedTemporalRules.filter(
     (rule) => rule.decision === 'PROVISIONAL_SHORT_HISTORY',
   ).length;
@@ -115,7 +119,7 @@ export function NextMealExplanation({
   row,
   explanation,
 }: {
-  readonly run: NextMealRunV1;
+  readonly run: NextMealDisplayRunV1;
   readonly row: NextMealRankedCandidate;
   readonly explanation: NextMealCandidateExplanationV1;
 }) {
