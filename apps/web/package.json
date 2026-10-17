@@ -13,6 +13,7 @@
     "lint:fix": "eslint . --fix --max-warnings=0",
     "start": "next start",
     "test": "vitest run --config ./vitest.config.ts",
+    "test:acceptance": "node --max-old-space-size=8192 ../../node_modules/vitest/vitest.mjs run --config ./vitest.config.acceptance.ts",
     "test:cov": "vitest run --config ./vitest.config.ts --coverage",
     "test:watch": "vitest watch --config ./vitest.config.ts",
     "typecheck": "next typegen && tsc --noEmit --project tsconfig.json"

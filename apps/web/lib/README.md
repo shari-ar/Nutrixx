@@ -64,3 +64,7 @@ observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.
 See the
 [Free next-meal contract](../../../docs/engines/next-meal-contract.md).
+`next-meal-acceptance-fixture.ts` pins the adult request and catalog digest
+shared by the isolated full-catalog Node audit and development-browser
+measurement. `next-meal-full-catalog.acceptance.ts` writes a private result to
+`.temp/stage-4-acceptance/` when `npm run acceptance:stage4` runs.

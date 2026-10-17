@@ -28,6 +28,7 @@
     "docs:preview": "vitepress preview docs",
     "docs:check": "node scripts/check-readmes.mjs && node scripts/check-doc-language.mjs && node scripts/check-mermaid.mjs",
     "quality:data": "npm run build --workspace=@nutrixx/canonical-schema && npm run build --workspace=@nutrixx/persistence && npm run build --workspace=@nutrixx/consumption && npm run build --workspace=@nutrixx/user-context && npm run build --workspace=@nutrixx/food-knowledge && npm run build --workspace=@nutrixx/nutrition-engine && node --max-old-space-size=4096 scripts/data-quality-radar.mjs",
+    "acceptance:stage4": "npm run build --workspace=@nutrixx/canonical-schema && npm run build --workspace=@nutrixx/persistence && npm run build --workspace=@nutrixx/food-knowledge && npm run build --workspace=@nutrixx/nutrition-engine && npm run build --workspace=@nutrixx/optimizer-engine && npm run test:acceptance --workspace=@nutrixx/web",
     "prepare": "node scripts/install-git-hooks.mjs",
     "format": "prettier . --write --ignore-unknown",
     "format:check": "prettier . --check --ignore-unknown",

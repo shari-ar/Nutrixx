@@ -46,6 +46,8 @@ const securityHeaders = [
 const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: environment.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_STAGE4_ACCEPTANCE_ENABLED:
+      process.env.NODE_ENV === 'development' ? 'true' : 'false',
   },
   output: 'standalone',
   outputFileTracingRoot: workspaceRoot,
