@@ -226,8 +226,34 @@ describe('next-meal browser input', () => {
             {
               state: 'recorded',
               mealId: '00000000-0000-4000-8000-000000000010',
+              ownerSubjectId: '00000000-0000-4000-8000-000000000011',
               revision: 1,
               occurredAt: '2026-10-11T08:00:00.000Z',
+              localDate: '2026-10-11',
+              timeZone: 'UTC',
+              mealType: 'breakfast',
+              items: [
+                {
+                  itemId: '00000000-0000-4000-8000-000000000012',
+                  position: 1,
+                  displayNameSnapshot: 'Test food',
+                  preparationState: 'prepared',
+                  reference: food.reference,
+                  consumedQuantity: {
+                    amount: '1',
+                    unit: { system: 'nutrixx', code: 'portion.serving' },
+                  },
+                  edibleGramWeight: '100',
+                  provenance: {
+                    method: 'user-entered',
+                    source: {
+                      kind: 'user',
+                      sourceId: '00000000-0000-4000-8000-000000000011',
+                    },
+                    recordedAt: '2026-10-11T08:00:00.000Z',
+                  },
+                },
+              ],
               nutrition: [
                 {
                   state: 'known',
@@ -236,9 +262,18 @@ describe('next-meal browser input', () => {
                   unit: { system: 'ucum', code: 'mg' },
                 },
               ],
+              provenance: {
+                method: 'user-entered',
+                source: {
+                  kind: 'user',
+                  sourceId: '00000000-0000-4000-8000-000000000011',
+                },
+                recordedAt: '2026-10-11T08:00:00.000Z',
+              },
+              recordedAt: '2026-10-11T08:00:00.000Z',
             },
           ],
-        } as unknown as BrowserNutritionSnapshotV1,
+        },
         foodRestrictions: [],
         inventory: null,
         now: NOW,

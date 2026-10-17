@@ -220,8 +220,11 @@ export class BrowserPlanningStore {
           PLANNING_USER_CONTEXT_TYPES.has(record.recordType) ||
           /^(?:food|recipe|consumption)\./.test(record.recordType),
       )
-      .map((record) => [record.recordId, record.integrity.value])
-      .sort((a, b) => a[0]!.localeCompare(b[0]!));
+      .map((record): [string, string] => [
+        record.recordId,
+        record.integrity.value,
+      ])
+      .sort((a, b) => a[0].localeCompare(b[0]));
     const referenceRelease = getAdultDriBaselineReleaseV1();
     return sha256Canonical(
       canonicalizeJson({
