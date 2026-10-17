@@ -1,7 +1,8 @@
 # Stage 4 development acceptance route
 
-`page.tsx` exposes `/acceptance?run` only in development. It measures the
-installed, pinned food catalog and the real next-meal browser worker. The route
-reads immutable reference data and keeps measurements in memory. Production
-requests receive a 404. The private report
-requires named browser/device pairs before release sign-off.
+`page.tsx` exposes `/acceptance?run` and `/acceptance?run-local` in development.
+The first mode measures catalog preparation and five reviewed rankings within
+one worker. The second mode installs the pinned catalog into an isolated test
+profile, creates a real local recommendation, and reloads it from IndexedDB.
+The route serves immutable reference data locally. Production requests receive
+a 404. Named browser/device reports remain private until release sign-off.

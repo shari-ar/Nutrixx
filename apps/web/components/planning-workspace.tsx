@@ -37,9 +37,6 @@ function inputGuidance(reasonCodes: readonly string[]): string {
       'The recorded meals or local catalog lack enough comparable nutrient evidence for a ranked recommendation.',
     'inventory-source-changed':
       'An available ingredient changed. Select it again from the current catalog.',
-    'local-worker-limit':
-      'This device could not complete the full local catalog review within the time limit.',
-    'next-meal-worker-error': 'Local ranking could not complete. Please retry.',
   };
   return reasonCodes
     .map((code) => guidance[code] ?? code.replaceAll('-', ' '))

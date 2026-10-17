@@ -4,15 +4,15 @@ Small, cross-platform automation used by contributors and CI.
 
 ## Contents
 
-| File                           | Responsibility                                                                                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `check-doc-language.mjs`       | Enforces international scope and affirmative language across technical documentation                                                              |
-| `check-readmes.mjs`            | Enforces README presence in project-owned directories                                                                                             |
-| `install-git-hooks.mjs`        | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                             |
-| `run-with-node-env.mjs`        | Runs a command with an explicit, cross-platform Node environment                                                                                  |
-| `data-quality-radar.mjs`       | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                  |
-| `stage-4-browser-runner.mjs`   | Measures the pinned full-catalog next-meal worker in a named local browser/device pair through the development-only acceptance route              |
-| `build-usda-cooking-tables.py` | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library |
+| File                           | Responsibility                                                                                                                                            |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check-doc-language.mjs`       | Enforces international scope and affirmative language across technical documentation                                                                      |
+| `check-readmes.mjs`            | Enforces README presence in project-owned directories                                                                                                     |
+| `install-git-hooks.mjs`        | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                                     |
+| `run-with-node-env.mjs`        | Runs a command with an explicit, cross-platform Node environment                                                                                          |
+| `data-quality-radar.mjs`       | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                          |
+| `stage-4-browser-runner.mjs`   | Measures full-catalog worker responsiveness in a named browser/device; the optional `local` argument runs an isolated IndexedDB create-and-reload journey |
+| `build-usda-cooking-tables.py` | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library         |
 
 ## Rules
 

@@ -78,9 +78,10 @@ Stage 4 boundary. Candidate preparation, ranking, validation, and browser
 integration are implemented. The
 [Stage 4 acceptance evidence](../quality/stage-4-local-planning-acceptance.md)
 confirms a complete, independently reviewed 8,156-food census and records
-browser performance on one workstation. Responsive preparation, complete
-typed outcomes and cancellation, and the supported device matrix keep the
-exit gate open.
+browser performance on one workstation. Worker-based preparation and saved-run
+loading meet the responsiveness check on that workstation. Full local-journey
+latency, complete typed outcomes and cancellation, and the supported device
+matrix keep the exit gate open.
 
 Exit: the complete advertised Free contract passes; mandatory fixtures show
 zero escaped hard violations. AI-dependent optimizer features remain excluded.

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const browserPath = process.argv[2];
 const deviceLabel = process.argv[3];
+const mode = process.argv[4] === 'local' ? 'run-local' : 'run';
 if (!browserPath || !deviceLabel) {
   throw new TypeError(
     'Usage: node scripts/stage-4-browser-runner.mjs <browser-executable> <device-label>',
@@ -119,7 +120,7 @@ try {
   await connection.command('Page.enable');
   await connection.command('Runtime.enable');
   await connection.command('Page.navigate', {
-    url: 'http://localhost:3000/acceptance?run',
+    url: `http://localhost:3000/acceptance?${mode}`,
   });
 
   const deadline = Date.now() + 180_000;

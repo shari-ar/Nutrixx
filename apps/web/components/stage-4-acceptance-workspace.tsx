@@ -2,118 +2,45 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  STAGE_4_ACCEPTANCE_INSTANT,
-  STAGE_4_CATALOG_SHA256,
-  stage4NutritionFixture,
-} from '@/lib/next-meal-acceptance-fixture';
-import { buildNextMealCatalogSnapshot } from '@/lib/next-meal-catalog';
-import { buildNextMealInputV1 } from '@/lib/next-meal-input';
-
-import type { NextMealWorkerResultV1 } from '../workers/next-meal.worker';
-import type { FoodCatalogPayloadV1 } from '@nutrixx/food-knowledge';
-import type { NextMealRankingRequest } from '@nutrixx/optimizer-engine';
-
-const sampleCount = 5;
-
-async function sha256(bytes: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
-}
-
-function workerRun(
-  request: NextMealRankingRequest,
-): Promise<NextMealWorkerResultV1> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL('../workers/next-meal.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-    const timeout = window.setTimeout(() => {
-      worker.terminate();
-      reject(new TypeError('The browser worker exceeded its 90-second limit.'));
-    }, 90_000);
-    worker.onmessage = (event: MessageEvent<NextMealWorkerResultV1>) => {
-      window.clearTimeout(timeout);
-      worker.terminate();
-      resolve(event.data);
-    };
-    worker.onerror = () => {
-      window.clearTimeout(timeout);
-      worker.terminate();
-      reject(new TypeError('The browser worker failed.'));
-    };
-    worker.postMessage(request);
-  });
-}
+import { BrowserNutritionStateStore } from '@/lib/browser-nutrition-state';
+import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
+import { BrowserPlanningStore } from '@/lib/browser-planning';
+import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
+import { STAGE_4_CATALOG_SHA256 } from '@/lib/next-meal-acceptance-fixture';
+import { prepareNextMealInWorker } from '@/lib/next-meal-preparation-client';
 
 async function measure(): Promise<object> {
   let lastTick = performance.now();
   let maxMainThreadGapMs = 0;
+  let maxGapAtMs = 0;
+  const longTasks: { startMs: number; durationMs: number }[] = [];
+  const observer = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries())
+      longTasks.push({
+        startMs: Math.round(entry.startTime),
+        durationMs: Math.round(entry.duration),
+      });
+  });
+  observer.observe({ type: 'longtask' });
   const interval = window.setInterval(() => {
     const current = performance.now();
-    maxMainThreadGapMs = Math.max(maxMainThreadGapMs, current - lastTick - 50);
+    const gap = current - lastTick - 50;
+    if (gap > maxMainThreadGapMs) {
+      maxMainThreadGapMs = gap;
+      maxGapAtMs = current;
+    }
     lastTick = current;
   }, 50);
   try {
-    let start = performance.now();
-    const response = await fetch('/acceptance/catalog', { cache: 'no-store' });
-    if (!response.ok) throw new TypeError(`Catalog HTTP ${response.status}.`);
-    const compressed = await response.arrayBuffer();
-    const actualHash = await sha256(compressed);
-    if (actualHash !== STAGE_4_CATALOG_SHA256)
-      throw new TypeError(
-        `The local catalog digest differs from the pinned release: ${actualHash} (${compressed.byteLength} bytes; ${response.url}; length ${response.headers.get('content-length')}; encoding ${response.headers.get('content-encoding')}).`,
-      );
-    const decompressed = new Blob([compressed])
-      .stream()
-      .pipeThrough(new DecompressionStream('gzip'));
-    const release = (await new Response(decompressed).json()) as {
-      releaseId: string;
-      payload: FoodCatalogPayloadV1;
-    };
-    const loadMs = Math.round(performance.now() - start);
-
-    start = performance.now();
-    const catalog = buildNextMealCatalogSnapshot({
-      activeReleaseId: release.releaseId,
-      catalog: release.payload,
-      customFoods: [],
-      recipes: [],
-    });
-    const mapMs = Math.round(performance.now() - start);
-
-    start = performance.now();
-    const built = buildNextMealInputV1({
-      catalog,
-      nutrition: stage4NutritionFixture(),
-      foodRestrictions: [],
-      inventory: null,
-      now: STAGE_4_ACCEPTANCE_INSTANT,
-      trackingStartedAt: '2026-10-10T00:00:00.000Z',
-    });
-    if (built.status !== 'READY')
-      throw new TypeError(`Input needs ${built.reasonCodes.join(', ')}.`);
-    const inputMs = Math.round(performance.now() - start);
-    const workerSamplesMs: number[] = [];
-    let comparable = 0;
-    for (let index = 0; index < sampleCount; index += 1) {
-      start = performance.now();
-      const result = await workerRun(built.request);
-      workerSamplesMs.push(Math.round(performance.now() - start));
-      if (
-        result.status !== 'APPROVED' ||
-        result.ranking.total !== catalog.entries.length ||
-        result.ranking.processed !== result.ranking.total
-      )
-        throw new TypeError(
-          'The worker did not independently approve a complete census.',
-        );
-      comparable = result.ranking.counts.COMPARABLE;
-    }
-    const sorted = [...workerSamplesMs].sort((a, b) => a - b);
+    const start = performance.now();
+    const prepared = await prepareNextMealInWorker({ kind: 'ACCEPTANCE' });
+    if (prepared.status === 'FAILED' && prepared.reasonCode === 'http-403')
+      throw new TypeError('HTTP 403 stopped the local acceptance run.');
+    if (prepared.status !== 'BENCHMARK')
+      throw new TypeError('The browser acceptance worker did not complete.');
+    const preparationElapsedMs = Math.round(performance.now() - start);
+    if (prepared.measurement.artifactSha256 !== STAGE_4_CATALOG_SHA256)
+      throw new TypeError('The worker used a different catalog artifact.');
     return {
       schemaVersion: 1,
       evaluatedAt: new Date().toISOString(),
@@ -122,17 +49,75 @@ async function measure(): Promise<object> {
       deviceMemoryGiB:
         (navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
         null,
-      artifactSha256: STAGE_4_CATALOG_SHA256,
-      catalogEntries: catalog.entries.length,
-      comparable,
-      comparisonNutrients: built.request.temporalRules.length,
-      loadMs,
-      mapMs,
-      inputMs,
-      workerSamplesMs,
-      workerP95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1],
+      ...prepared.measurement,
+      preparationElapsedMs,
       maxMainThreadGapMs: Math.round(maxMainThreadGapMs),
+      maxGapAtMs: Math.round(maxGapAtMs),
+      longTasks: longTasks
+        .sort((a, b) => b.durationMs - a.durationMs)
+        .slice(0, 5),
       note: 'Development-browser measurement on this device; additional supported browser/device pairs remain separate sign-off evidence.',
+    };
+  } finally {
+    window.clearInterval(interval);
+    observer.disconnect();
+  }
+}
+
+async function measureLocalJourney(): Promise<object> {
+  const onboarding = new BrowserOnboardingStore();
+  await onboarding.save({
+    ageYears: 30,
+    heightCentimeters: '170',
+    weightKilograms: '70',
+    physiologicalReference: 'female',
+    primaryGoal: 'maintain',
+    foodRestrictions: [],
+  });
+  await new BrowserNutritionStateStore().selectMarket('US');
+  const response = await fetch('/acceptance/catalog', { cache: 'no-store' });
+  if (!response.ok) throw new TypeError(`Catalog HTTP ${response.status}.`);
+  const artifact = new File([await response.arrayBuffer()], 'catalog.json.gz', {
+    type: 'application/gzip',
+  });
+  await new BrowserStageTwoStore().installCatalog(artifact);
+
+  let lastTick = performance.now();
+  let phase: 'create' | 'load' = 'create';
+  const maxGap = { create: 0, load: 0 };
+  const interval = window.setInterval(() => {
+    const current = performance.now();
+    maxGap[phase] = Math.max(maxGap[phase], current - lastTick - 50);
+    lastTick = current;
+  }, 50);
+  try {
+    const planning = new BrowserPlanningStore();
+    let started = performance.now();
+    const created = await planning.createRecommendation({ inventory: null });
+    const createMs = Math.round(performance.now() - started);
+    if (created.status !== 'READY')
+      throw new TypeError(
+        `Local input needs ${created.reasonCodes.join(', ')}.`,
+      );
+    phase = 'load';
+    started = performance.now();
+    const snapshot = await planning.load();
+    const loadMs = Math.round(performance.now() - started);
+    if (!snapshot.fresh || snapshot.run?.runId !== created.runId)
+      throw new TypeError('The saved local recommendation did not reload.');
+    return {
+      schemaVersion: 1,
+      evaluatedAt: new Date().toISOString(),
+      browser: navigator.userAgent,
+      journey: 'temporary-profile-installed-catalog-create-and-reload',
+      catalogEntries: snapshot.run.result.total,
+      comparable: snapshot.run.result.counts.COMPARABLE,
+      createMs,
+      loadMs,
+      createMainThreadGapMs: Math.round(maxGap.create),
+      loadMainThreadGapMs: Math.round(maxGap.load),
+      workerP95Ms: createMs,
+      maxMainThreadGapMs: Math.round(Math.max(maxGap.create, maxGap.load)),
     };
   } finally {
     window.clearInterval(interval);
@@ -147,7 +132,8 @@ export function Stage4AcceptanceWorkspace() {
   const start = useCallback(() => {
     setRunning(true);
     setError(null);
-    measure().then(
+    const local = new URLSearchParams(window.location.search).has('run-local');
+    (local ? measureLocalJourney() : measure()).then(
       (report) => {
         setResult(JSON.stringify(report, null, 2));
         setRunning(false);
@@ -162,8 +148,9 @@ export function Stage4AcceptanceWorkspace() {
   }, []);
 
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has('run')) return;
-    const timer = window.setTimeout(start, 0);
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('run') && !params.has('run-local')) return;
+    const timer = window.setTimeout(start, 1_500);
     return () => window.clearTimeout(timer);
   }, [start]);
 

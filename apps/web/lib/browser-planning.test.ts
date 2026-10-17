@@ -12,6 +12,10 @@ import { BrowserPlanningStore } from './browser-planning';
 
 import type { BrowserNutritionSnapshotV1 } from './browser-nutrition-state';
 import type { BrowserStageTwoStore } from './browser-stage-two';
+import type {
+  NextMealPreparationRequestV1,
+  NextMealPreparationResultV1,
+} from './next-meal-preparation-client';
 
 const NOW = '2026-10-12T12:00:00.000Z';
 
@@ -40,6 +44,71 @@ afterEach(() => {
 });
 
 describe('browser next-meal planning', () => {
+  it('keeps recommendation and reload work behind compact worker messages', async () => {
+    const onboarding = new BrowserOnboardingStore({
+      storage: localStorage,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: () => crypto.randomUUID(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+    });
+    await onboarding.save({
+      ageYears: 30,
+      heightCentimeters: '170',
+      weightKilograms: '70',
+      physiologicalReference: 'female',
+      primaryGoal: 'maintain',
+      foodRestrictions: [],
+    });
+    const posted: string[] = [];
+    class WorkerStub {
+      public onmessage:
+        | ((event: MessageEvent<NextMealPreparationResultV1>) => void)
+        | null = null;
+      public onerror: ((event: ErrorEvent) => void) | null = null;
+
+      public postMessage(request: NextMealPreparationRequestV1): void {
+        posted.push(request.kind);
+        const response: NextMealPreparationResultV1 =
+          request.kind === 'LOCAL_LOAD'
+            ? {
+                status: 'SNAPSHOT',
+                snapshot: {
+                  run: null,
+                  fresh: false,
+                  intention: null,
+                  loggedMealId: null,
+                },
+              }
+            : {
+                status: 'RECOMMENDATION',
+                result: { status: 'READY', runId: 'worker-run' },
+              };
+        queueMicrotask(() =>
+          this.onmessage?.({
+            data: response,
+          } as MessageEvent<NextMealPreparationResultV1>),
+        );
+      }
+
+      public terminate(): void {}
+    }
+    vi.stubGlobal('Worker', WorkerStub);
+    const planning = new BrowserPlanningStore(undefined, onboarding);
+    expect(await planning.createRecommendation({ inventory: null })).toEqual({
+      status: 'READY',
+      runId: 'worker-run',
+    });
+    expect(await planning.load()).toEqual({
+      run: null,
+      fresh: false,
+      intention: null,
+      loggedMealId: null,
+    });
+    expect(posted).toEqual(['LOCAL_RECOMMENDATION', 'LOCAL_LOAD']);
+  });
+
   it('starts without a recommendation and requests a nutrition market', async () => {
     const onboarding = new BrowserOnboardingStore({
       storage: localStorage,
@@ -57,7 +126,13 @@ describe('browser next-meal planning', () => {
       primaryGoal: 'maintain',
       foodRestrictions: [],
     });
-    const planning = new BrowserPlanningStore();
+    const planning = new BrowserPlanningStore(
+      undefined,
+      onboarding,
+      undefined,
+      undefined,
+      false,
+    );
     expect(await planning.load()).toEqual({
       run: null,
       fresh: false,
@@ -216,6 +291,7 @@ describe('browser next-meal planning', () => {
       onboarding,
       nutrition,
       foods,
+      false,
     );
     const created = await planning.createRecommendation({ inventory: null });
     expect(created.status).toBe('READY');

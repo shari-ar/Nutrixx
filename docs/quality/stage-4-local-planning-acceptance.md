@@ -27,13 +27,16 @@ bytes through the development-only `/acceptance/catalog` route:
 ```powershell
 node scripts/stage-4-browser-runner.mjs 'C:\Program Files\Google\Chrome\Application\chrome.exe' chrome-windows-workstation
 node scripts/stage-4-browser-runner.mjs 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' edge-windows-workstation
+node scripts/stage-4-browser-runner.mjs 'C:\Program Files\Google\Chrome\Application\chrome.exe' chrome-windows-local-journey local
 ```
 
 The runner records a named browser/device pair in
 `.temp/stage-4-acceptance/<device-label>.json`. It measures five complete
 worker executions, their nearest-rank p95, catalog retrieval and input
 preparation, and the maximum observed main-thread timer gap. Its isolated
-browser profile and localhost request keep user records outside the corpus.
+browser profile and localhost request keep user records outside the corpus. The
+optional `local` mode installs the catalog in its temporary profile and measures
+the actual create-and-reload workflow.
 
 ## Recorded results
 
@@ -53,15 +56,25 @@ Both browser runs used one Windows workstation with an Intel Core i5-11400,
 24 GB physical memory, and headless Chromium-family browsers. The pinned
 artifact and all 8,156 catalog identities matched the Node audit.
 
-| Browser | Worker samples, ms                | Worker p95 | Maximum main-thread gap |
-| ------- | --------------------------------- | ---------- | ----------------------- |
-| Chrome  | 4,117, 3,853, 3,964, 4,005, 3,888 | 4,117 ms   | 2,647 ms                |
-| Edge    | 4,845, 5,306, 5,034, 5,819, 4,826 | 5,819 ms   | 2,670 ms                |
+| Browser | Earlier UI gap | Unified-worker ranking p95 | Current UI gap |
+| ------- | -------------- | -------------------------- | -------------- |
+| Chrome  | 2,647 ms       | 3,460 ms                   | 17 ms          |
+| Edge    | 2,670 ms       | 3,263 ms                   | 17 ms          |
 
-The worker-only p95 is below the proposed 10-second budget on this device.
-The measured main-thread stalls keep the responsive-interface gate open.
-Catalog retrieval in this harness uses the development route; production
-installation and IndexedDB read time require their own end-to-end evidence.
+The unified worker loads and maps the full catalog, constructs the input, and
+runs five independent reviewed rankings. It sends a compact result to the UI.
+The earlier implementation started a ranking worker for each sample, so its
+worker-duration measurements use a different boundary. The UI-gap measurements
+show the responsiveness change on this workstation.
+
+An isolated Chrome profile also completed the real local IndexedDB installation,
+recommendation, and saved-run reload with all 8,156 foods. Creation took 52.7 s
+with a 118 ms maximum UI timer gap; reload took 16.9 s with a 14 ms gap. The
+profile yielded zero comparable candidates under its newly started user context,
+so the corpus ranking above remains the comparable-candidate evidence. This
+end-to-end latency needs optimization before release, even though the interface
+stays responsive. Additional device measurements and selection/logging evidence
+remain release work.
 
 ## Exit decision
 
@@ -71,14 +84,15 @@ installation and IndexedDB read time require their own end-to-end evidence.
 | Sparse composition handling                       | Pass: an unknown nutrient remains evidence-limited; golden tests cover hard-rule and explanation tampering                      |
 | Deterministic policy and temporal replay          | Pass: engine unit fixtures and identical repeated full-catalog ranking; result hash recorded in the local report                |
 | Browser worker budget on the measured workstation | Pass for the five worker-only runs in each named browser                                                                        |
-| Responsive local workflow                         | Open: observed 2.6-second main-thread gaps during catalog and input preparation                                                 |
+| Responsive local workflow                         | Pass on the measured workstation: 17 ms fixture gaps; 118 ms create and 14 ms reload gaps in the installed-cache journey        |
+| Full local-journey latency                        | Open: the first installed-cache creation took 52.7 s and saved-run reload took 16.9 s on this workstation                       |
 | Supported device/browser matrix                   | Open: Chrome and Edge measurements share one workstation; additional representative devices need measured results               |
 | Complete outcome and cancellation contract        | Open: the active browser flow exposes `READY` and `NEEDS_INPUT`; the eight-status contract and cancellation remain to implement |
 | Full offline user journey                         | Open: measure installed-cache load, actual selection, cancellation, and logging on each supported browser/device pair           |
 
-Stage 4 exit remains open. The next release candidate needs responsive
-preparation, typed non-ready outcomes and cancellation, additional device
-measurements, and the complete browser-local journey before quality sign-off.
+Stage 4 exit remains open. The next release candidate needs faster local
+creation and reload, typed non-ready outcomes and cancellation, additional
+device measurements, and complete selection/logging evidence before sign-off.
 The [Free next-meal contract](../engines/next-meal-contract.md) and
 [quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md)
 remain the governing criteria.

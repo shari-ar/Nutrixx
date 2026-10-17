@@ -55,10 +55,13 @@ accepted meals within each cited temporal-rule window, applicable reference
 targets, and optional inventory. It applies the versioned temporal-policy
 contract, keeps short-history qualification with the frozen run, and uses the
 published daily-reference horizon until additional sourced rules are released.
-`browser-planning.ts` owns recommendation, selection, data and time freshness,
-and the explicit actual-consumption handoff to the meal ledger. A run expires
-after 15 minutes or an earlier applicable temporal boundary. The background worker computes
-the ranking; the browser service independently reviews it before persistence.
+`browser-planning.ts` delegates recommendation creation and saved-run loading
+to the browser worker. `browser-planning-core.ts` owns the local recommendation,
+selection, data and time freshness, independent review, persistence, and the
+explicit actual-consumption handoff to the meal ledger. The core runs inside
+the worker for creation and loading. A run expires after 15 minutes or an
+earlier applicable temporal boundary. `next-meal-preparation-client.ts` carries
+only compact outcomes across the UI boundary during creation.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.
