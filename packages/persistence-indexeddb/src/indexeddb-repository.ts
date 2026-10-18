@@ -2,6 +2,7 @@ import {
   CanonicalIdSchema,
   UtcInstantSchema,
   canonicalizeJson,
+  sealCanonicalRecordV1,
   type CanonicalRecordV1,
   type JsonValue,
 } from '@nutrixx/canonical-schema';
@@ -9,8 +10,11 @@ import {
   PersistenceError,
   commandFromTransactionEntry,
   classifyCanonicalWrite,
+  classifyEditableChange,
   createLocalDataExportV1,
+  createEditableDataFileV1,
   validateLocalDataExportV1,
+  validateEditableDataFileV1,
   validateCanonicalRecord,
   type AtomicCanonicalRecordRepository,
   type CanonicalRecordMutationResult,
@@ -20,8 +24,12 @@ import {
   type CanonicalTransactionLogEntryV1,
   type CanonicalTransactionResult,
   type CanonicalWriteResult,
+  type EditableChangeV1,
+  type EditableDataFileV1,
+  type EditableFactV1,
+  type EditableImportPreviewV1,
   type LocalDataExportArtifactV1,
-  type LocalDataExportImportRepository,
+  type LocalPortabilityRepository,
 } from '@nutrixx/persistence';
 
 import { sha256Canonical } from './crypto.js';
@@ -54,6 +62,12 @@ export interface IndexedDbRepositoryOptions {
   readonly beforeLogAppend?: () => void;
   readonly fingerprint?: (canonicalCommand: string) => Promise<string>;
   readonly beforeImportCommit?: () => void;
+  readonly validatePortableRecord?: (
+    record: CanonicalRecordV1,
+  ) => boolean | Promise<boolean>;
+  readonly validatePortableDataset?: (
+    records: readonly CanonicalRecordV1[],
+  ) => boolean;
 }
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
@@ -131,7 +145,7 @@ function abortTransaction(transaction: IDBTransaction): void {
 }
 
 export class IndexedDbCanonicalRecordRepository
-  implements AtomicCanonicalRecordRepository, LocalDataExportImportRepository
+  implements AtomicCanonicalRecordRepository, LocalPortabilityRepository
 {
   readonly #database: IDBDatabase;
   readonly #options: IndexedDbRepositoryOptions;
@@ -434,16 +448,340 @@ export class IndexedDbCanonicalRecordRepository
     });
   }
 
+  public async exportEditableData(
+    subjectId: string,
+  ): Promise<EditableDataFileV1> {
+    this.#assertOpen();
+    const records = await this.listBySubject(subjectId);
+    for (const record of records) {
+      await validateCanonicalRecord(record, this.#options.verifyRecord);
+    }
+    return createEditableDataFileV1(records, subjectId, this.#now());
+  }
+
+  async #prepareEditableRecord(
+    fact: EditableFactV1,
+    existing: CanonicalRecordV1 | null,
+    occurredAt: string,
+  ): Promise<CanonicalRecordV1> {
+    const transferred = existing === null && fact.sourceRevision !== null;
+    const logicalVersion =
+      existing === null ? fact.logicalVersion : existing.logicalVersion + 1;
+    const payload =
+      existing !== null &&
+      fact.recordType === 'user-context.starting-profile' &&
+      typeof fact.payload === 'object' &&
+      fact.payload !== null &&
+      !Array.isArray(fact.payload)
+        ? { ...fact.payload, revision: logicalVersion }
+        : fact.payload;
+    const record = await sealCanonicalRecordV1(
+      {
+        format: 'nutrixx.canonical-record',
+        schemaVersion: 1,
+        recordType: fact.recordType,
+        recordVersion: fact.recordVersion,
+        recordId: fact.recordId,
+        subjectId: fact.subjectId,
+        owningContext: fact.owningContext,
+        logicalVersion,
+        createdAt: fact.createdAt,
+        updatedAt: existing === null ? fact.updatedAt : occurredAt,
+        ...(fact.correctionOf === undefined
+          ? {}
+          : { correctionOf: fact.correctionOf }),
+        provenance: transferred
+          ? fact.provenance
+          : {
+              method: 'imported',
+              source: {
+                kind: 'import',
+                sourceId: 'editable-data',
+                sourceRecordId: fact.recordId,
+              },
+              recordedAt: occurredAt,
+            },
+        payload,
+      },
+      this.#fingerprint,
+    );
+    if (!(await this.#options.validatePortableRecord?.(record))) {
+      throw new PersistenceError(
+        'invalid-export',
+        'An edited fact fails its domain schema.',
+      );
+    }
+    return record;
+  }
+
+  #validateEditableDataset(
+    current: readonly CanonicalRecordV1[],
+    facts: readonly EditableFactV1[],
+    prepared: ReadonlyMap<string, CanonicalRecordV1>,
+  ): void {
+    if (this.#options.validatePortableDataset === undefined) return;
+    const next = new Map(current.map((record) => [record.recordId, record]));
+    for (const fact of facts) {
+      if (fact.action === 'delete') next.delete(fact.recordId);
+      else {
+        const record = prepared.get(fact.recordId);
+        if (record !== undefined) next.set(fact.recordId, record);
+      }
+    }
+    if (!this.#options.validatePortableDataset([...next.values()])) {
+      throw new PersistenceError(
+        'invalid-export',
+        'The edited facts break local record relationships.',
+      );
+    }
+  }
+
+  public async previewEditableData(
+    input: unknown,
+  ): Promise<EditableImportPreviewV1> {
+    this.#assertOpen();
+    const file = validateEditableDataFileV1(input);
+    const transaction = this.#database.transaction(
+      CANONICAL_RECORD_STORE,
+      'readonly',
+    );
+    const completion = transactionComplete(transaction);
+    const records = (await requestResult(
+      transaction.objectStore(CANONICAL_RECORD_STORE).getAll(),
+    )) as CanonicalRecordV1[];
+    await completion;
+    if (
+      records.some(
+        (record) => record.subjectId !== file.content.manifest.subjectId,
+      )
+    ) {
+      throw new PersistenceError(
+        'invalid-export',
+        'The editable file belongs to a different local profile.',
+      );
+    }
+    const byId = new Map(records.map((record) => [record.recordId, record]));
+    const targetWasEmpty = records.length === 0;
+    if (this.#options.validatePortableRecord === undefined) {
+      throw new PersistenceError(
+        'invalid-export',
+        'Portable record validation is required for editable imports.',
+      );
+    }
+    const changes = file.content.facts.map((fact) =>
+      classifyEditableChange(
+        fact,
+        byId.get(fact.recordId) ?? null,
+        targetWasEmpty,
+      ),
+    );
+    const prepared = new Map<string, CanonicalRecordV1>();
+    for (const [index, fact] of file.content.facts.entries()) {
+      if (
+        fact.action === 'delete' &&
+        fact.recordType === 'user-context.starting-profile'
+      ) {
+        throw new PersistenceError(
+          'invalid-export',
+          'The local profile cannot be deleted through an editable import.',
+        );
+      }
+      if (
+        changes[index]?.kind === 'add' ||
+        changes[index]?.kind === 'correct'
+      ) {
+        prepared.set(
+          fact.recordId,
+          await this.#prepareEditableRecord(
+            fact,
+            byId.get(fact.recordId) ?? null,
+            this.#now(),
+          ),
+        );
+      }
+    }
+    if (!changes.some((change) => change.kind === 'conflict')) {
+      this.#validateEditableDataset(
+        records,
+        file.content.facts.filter(
+          (_, index) => changes[index]?.kind !== 'unchanged',
+        ),
+        prepared,
+      );
+    }
+    return {
+      file,
+      changes,
+      targetWasEmpty,
+      reviewDigest: await this.#fingerprint(
+        canonicalizeJson(file as unknown as JsonValue),
+      ),
+    };
+  }
+
+  public async importEditableData(
+    reviewed: EditableImportPreviewV1,
+  ): Promise<readonly EditableChangeV1[]> {
+    this.#assertOpen();
+    const preview = await this.previewEditableData(reviewed.file);
+    if (
+      reviewed.targetWasEmpty !== preview.targetWasEmpty ||
+      reviewed.reviewDigest !== preview.reviewDigest ||
+      canonicalizeJson(reviewed.changes as unknown as JsonValue) !==
+        canonicalizeJson(preview.changes as unknown as JsonValue)
+    ) {
+      throw new PersistenceError(
+        'invalid-export',
+        'The editable import review is outdated.',
+      );
+    }
+    if (preview.changes.some((change) => change.kind === 'conflict')) {
+      throw new PersistenceError(
+        'invalid-export',
+        'Resolve editable import conflicts before committing.',
+      );
+    }
+    const occurredAt = this.#now();
+    const changedFacts = preview.file.content.facts.filter((_, index) =>
+      ['add', 'correct', 'delete'].includes(preview.changes[index]?.kind ?? ''),
+    );
+    if (changedFacts.length === 0) return preview.changes;
+
+    const sourceRecords = new Map<string, CanonicalRecordV1>();
+    const prepared = new Map<string, CanonicalRecordV1>();
+    for (const fact of changedFacts) {
+      const existing = await this.getById(fact.recordId);
+      if (
+        classifyEditableChange(fact, existing, preview.targetWasEmpty).kind ===
+        'conflict'
+      ) {
+        throw new PersistenceError(
+          'invalid-export',
+          'The editable source changed during import review.',
+        );
+      }
+      if (existing !== null) sourceRecords.set(fact.recordId, existing);
+      if (fact.action === 'delete') continue;
+      prepared.set(
+        fact.recordId,
+        await this.#prepareEditableRecord(fact, existing, occurredAt),
+      );
+    }
+
+    const commandId = this.#createId();
+    const command = {
+      commandId,
+      occurredAt,
+      mutations: changedFacts.map((fact) =>
+        fact.action === 'delete'
+          ? { kind: 'delete' as const, recordId: fact.recordId }
+          : { kind: 'put' as const, record: prepared.get(fact.recordId)! },
+      ),
+    } satisfies CanonicalTransactionCommand;
+    const fingerprint = await this.#fingerprint(
+      canonicalizeJson(command as unknown as JsonValue),
+    );
+    const transaction = this.#database.transaction(
+      [CANONICAL_RECORD_STORE, TRANSACTION_LOG_STORE, COMMAND_RECEIPT_STORE],
+      'readwrite',
+      { durability: 'strict' },
+    );
+    const completion = transactionComplete(transaction);
+    const records = transaction.objectStore(CANONICAL_RECORD_STORE);
+    const log = transaction.objectStore(TRANSACTION_LOG_STORE);
+    const receipts = transaction.objectStore(COMMAND_RECEIPT_STORE);
+    try {
+      const currentRecords = (await requestResult(
+        records.getAll(),
+      )) as CanonicalRecordV1[];
+      if (preview.targetWasEmpty && currentRecords.length !== 0) {
+        throw new PersistenceError(
+          'invalid-export',
+          'The local profile changed before import committed.',
+        );
+      }
+      const currentById = new Map(
+        currentRecords.map((record) => [record.recordId, record]),
+      );
+      for (const fact of changedFacts) {
+        const current = currentById.get(fact.recordId);
+        const expected = sourceRecords.get(fact.recordId);
+        if (
+          (current?.integrity.value ?? null) !==
+            (expected?.integrity.value ?? null) ||
+          classifyEditableChange(fact, current ?? null, preview.targetWasEmpty)
+            .kind === 'conflict'
+        ) {
+          throw new PersistenceError(
+            'invalid-export',
+            'The local fact changed before import committed.',
+          );
+        }
+      }
+      this.#validateEditableDataset(currentRecords, changedFacts, prepared);
+      const mutationResults: CanonicalRecordMutationResult[] = [];
+      for (const fact of changedFacts) {
+        const current = currentById.get(fact.recordId);
+        if (fact.action === 'delete') {
+          if (current !== undefined)
+            await requestResult(records.delete(fact.recordId));
+          mutationResults.push({
+            kind: 'delete',
+            recordId: fact.recordId,
+            deleted: current !== undefined,
+          });
+        } else {
+          const record = prepared.get(fact.recordId)!;
+          const result = classifyCanonicalWrite(current ?? null, record);
+          await requestResult(records.put(structuredClone(record)));
+          mutationResults.push({ kind: 'put', record, result });
+        }
+      }
+      this.#options.beforeLogAppend?.();
+      const sequence = await requestResult(
+        log.add({
+          format: 'nutrixx.local-transaction',
+          schemaVersion: 1,
+          transactionId: this.#createId(),
+          commandId,
+          occurredAt,
+          committedAt: this.#now(),
+          mutations: mutationResults,
+        }),
+      );
+      if (typeof sequence !== 'number') {
+        throw new PersistenceError(
+          'invalid-command',
+          'IndexedDB returned an invalid sequence.',
+        );
+      }
+      await requestResult(
+        receipts.add({
+          commandId,
+          fingerprint,
+          sequence,
+        } satisfies StoredCommandReceipt),
+      );
+      this.#options.beforeImportCommit?.();
+      await completion;
+      return preview.changes;
+    } catch (error) {
+      abortTransaction(transaction);
+      await completion.catch(() => undefined);
+      throw error;
+    }
+  }
+
   public async importLocalData(
     input: unknown,
-  ): Promise<LocalDataExportArtifactV1['manifest']> {
+  ): Promise<LocalDataExportArtifactV1['content']['manifest']> {
     this.#assertOpen();
     const artifact = await validateLocalDataExportV1(input, {
       hash: this.#fingerprint,
       verifyRecord: this.#options.verifyRecord,
     });
     const receiptsToImport = await Promise.all(
-      artifact.transactions.map(async (entry) => ({
+      artifact.content.transactions.map(async (entry) => ({
         commandId: entry.commandId,
         fingerprint: await this.#fingerprint(
           canonicalizeJson(
@@ -470,10 +808,10 @@ export class IndexedDbCanonicalRecordRepository
         requestResult(log.clear()),
         requestResult(receipts.clear()),
       ]);
-      for (const record of artifact.records) {
+      for (const record of artifact.content.records) {
         await requestResult(records.add(structuredClone(record)));
       }
-      for (const entry of artifact.transactions) {
+      for (const entry of artifact.content.transactions) {
         await requestResult(log.add(structuredClone(entry)));
       }
       for (const receipt of receiptsToImport) {
@@ -483,7 +821,7 @@ export class IndexedDbCanonicalRecordRepository
       }
       this.#options.beforeImportCommit?.();
       await completion;
-      return structuredClone(artifact.manifest);
+      return structuredClone(artifact.content.manifest);
     } catch (error) {
       abortTransaction(transaction);
       await completion.catch(() => undefined);

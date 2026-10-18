@@ -5,12 +5,13 @@
 | Status        | Current and target-state index               |
 | Audience      | Data, application, engine, privacy engineers |
 | Owner         | Nutrixx Data                                 |
-| Last reviewed | 2026-10-07                                   |
+| Last reviewed | 2026-10-18                                   |
 
 | Document                                                    | Purpose                                                     |
 | ----------------------------------------------------------- | ----------------------------------------------------------- |
 | [Data architecture](architecture.md)                        | Stores, temporal/version model, and ownership               |
 | [Canonical model](canonical-model.md)                       | Shared identifiers, quantities, observations, and snapshots |
+| [Local portability](local-portability.md)                   | Editable data, complete backup, encryption, and import      |
 | [Current logical ER](current-logical-er.md)                 | Implemented food, recipe, meal, and profile relationships   |
 | [Current physical storage ER](current-storage-er.md)        | IndexedDB object stores and PostgreSQL adapter table        |
 | [Publication and quality](publication-and-quality.md)       | Ingestion, validation, activation, and rollback             |

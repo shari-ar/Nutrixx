@@ -131,13 +131,16 @@ Settings always display:
 - persistent, best-effort, unavailable, or unknown retention status;
 - approximate usage/quota and current pressure state;
 - canonical schema and reference-release versions;
-- date of the last successfully generated and internally verified export;
+- date of the last successfully generated and internally verified complete
+  backup;
 - actions to request persistence, export, import, remove disposable data, and
   clear all local data.
 
 A granted persistence request reduces browser-initiated eviction risk. Product
-copy describes its exact browser-defined scope, while verified export provides
-the portable recovery path. Manual local use remains available after refusal.
+copy describes its exact browser-defined scope, while a verified complete
+backup provides the portable recovery path. Editable-data files support
+deliberate fact transfer under [ADR-0020](ADR-0020-user-controlled-local-portability.md).
+Manual local use remains available after refusal.
 
 ### Export reminder policy
 
@@ -145,21 +148,22 @@ Export reminders are local, non-blocking, and contain no nutrition payload in
 telemetry.
 
 1. After canonical user data exists, remind when seven days have passed without
-   a successfully generated and internally verified export.
-2. After the first export, remind every 30 days only when canonical data has
-   changed since that export.
+   a successfully generated and internally verified complete backup.
+2. After the first complete backup, remind every 30 days only when canonical
+   data has changed since that backup.
 3. Allow a seven-day snooze and show at most one routine reminder in each
    seven-day period.
 4. Escalate the reminder when storage becomes Warning/Critical, persistence is
    unavailable, pending user grant, or a destructive clear/reset is requested.
-5. A destructive clear requires an explicit preview and confirmation; export is
-   offered immediately beforehand, and completion status follows verified
-   artifact generation.
+5. A destructive clear requires an explicit preview and confirmation; complete
+   backup is offered immediately beforehand, and completion status follows
+   verified artifact generation.
 
-“Verified export” means Nutrixx serialized the declared snapshot, validated its
-manifest, counts, relationships, and hashes, then handed the artifact to the
-browser. The UI explains that continued possession of the downloaded file
-remains the user's responsibility.
+“Verified complete backup” means Nutrixx serialized canonical records and the
+transaction log, validated their manifest, counts, relationships, hashes, and
+replay, then handed the artifact to the browser. The UI explains that continued
+possession of the downloaded file and any selected passphrase remains the
+user's responsibility.
 
 ### Migration policy before first public release
 

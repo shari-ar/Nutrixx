@@ -5,7 +5,7 @@
 | Status        | Process definition           |
 | Audience      | Architecture and engineering |
 | Owner         | Nutrixx Architecture         |
-| Last reviewed | 2026-10-12                   |
+| Last reviewed | 2026-10-18                   |
 
 ADRs capture decisions whose rationale must survive code changes. Use
 `ADR-NNNN-short-title.md` and the [template](ADR-0000-template.md).
@@ -27,6 +27,7 @@ ADRs capture decisions whose rationale must survive code changes. Use
 | [ADR-0017](ADR-0017-complete-local-next-meal-ranking.md)             | Complete local catalog ranking and replay                           | Accepted |
 | [ADR-0018](ADR-0018-next-meal-lifecycle-and-inventory.md)            | Next-meal lifecycle and optional personal inventory                 | Accepted |
 | [ADR-0019](ADR-0019-free-next-meal-quality-floor.md)                 | Free next-meal capability and quality floor                         | Accepted |
+| [ADR-0020](ADR-0020-user-controlled-local-portability.md)            | Editable local files, complete backups, and optional encryption     | Accepted |
 
 The documentation tree presents the active private-MVP design. Git history
 retains earlier drafts; overview documents summarize and link to the accepted

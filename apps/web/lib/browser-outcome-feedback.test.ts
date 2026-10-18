@@ -96,7 +96,7 @@ describe('browser-local outcome feedback', () => {
     });
     const artifact = await repository.exportLocalData(NOW);
     expect(
-      artifact.records.filter(
+      artifact.content.records.filter(
         (record) => record.recordType === 'user-context.outcome-observation',
       ),
     ).toHaveLength(5);

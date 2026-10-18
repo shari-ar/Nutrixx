@@ -16,6 +16,11 @@ import type {
   CanonicalTransactionLogEntryV1,
 } from './transaction-log.js';
 import type { CanonicalRecordVerifier } from './repository.js';
+import type {
+  EditableChangeV1,
+  EditableDataFileV1,
+  EditableImportPreviewV1,
+} from './editable-data.js';
 
 export const LOCAL_EXPORT_VERSION = 1;
 
@@ -24,8 +29,6 @@ export type CanonicalPayloadHasher = (
 ) => Promise<string>;
 
 export interface LocalDataExportManifestV1 {
-  readonly format: 'nutrixx.local-export';
-  readonly exportVersion: 1;
   readonly canonicalSchemaVersion: 1;
   readonly databaseSchemaVersion: 1;
   readonly exportedAt: string;
@@ -37,9 +40,15 @@ export interface LocalDataExportManifestV1 {
 }
 
 export interface LocalDataExportArtifactV1 {
-  readonly manifest: LocalDataExportManifestV1;
-  readonly records: readonly CanonicalRecordV1[];
-  readonly transactions: readonly CanonicalTransactionLogEntryV1[];
+  readonly format: 'nutrixx.local-file';
+  readonly formatVersion: 1;
+  readonly kind: 'complete-backup';
+  readonly protection: 'plain';
+  readonly content: {
+    readonly manifest: LocalDataExportManifestV1;
+    readonly records: readonly CanonicalRecordV1[];
+    readonly transactions: readonly CanonicalTransactionLogEntryV1[];
+  };
 }
 
 export interface CreateLocalDataExportV1Options {
@@ -55,9 +64,14 @@ export interface ValidateLocalDataExportV1Options {
   readonly verifyRecord: CanonicalRecordVerifier;
 }
 
-export interface LocalDataExportImportRepository {
+export interface LocalPortabilityRepository {
   exportLocalData(exportedAt?: string): Promise<LocalDataExportArtifactV1>;
   importLocalData(input: unknown): Promise<LocalDataExportManifestV1>;
+  exportEditableData(subjectId: string): Promise<EditableDataFileV1>;
+  previewEditableData(input: unknown): Promise<EditableImportPreviewV1>;
+  importEditableData(
+    reviewed: EditableImportPreviewV1,
+  ): Promise<readonly EditableChangeV1[]>;
 }
 
 const SHA256_HEX = /^[a-f0-9]{64}$/;
@@ -88,17 +102,13 @@ function parseManifest(input: unknown): LocalDataExportManifestV1 {
     !hasOnlyKeys(input, [
       'canonicalSchemaVersion',
       'databaseSchemaVersion',
-      'exportVersion',
       'exportedAt',
-      'format',
       'lastSequence',
       'payloadSha256',
       'recordCount',
       'subjectIds',
       'transactionCount',
     ]) ||
-    input['format'] !== 'nutrixx.local-export' ||
-    input['exportVersion'] !== LOCAL_EXPORT_VERSION ||
     input['canonicalSchemaVersion'] !== CANONICAL_SCHEMA_VERSION ||
     input['databaseSchemaVersion'] !== 1 ||
     !UtcInstantSchema.safeParse(input['exportedAt']).success ||
@@ -239,20 +249,24 @@ export async function createLocalDataExportV1(
     invalidExport('The export hasher returned an invalid SHA-256 digest.');
   }
   return {
-    manifest: {
-      format: 'nutrixx.local-export',
-      exportVersion: LOCAL_EXPORT_VERSION,
-      canonicalSchemaVersion: CANONICAL_SCHEMA_VERSION,
-      databaseSchemaVersion: options.databaseSchemaVersion,
-      exportedAt: options.exportedAt,
-      recordCount: records.length,
-      transactionCount: transactions.length,
-      lastSequence: transactions.at(-1)?.sequence ?? 0,
-      subjectIds: sortedSubjectIds(records),
-      payloadSha256,
+    format: 'nutrixx.local-file',
+    formatVersion: LOCAL_EXPORT_VERSION,
+    kind: 'complete-backup',
+    protection: 'plain',
+    content: {
+      manifest: {
+        canonicalSchemaVersion: CANONICAL_SCHEMA_VERSION,
+        databaseSchemaVersion: options.databaseSchemaVersion,
+        exportedAt: options.exportedAt,
+        recordCount: records.length,
+        transactionCount: transactions.length,
+        lastSequence: transactions.at(-1)?.sequence ?? 0,
+        subjectIds: sortedSubjectIds(records),
+        payloadSha256,
+      },
+      records,
+      transactions,
     },
-    records,
-    transactions,
   };
 }
 
@@ -262,20 +276,35 @@ export async function validateLocalDataExportV1(
 ): Promise<LocalDataExportArtifactV1> {
   if (
     !isObject(input) ||
-    !hasOnlyKeys(input, ['manifest', 'records', 'transactions']) ||
-    !Array.isArray(input['records']) ||
-    !Array.isArray(input['transactions'])
+    !hasOnlyKeys(input, [
+      'content',
+      'format',
+      'formatVersion',
+      'kind',
+      'protection',
+    ]) ||
+    input['format'] !== 'nutrixx.local-file' ||
+    input['formatVersion'] !== LOCAL_EXPORT_VERSION ||
+    input['kind'] !== 'complete-backup' ||
+    input['protection'] !== 'plain' ||
+    !isObject(input['content']) ||
+    !hasOnlyKeys(input['content'], ['manifest', 'records', 'transactions']) ||
+    !Array.isArray(input['content']['records']) ||
+    !Array.isArray(input['content']['transactions'])
   ) {
     invalidExport('The local export artifact is malformed.');
   }
-  const manifest = parseManifest(input['manifest']);
-  const records = input['records'].map((candidate) => {
+  const content = input['content'];
+  const manifest = parseManifest(content['manifest']);
+  const records = (content['records'] as unknown[]).map((candidate) => {
     const parsed = CanonicalRecordV1Schema.safeParse(candidate);
     if (!parsed.success)
       invalidExport('The export contains a malformed record.');
     return parsed.data;
   });
-  const transactions = input['transactions'].map(parseTransaction);
+  const transactions = (content['transactions'] as unknown[]).map(
+    parseTransaction,
+  );
 
   if (
     manifest.recordCount !== records.length ||
@@ -366,8 +395,10 @@ export async function validateLocalDataExportV1(
   }
 
   return structuredClone({
-    manifest,
-    records: sortedRecords,
-    transactions,
+    format: 'nutrixx.local-file',
+    formatVersion: LOCAL_EXPORT_VERSION,
+    kind: 'complete-backup',
+    protection: 'plain',
+    content: { manifest, records: sortedRecords, transactions },
   });
 }

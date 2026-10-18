@@ -38,9 +38,12 @@ browser. Nutrixx servers MAY hold only the minimum service data needed for an
 account the user chooses to create, security/abuse prevention, support, and a
 future purchase; Free nutrition content remains inside the browser origin.
 
-Free includes manual export and import. Browser storage is best-effort and can
-be cleared by the user, browser, device policy, or storage pressure; the product
-MUST communicate that limitation and offer storage-health and backup guidance.
+Free includes editable-data export/import and complete-backup export/restore,
+each with optional browser-local passphrase encryption. These choices work
+without an account and remain independent of server-side nutrition storage.
+Browser storage is best-effort and can be cleared by the user, browser, device
+policy, or storage pressure; the product MUST communicate that limitation and
+offer storage-health and backup guidance.
 
 ### Experimental Local Processing
 

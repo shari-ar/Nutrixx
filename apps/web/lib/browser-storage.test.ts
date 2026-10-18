@@ -109,9 +109,15 @@ describe('browser storage service', () => {
     adapter.createRepository.mockResolvedValue({
       close,
       exportLocalData: vi.fn().mockResolvedValue({
-        manifest: { exportedAt: '2026-10-03T12:00:00.000Z' },
-        records: [],
-        transactions: [],
+        format: 'nutrixx.local-file',
+        formatVersion: 1,
+        kind: 'complete-backup',
+        protection: 'plain',
+        content: {
+          manifest: { exportedAt: '2026-10-03T12:00:00.000Z' },
+          records: [],
+          transactions: [],
+        },
       }),
     });
     const createObjectURL = vi.fn(() => 'blob:nutrixx-export');

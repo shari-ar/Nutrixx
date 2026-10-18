@@ -5,7 +5,7 @@
 | Status            | Proposed target state                                                                                                                                                                                            |
 | Audience          | Product, architecture, web, API, security, data, operations                                                                                                                                                      |
 | Owner             | Nutrixx Architecture                                                                                                                                                                                             |
-| Last reviewed     | 2026-09-29                                                                                                                                                                                                       |
+| Last reviewed     | 2026-10-18                                                                                                                                                                                                       |
 | Related decisions | [ADR-0002](../decisions/ADR-0002-local-first-cloud-promotion.md), [ADR-0003](../decisions/ADR-0003-shared-canonical-model.md), [ADR-0006](../decisions/ADR-0006-browser-support-and-local-storage-resilience.md) |
 
 ## Architectural intent
@@ -65,6 +65,10 @@ Local mode requirements:
   schema version, and a clear-data control;
 - reference datasets are immutable/versioned and can be re-downloaded; user
   facts remain distinct from disposable reference caches;
+- local editable-data files and complete backups follow the
+  [portability contract](../data/local-portability.md); optional passphrase
+  encryption occurs on the device for either file kind, including anonymous
+  local profiles and account-only local profiles;
 - deterministic engines run against immutable input snapshots regardless of
   storage mode.
 

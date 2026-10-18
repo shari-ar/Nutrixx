@@ -5,7 +5,7 @@
 | Status        | Target-state index                                            |
 | Audience      | Product, engineering, nutrition science, security, operations |
 | Owner         | Nutrixx Engineering                                           |
-| Last reviewed | 2026-09-27                                                    |
+| Last reviewed | 2026-10-18                                                    |
 
 This documentation defines the product Nutrixx is intended to become. The
 current repository scaffold is an implementation starting point; completed
@@ -26,6 +26,7 @@ source; the website is a generated presentation of it.
 | System boundaries and technical strategy      | [Target architecture](architecture/target-architecture.md)        |
 | Local-first operation and cloud evolution     | [Local-first architecture](architecture/local-first-evolution.md) |
 | Canonical data, lineage, and versioning       | [Data architecture](data/architecture.md)                         |
+| User-controlled editable files and backups    | [Local portability](data/local-portability.md)                    |
 | Data relationships implemented so far         | [Current logical ER](data/current-logical-er.md)                  |
 | Calculations and optimization                 | [Engine documentation](engines/README.md)                         |
 | API behavior                                  | [API conventions](api/conventions.md)                             |

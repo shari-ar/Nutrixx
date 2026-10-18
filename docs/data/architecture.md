@@ -5,7 +5,7 @@
 | Status        | Proposed target state                    |
 | Audience      | Architecture, data, application, privacy |
 | Owner         | Nutrixx Data                             |
-| Last reviewed | 2026-10-03                               |
+| Last reviewed | 2026-10-18                               |
 
 ## Store roles
 
@@ -125,23 +125,20 @@ fixtures are required before the database version can advance.
 
 ### Verified local export and import
 
-Local export format version `1` contains canonical records, the complete local
-transaction log, and a strict manifest. The manifest declares export,
-canonical-schema, and database-schema versions; UTC creation time; record and
-transaction counts; last sequence; subject identifiers; and the canonical
-payload SHA-256 digest. Reference releases are excluded because they are
-disposable and can be fetched again.
+The single pre-release [local portability contract](local-portability.md)
+defines a versioned envelope and two payload kinds. `editable-data` carries
+schema-governed user facts and imports confirmed changes as new canonical
+transactions. `complete-backup` carries canonical records, the full ordered
+transaction log, and a strict manifest for replay-verified atomic replacement.
+Both kinds offer optional passphrase protection entirely in the browser,
+independent of account identity. Reference releases and disposable caches are
+separate from user-controlled files.
 
-Before import, Nutrixx rejects unknown structure or versions, malformed or
-duplicate identities, invalid record seals, count or hash mismatches,
-non-monotonic log order, incorrect mutation outcomes, and replay divergence.
-Only a fully validated artifact may
-replace local authority data. Records, log entries, and reconstructed command
-receipts replace the prior state in one strict IndexedDB transaction; any
-interruption restores the complete prior state.
-
-SHA-256 detects accidental corruption and inconsistent artifacts. Transport,
-encryption, and trusted-reference-release signing are separate controls.
+The format version `1` baseline is replaced in place during pre-release
+development. The portability contract governs the completed implementation;
+the plain editable and backup adapter paths are in place, while Settings
+controls and password-protected files remain delivery work until all four
+kind/protection combinations pass acceptance tests.
 
 ### Reference dataset cache isolation
 
@@ -159,14 +156,14 @@ their dedicated database.
 The Settings storage page reads the browser estimate and persistence state at
 runtime. It displays Local authority and browser-profile scope, approximate
 usage and quota, pressure state, schema versions, active reference release, and
-the last verified export handoff. Unknown or unavailable browser capabilities
+the last verified complete-backup handoff. Unknown or unavailable browser capabilities
 remain explicit instead of being inferred from user-agent strings.
 
 The application calls `persist()` only from the user-initiated **Protect data**
 action and explains that persistence reduces eviction risk without becoming a
-backup. Export generates and validates format version `1` before handing a JSON
-artifact to the browser. Clear Data requires a destructive preview, offers an
-export first, then removes the disposable reference database before deleting
+backup. Export presents the two file purposes and an independent browser-local
+encryption choice. Clear Data requires a destructive preview, offers a complete
+backup first, then removes the disposable reference database before deleting
 the user-authority database and local export metadata. A blocked deletion fails
 visibly rather than reporting success while another tab retains the database.
 
@@ -176,10 +173,11 @@ Executable fixtures verify that accepted facts and their log survive repository
 close/reopen, and that local read/export operations require no network request.
 Quota exhaustion is injected before log append and must roll back both record
 and log. An interrupted version-change transaction must leave no partial schema
-and allow a clean baseline installation. A committed format-version `1` export
-fixture must remain importable, while malformed, tampered, or unsupported
-artifacts fail before replacement. Explicit database deletion must recreate an
-empty, valid baseline on the next open.
+and allow a clean baseline installation. Current-format editable and backup
+fixtures exercise diff import, encrypted round trips, log replay, and atomic
+replacement. Malformed, tampered, or unsupported artifacts fail before a
+canonical write. Explicit database deletion must recreate an empty, valid
+baseline on the next open.
 
 ## Adapter conformance
 

@@ -19,21 +19,25 @@ import {
 
 const NOW = '2026-10-03T12:00:00.000Z';
 const EMPTY_V1_EXPORT = {
-  manifest: {
-    format: 'nutrixx.local-export',
-    exportVersion: 1,
-    canonicalSchemaVersion: 1,
-    databaseSchemaVersion: 1,
-    exportedAt: NOW,
-    recordCount: 0,
-    transactionCount: 0,
-    lastSequence: 0,
-    subjectIds: [],
-    payloadSha256:
-      '59fe87130cc6b0414e699edb61b713ab987c79cf614a5cf60928cd2eb6a24cc3',
+  format: 'nutrixx.local-file',
+  formatVersion: 1,
+  kind: 'complete-backup',
+  protection: 'plain',
+  content: {
+    manifest: {
+      canonicalSchemaVersion: 1,
+      databaseSchemaVersion: 1,
+      exportedAt: NOW,
+      recordCount: 0,
+      transactionCount: 0,
+      lastSequence: 0,
+      subjectIds: [],
+      payloadSha256:
+        '59fe87130cc6b0414e699edb61b713ab987c79cf614a5cf60928cd2eb6a24cc3',
+    },
+    records: [],
+    transactions: [],
   },
-  records: [],
-  transactions: [],
 } as const satisfies LocalDataExportArtifactV1;
 
 const digest = (input: string): string =>
@@ -99,7 +103,7 @@ describe('local data resilience fixtures', () => {
     );
     await expect(reloaded.getById(input.recordId)).resolves.toEqual(input);
     await expect(reloaded.exportLocalData()).resolves.toMatchObject({
-      manifest: { recordCount: 1, transactionCount: 1 },
+      content: { manifest: { recordCount: 1, transactionCount: 1 } },
     });
     expect(fetch).not.toHaveBeenCalled();
     await reloaded.close();
@@ -168,20 +172,23 @@ describe('local data resilience fixtures', () => {
     recovered.close();
   });
 
-  it('imports the committed version 1 compatibility fixture', async () => {
+  it('imports the current format 1 baseline fixture', async () => {
     const indexedDB = new IDBFactory();
     const repository = await IndexedDbCanonicalRecordRepository.create(
       options(indexedDB, `nutrixx-export-v1-${randomUUID()}`),
     );
     await expect(repository.importLocalData(EMPTY_V1_EXPORT)).resolves.toEqual(
-      EMPTY_V1_EXPORT.manifest,
+      EMPTY_V1_EXPORT.content.manifest,
     );
     await expect(repository.exportLocalData()).resolves.toMatchObject({
-      manifest: {
-        exportVersion: 1,
-        canonicalSchemaVersion: 1,
-        databaseSchemaVersion: 1,
-        payloadSha256: EMPTY_V1_EXPORT.manifest.payloadSha256,
+      formatVersion: 1,
+      kind: 'complete-backup',
+      content: {
+        manifest: {
+          canonicalSchemaVersion: 1,
+          databaseSchemaVersion: 1,
+          payloadSha256: EMPTY_V1_EXPORT.content.manifest.payloadSha256,
+        },
       },
     });
     await repository.close();

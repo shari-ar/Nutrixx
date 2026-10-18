@@ -5,7 +5,7 @@
 | Status        | Proposed                                         |
 | Audience      | Product, engineering, science, quality, security |
 | Owner         | Nutrixx Product                                  |
-| Last reviewed | 2026-10-12                                       |
+| Last reviewed | 2026-10-18                                       |
 
 Work is sequenced around one rule: finish the useful local product before cloud
 custody or paid hosted capabilities. Each stage has independently reviewable
@@ -35,11 +35,13 @@ source-to-explanation golden case is reproducible through local storage.
 ## Stage 1 — Local data foundation
 
 Deliver browser repository adapters, schema/migration runner, local transaction
-log, versioned export/import, storage/persistence status, reference-release
-caching, clear-data control, and adapter conformance suites.
+log, the [editable-data and complete-backup contract](../data/local-portability.md),
+optional browser-local file encryption, storage/persistence status,
+reference-release caching, clear-data control, and adapter conformance suites.
 
-Exit: historical-schema, interruption, offline reload, quota-pressure, export/
-import integrity, and supported-browser fixtures pass with local-only authority.
+Exit: interruption, offline reload, quota-pressure, four file-kind/protection
+round trips, editable-import review, replay-verified backup restore, and
+supported-browser fixtures pass with local-only authority.
 
 ## Stage 2 — Local food, recipe, and intake ledger
 
