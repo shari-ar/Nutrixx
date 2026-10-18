@@ -304,7 +304,11 @@ describe('editable local data', () => {
     );
     const file = structuredClone(await createEditableLocalFile());
     const deletedProfile = structuredClone(file);
-    Object.assign(deletedProfile.content.facts[0]!, { action: 'delete' });
+    const firstFact = deletedProfile.content.facts[0];
+    if (!firstFact) {
+      throw new Error('Expected the editable export to contain a profile.');
+    }
+    Object.assign(firstFact, { action: 'delete' });
     await expect(
       inspectEditableLocalFile(jsonFile(deletedProfile)),
     ).rejects.toThrow();

@@ -313,7 +313,8 @@ export async function decryptLocalFile(
       'The decrypted local file does not match its envelope.',
     );
   }
-  return plain as unknown as PlainLocalFileV1;
+  const decoded: unknown = plain;
+  return decoded as PlainLocalFileV1;
 }
 
 export async function openLocalFile(
