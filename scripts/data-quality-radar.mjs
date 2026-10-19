@@ -14,14 +14,17 @@ import {
   FOOD_COMPONENTS_V1,
   getAdultDriBaselineReleaseV1,
 } from '@nutrixx/nutrition-engine';
+import { buildFoodCompositionWorkQueueV1 } from '../packages/reference-quality/dist/index.js';
+
+import { renderReferenceWorkQueueHtml } from './render-reference-work-queue.mjs';
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 );
-const defaultArtifact = path.join(
+const activeConfigPath = path.join(
   projectRoot,
-  'apps/web/public/catalog/food-catalog-usda-2026-04-30.1.v1.json.gz',
+  'apps/web/config/active-food-catalog.json',
 );
 const outputDirectory = path.join(projectRoot, '.temp/data-quality-radar');
 const unzip = promisify(gunzip);
@@ -49,7 +52,7 @@ function card(label, value, detail) {
   return `<section class="card"><h2>${escapeHtml(label)}</h2><strong>${escapeHtml(value)}</strong><p>${escapeHtml(detail)}</p></section>`;
 }
 
-function renderHtml(report, artifact) {
+function renderHtml(report, artifact, active) {
   const rows = report.rows
     .map(
       (row) => `<tr data-search="${escapeHtml(
@@ -85,7 +88,9 @@ label{display:block;margin:1.5rem 0 .5rem}input{box-sizing:border-box;width:100%
 footer{margin:2rem 0;color:#9cbbca;font-size:.85rem}
 </style></head><body>
 <p class="eyebrow">Internal / local artifact audit</p><h1>Data Quality Radar</h1>
+<p><a href="/queue">Open the Reference Work Queue</a></p>
 <p>Catalog ${escapeHtml(report.releaseId)} · Evaluated ${escapeHtml(report.evaluatedAt)} · ${report.totalComponents} registered components · ${report.latestFoods.toLocaleString('en-US')} latest food records</p>
+<p>Publication: ${active.candidateId === null ? 'pinned base catalog' : `reviewed candidate ${escapeHtml(active.candidateId)} · ${active.reviewedClaimCount} reviewed composition claims`}</p>
 <div class="notice">This is an operational coverage report, not a measure of health accuracy. Known zero counts as known. Missing and explicitly unknown values never become zero. Catalog-only comparability excludes personal history, restrictions, recipes, and final ranking validation.</div>
 <div class="grid">
 ${card('Coverage score', report.coverageScore === null ? 'Unknown' : `${report.coverageScore}%`, `${report.knownFoodComponentPairs.toLocaleString('en-US')} known of ${report.possibleFoodComponentPairs.toLocaleString('en-US')} possible food–component pairs`)}
@@ -143,32 +148,85 @@ async function loadArtifact(artifactPath) {
 }
 
 async function main() {
+  const active = JSON.parse(await readFile(activeConfigPath, 'utf8'));
+  if (
+    active.format !== 'nutrixx.active-food-catalog' ||
+    active.schemaVersion !== 1 ||
+    !/^[a-z0-9][a-z0-9.-]{0,199}$/u.test(active.releaseId ?? '') ||
+    active.artifactName !== `${active.releaseId}.v1.json.gz` ||
+    !/^[a-f0-9]{64}$/u.test(active.artifactSha256 ?? '')
+  )
+    throw new TypeError('The active catalog descriptor is invalid.');
+  const defaultArtifact = path.join(
+    projectRoot,
+    'apps/web/public/catalog',
+    active.artifactName,
+  );
   const artifactPath = path.resolve(process.argv[2] ?? defaultArtifact);
   const { manifest, payload, sha256, receiptStatus } =
     await loadArtifact(artifactPath);
+  if (
+    process.argv[2] === undefined &&
+    (manifest.releaseId !== active.releaseId ||
+      sha256 !== active.artifactSha256)
+  )
+    throw new TypeError(
+      'The active catalog differs from its pinned descriptor.',
+    );
   const baselineTargetIds = getAdultDriBaselineReleaseV1().rules.map(
     (rule) => rule.nutrientId,
   );
+  const evaluatedAt = new Date().toISOString();
   const report = auditFoodDataQualityV1({
     manifest,
     payload,
     components: FOOD_COMPONENTS_V1,
     baselineTargetIds,
-    evaluatedAt: new Date().toISOString(),
+    evaluatedAt,
   });
   if (report.totalComponents !== 112)
     throw new TypeError(
       'The active food-component registry must contain 112 entries.',
     );
+  const sources = new Map(
+    payload.sources.map((source) => [source.sourceId, source]),
+  );
+  const queue = buildFoodCompositionWorkQueueV1({
+    releaseId: manifest.releaseId,
+    artifactSha256: sha256,
+    evaluatedAt,
+    foods: payload.foods.map((food) => ({
+      foodId: food.foodId,
+      revision: food.revision,
+      name:
+        food.descriptions.find((description) => description.kind === 'primary')
+          ?.value ?? food.descriptions[0].value,
+      sourceRecordId: sources.get(food.sourceId)?.sourceRecordId ?? food.foodId,
+    })),
+    observations: payload.composition,
+    components: FOOD_COMPONENTS_V1,
+    baselineTargetIds,
+  });
   await mkdir(outputDirectory, { recursive: true });
   const jsonPath = path.join(outputDirectory, 'report.json');
   const htmlPath = path.join(outputDirectory, 'index.html');
+  const queueJsonPath = path.join(outputDirectory, 'queue.json');
+  const queueHtmlPath = path.join(outputDirectory, 'queue.html');
   await writeFile(
     jsonPath,
-    `${JSON.stringify({ artifact: { sha256, receiptStatus }, report }, null, 2)}\n`,
+    `${JSON.stringify({ activeRelease: active, artifact: { sha256, receiptStatus }, report }, null, 2)}\n`,
   );
-  await writeFile(htmlPath, renderHtml(report, { sha256, receiptStatus }));
+  await writeFile(
+    htmlPath,
+    renderHtml(report, { sha256, receiptStatus }, active),
+  );
+  await writeFile(
+    queueJsonPath,
+    `${JSON.stringify({ ...queue, components: FOOD_COMPONENTS_V1 })}\n`,
+  );
+  await writeFile(queueHtmlPath, renderReferenceWorkQueueHtml());
   console.log(`Data quality radar: ${htmlPath}`);
+  console.log(`Reference work queue: ${queueHtmlPath}`);
   console.log(`Machine-readable report: ${jsonPath}`);
   console.log(
     `Coverage score: ${report.coverageScore ?? 'unknown'}%; known pairs: ${report.knownFoodComponentPairs}/${report.possibleFoodComponentPairs}.`,

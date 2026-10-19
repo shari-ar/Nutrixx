@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { ACTIVE_FOOD_CATALOG } from '@/config/active-food-catalog';
 import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
 
-const catalogReleaseId = 'food-catalog-usda-2026-04-30.1';
-const catalogArtifactName = `${catalogReleaseId}.v1.json.gz`;
+const catalogArtifactName = ACTIVE_FOOD_CATALOG.artifactName;
 const catalogArtifactUrl = `/catalog/${catalogArtifactName}`;
 
 type CatalogStore = Pick<
@@ -19,8 +19,8 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
       store ?? {
         activeCatalogRelease: () =>
           new BrowserStageTwoStore().activeCatalogRelease(),
-        installCatalog: (file) =>
-          new BrowserStageTwoStore().installCatalog(file),
+        installCatalog: (file, expectedReleaseId) =>
+          new BrowserStageTwoStore().installCatalog(file, expectedReleaseId),
       },
     [store],
   );
@@ -49,7 +49,25 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
   }, [runtime]);
 
   async function installArtifact(file: File) {
-    const releaseId = await runtime.installCatalog(file);
+    if (file.size !== ACTIVE_FOOD_CATALOG.compressedByteLength)
+      throw new TypeError('The catalog download has an unexpected length.');
+    const bytes = await file.arrayBuffer();
+    const digest = Array.from(
+      new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
+      (byte) => byte.toString(16).padStart(2, '0'),
+    ).join('');
+    if (digest !== ACTIVE_FOOD_CATALOG.artifactSha256)
+      throw new TypeError(
+        'The catalog download failed its pinned SHA-256 check.',
+      );
+    const releaseId = await runtime.installCatalog(
+      file,
+      ACTIVE_FOOD_CATALOG.releaseId,
+    );
+    if (releaseId !== ACTIVE_FOOD_CATALOG.releaseId)
+      throw new TypeError(
+        'The installed catalog has an unexpected release ID.',
+      );
     setRelease(releaseId);
     setStatus(`Catalog ${releaseId} is verified and active offline.`);
   }
@@ -139,13 +157,18 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
         Active release: {release ?? 'No catalog installed'}
       </p>
 
-      {release === null ? (
+      {release !== ACTIVE_FOOD_CATALOG.releaseId ? (
         <div className="mt-5 rounded-2xl bg-background/60 p-4">
-          <p className="font-semibold">Install the offline food catalog</p>
+          <p className="font-semibold">
+            {release === null
+              ? 'Install the offline food catalog'
+              : 'Update the offline food catalog'}
+          </p>
           <p className="mt-1 text-sm leading-6 text-muted">
-            This one-time download is about 29 MB and uses about 329 MB after
-            local installation. Nutrixx verifies it before storing it in this
-            browser.
+            This download is about{' '}
+            {Math.ceil(ACTIVE_FOOD_CATALOG.compressedByteLength / 1_000_000)}{' '}
+            MB. Nutrixx checks its pinned SHA-256 digest and release integrity
+            before storing it in this browser.
           </p>
           <button
             className="mt-4 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-60"
@@ -155,7 +178,11 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
             }}
             type="button"
           >
-            {installing ? 'Installing locally…' : 'Install offline catalog'}
+            {installing
+              ? 'Installing locally…'
+              : release === null
+                ? 'Install offline catalog'
+                : 'Update offline catalog'}
           </button>
           {installationPhase ? (
             <div className="mt-4 text-sm" role="status">

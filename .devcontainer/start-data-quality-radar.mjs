@@ -90,5 +90,9 @@ try {
   await writeStatus('failed', message);
   console.warn(`Data quality radar preparation failed: ${message}`);
 }
-await startServer();
+if (process.argv.includes('--foreground')) {
+  await import('./serve-data-quality-radar.mjs');
+} else {
+  await startServer();
+}
 console.info('Data quality radar: http://localhost:3002/');

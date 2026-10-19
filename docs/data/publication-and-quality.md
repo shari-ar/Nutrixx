@@ -1,11 +1,11 @@
 # Data publication and quality
 
-| Field         | Value                                                     |
-| ------------- | --------------------------------------------------------- |
-| Status        | Proposed target state                                     |
-| Audience      | Data engineering, nutrition science, security, operations |
-| Owner         | Nutrixx Data                                              |
-| Last reviewed | 2026-10-04                                                |
+| Field         | Value                                                                  |
+| ------------- | ---------------------------------------------------------------------- |
+| Status        | Guarded food-composition publication implemented; broader target state |
+| Audience      | Data engineering, nutrition science, security, operations              |
+| Owner         | Nutrixx Data                                                           |
+| Last reviewed | 2026-10-19                                                             |
 
 ## Pipeline
 
@@ -27,6 +27,11 @@ flowchart LR
 
 Ingestion writes to quarantined release candidates. Activation updates a version
 pointer; rollback selects the previous accepted release.
+
+The [reference completion contract](reference-completion.md) documents the
+implemented local review, differential replay, immutable catalog publication,
+and single Web activation descriptor. The initial descriptor selects the
+verified USDA release while operator-reviewed data is being prepared.
 
 ## Release manifest
 
@@ -65,6 +70,11 @@ Historical snapshots preserve their original release IDs. Recalculation creates
 new snapshots while preserving prior evidence.
 
 ## Accepted source policy
+
+The [reference completion contract](reference-completion.md) identifies and
+prioritizes gaps across food composition, cooking rules, and intake references
+before an operator begins source acquisition. Its decision-coverage score and
+source-quality checks serve different purposes.
 
 [ADR-0007](../decisions/ADR-0007-food-catalog-sources-and-release-quality.md)
 is authoritative for provider admission, licenses, international coverage,

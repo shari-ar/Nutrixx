@@ -9,7 +9,7 @@ services:
       - |
         dependency_fingerprint="$$(
           {
-            sha256sum /workspace/.npmrc /workspace/package.json /workspace/package-lock.json /workspace/apps/api/package.json /workspace/apps/web/package.json /workspace/packages/canonical-schema/package.json /workspace/packages/config/package.json /workspace/packages/contracts/package.json /workspace/packages/consumption/package.json /workspace/packages/food-knowledge/package.json /workspace/packages/nutrition-engine/package.json /workspace/packages/optimizer-engine/package.json /workspace/packages/persistence/package.json /workspace/packages/persistence-indexeddb/package.json /workspace/packages/persistence-postgresql/package.json /workspace/packages/recipe-knowledge/package.json /workspace/packages/user-context/package.json
+            sha256sum /workspace/.npmrc /workspace/package.json /workspace/package-lock.json /workspace/apps/api/package.json /workspace/apps/web/package.json /workspace/packages/canonical-schema/package.json /workspace/packages/config/package.json /workspace/packages/contracts/package.json /workspace/packages/consumption/package.json /workspace/packages/food-knowledge/package.json /workspace/packages/nutrition-engine/package.json /workspace/packages/optimizer-engine/package.json /workspace/packages/persistence/package.json /workspace/packages/persistence-indexeddb/package.json /workspace/packages/persistence-postgresql/package.json /workspace/packages/recipe-knowledge/package.json /workspace/packages/reference-quality/package.json /workspace/packages/user-context/package.json
             node --version
             npm --version
             uname -sm
@@ -106,6 +106,33 @@ services:
       - ../..:/workspace
       - web_root_node_modules:/workspace/node_modules
       - web_workspace_node_modules:/workspace/apps/web/node_modules
+    restart: 'no'
+
+  radar:
+    image: nutrixx-api:local
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      target: development
+    user: root
+    cap_add:
+      - DAC_OVERRIDE
+      - FOWNER
+    working_dir: /workspace
+    command: node .devcontainer/start-data-quality-radar.mjs --foreground
+    environment:
+      NODE_ENV: development
+    ports:
+      - '127.0.0.1:3002:3002'
+    volumes:
+      - ../..:/workspace
+      - api_root_node_modules:/workspace/node_modules
+      - api_workspace_node_modules:/workspace/apps/api/node_modules
+    depends_on:
+      dev-dependencies:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
     restart: 'no'
 
 volumes:

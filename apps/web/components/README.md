@@ -14,7 +14,7 @@ Reusable, application-local React components shared by multiple routes.
 | `BrandLogo`                 | Canonical brand asset rendering                                 |
 | `ThemeSwitch`               | Light and dark appearance control                               |
 | `FoodPicker`                | Local food and recipe reference search                          |
-| `CatalogInstaller`          | Dashboard-only catalog installation                             |
+| `CatalogInstaller`          | Dashboard-only, digest-pinned catalog installation and update   |
 | `FoodWorkspace`             | Food details, categories, portions, and custom-food corrections |
 | `RecipeWorkspace`           | Versioned recipes, cooking-loss inputs, steps, and output foods |
 | `MealWorkspace`             | Manual local meal ledger                                        |

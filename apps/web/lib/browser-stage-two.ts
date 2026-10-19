@@ -254,7 +254,10 @@ export class BrowserStageTwoStore {
     }
   }
 
-  public async installCatalog(file: File): Promise<string> {
+  public async installCatalog(
+    file: File,
+    expectedReleaseId?: string,
+  ): Promise<string> {
     const artifact = await readArtifact(file);
     const verified = await createFoodCatalogReleaseV1({
       manifest: artifact['manifest'] as never,
@@ -272,6 +275,8 @@ export class BrowserStageTwoStore {
         throw new TypeError(`Catalog ${field} integrity check failed.`);
       }
     }
+    if (expectedReleaseId && verified.releaseId !== expectedReleaseId)
+      throw new TypeError('The catalog has an unexpected release ID.');
     const cache = await IndexedDbReferenceDatasetCache.create({
       databaseName: REFERENCE_CACHE_DATABASE_NAME,
       indexedDB: this.dependencies.indexedDB,

@@ -40,7 +40,14 @@ const server = createServer(async (request, response) => {
     response.end(request.method === 'HEAD' ? undefined : 'nutrixx-radar-v1');
     return;
   }
-  if (request.url !== '/' && request.url !== '/report.json') {
+  const routes = {
+    '/': 'index.html',
+    '/report.json': 'report.json',
+    '/queue': 'queue.html',
+    '/queue.json': 'queue.json',
+  };
+  const filename = routes[request.url];
+  if (filename === undefined) {
     response.writeHead(404).end();
     return;
   }
@@ -57,10 +64,8 @@ const server = createServer(async (request, response) => {
       );
       return;
     }
-    const isJson = request.url === '/report.json';
-    const content = await readFile(
-      path.join(outputDirectory, isJson ? 'report.json' : 'index.html'),
-    );
+    const isJson = filename.endsWith('.json');
+    const content = await readFile(path.join(outputDirectory, filename));
     response.writeHead(200, {
       'Content-Type': isJson
         ? 'application/json; charset=utf-8'

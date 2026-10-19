@@ -11,6 +11,7 @@ Reusable, independently testable building blocks consumed by applications.
 | `contracts/`              | Public machine-readable API contracts                       |
 | `consumption/`            | Append-only meal intake and correction ledger               |
 | `food-knowledge/`         | Food catalog models, release tooling, and local queries     |
+| `reference-quality/`      | Cross-domain reference gaps and measured work priority      |
 | `recipe-knowledge/`       | Immutable recipe versions, yield, and nutrition calculation |
 | `user-context/`           | Minimal one-time profile and local persistence service      |
 | `nutrition-engine/`       | Deterministic nutrition-domain calculations                 |

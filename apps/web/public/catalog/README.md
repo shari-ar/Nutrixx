@@ -11,3 +11,8 @@ reference cache in IndexedDB.
 
 Production deployment supplies the approved immutable artifact at this same
 path through release delivery infrastructure.
+The tracked active-release descriptor lives in `apps/web/config/` and pins
+the expected compressed artifact digest. The guarded publication command
+copies reviewed release assets here before switching that descriptor.
+Generated artifacts and receipts remain outside Git and are delivered through
+immutable URLs for fresh development containers.

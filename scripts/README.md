@@ -4,15 +4,21 @@ Small, cross-platform automation used by contributors and CI.
 
 ## Contents
 
-| File                           | Responsibility                                                                                                                                            |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `check-doc-language.mjs`       | Enforces international scope and affirmative language across technical documentation                                                                      |
-| `check-readmes.mjs`            | Enforces README presence in project-owned directories                                                                                                     |
-| `install-git-hooks.mjs`        | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                                     |
-| `run-with-node-env.mjs`        | Runs a command with an explicit, cross-platform Node environment                                                                                          |
-| `data-quality-radar.mjs`       | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                          |
-| `stage-4-browser-runner.mjs`   | Measures full-catalog worker responsiveness in a named browser/device; the optional `local` argument runs an isolated IndexedDB create-and-reload journey |
-| `build-usda-cooking-tables.py` | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library         |
+| File                                 | Responsibility                                                                                                                                            |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check-doc-language.mjs`             | Enforces international scope and affirmative language across technical documentation                                                                      |
+| `check-readmes.mjs`                  | Enforces README presence in project-owned directories                                                                                                     |
+| `install-git-hooks.mjs`              | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                                     |
+| `run-with-node-env.mjs`              | Runs a command with an explicit, cross-platform Node environment                                                                                          |
+| `data-quality-radar.mjs`             | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                          |
+| `render-reference-work-queue.mjs`    | Renders the internal food-composition coverage queue with searchable, paginated details                                                                   |
+| `stage-reference-data.mjs`           | Stages local source evidence and validated proposals in the ignored reference workbench                                                                   |
+| `stage-reference-data.test.mjs`      | Exercises content-addressed staging and quarantine with a synthetic catalog                                                                               |
+| `build-reference-candidate.mjs`      | Verifies reviewed evidence, replays the next-meal engine, and writes an inactive candidate                                                                |
+| `build-reference-candidate.test.mjs` | Exercises deterministic replay, reviewer separation, and evidence tampering with a synthetic catalog                                                      |
+| `publish-reference-candidate.mjs`    | Revalidates replay, materializes a catalog release, and switches the Web descriptor only on explicit activation                                           |
+| `stage-4-browser-runner.mjs`         | Measures full-catalog worker responsiveness in a named browser/device; the optional `local` argument runs an isolated IndexedDB create-and-reload journey |
+| `build-usda-cooking-tables.py`       | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library         |
 
 ## Rules
 
@@ -24,10 +30,31 @@ Small, cross-platform automation used by contributors and CI.
 
 Run `npm run quality:data` inside the DevContainer to audit the installed catalog.
 The script reads the local release without downloading it and writes the internal
-dashboard to `.temp/data-quality-radar/index.html`. Open that file in a browser
-or editor preview. The generated report is ignored by Git and is not deployed
-with the public website. The audit logic and fixtures live in
-`@nutrixx/food-knowledge`.
+dashboard to `.temp/data-quality-radar/index.html` and the food-composition
+work queue to `queue.html` and `queue.json` in the same directory. Open the
+dashboard through the forwarded Dev Container port `3002`; its queue link
+opens the searchable work list. Generated outputs stay in ignored local
+storage and remain outside the public website. Audit logic lives in
+`@nutrixx/food-knowledge`; queue logic lives in `@nutrixx/reference-quality`.
+
+Run `npm run reference:stage -- --source <local-file> --proposal <proposal.json>`
+to stage operator-provided evidence without a download or active-data change.
+The [reference completion contract](../docs/data/reference-completion.md)
+defines the proposal fields and review boundary.
+
+Run `npm run reference:candidate -- --run <run.json> --review <review.json> --corpus <corpus.json>`
+after independent review. The command uses the installed local catalog and
+writes an immutable, inactive projection, differential replay report, and
+candidate manifest to the local workbench. The reference completion contract
+defines the review and replay file shapes and blocked-candidate criteria.
+
+Run `npm run reference:publish -- --run <run.json> --review <review.json> --corpus <corpus.json>`
+to produce an immutable reviewed catalog, receipt, and activation descriptor
+in `.temp/reference-publication/`. Once the exact files are available at
+immutable HTTPS URLs, add `--activate --artifact-url <https-url>
+--receipt-url <https-url>` to install the release in the Web catalog directory
+and switch its tracked descriptor. The internal radar then audits the active
+release. Artifact hosting is a separate delivery step.
 
 For a source refresh, obtain USDA `retn06.txt` (Release 6) and
 `USDA_CookingYields_MeatPoultry02.xlsx` (Release 2) from the URLs in

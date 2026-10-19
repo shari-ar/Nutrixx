@@ -5,7 +5,7 @@
     "../infra/compose/compose.dev.yaml"
   ],
   "service": "api",
-  "runServices": ["api", "web"],
+  "runServices": ["api", "web", "radar"],
   "workspaceFolder": "/workspace",
   "initializeCommand": [
     "docker",
@@ -36,7 +36,6 @@
   "overrideCommand": false,
   "shutdownAction": "stopCompose",
   "postStartCommand": "node .devcontainer/wait-for-api.mjs",
-  "postAttachCommand": "node .devcontainer/start-data-quality-radar.mjs",
   "waitFor": "postStartCommand",
   "remoteUser": "root",
   "updateRemoteUserUID": false

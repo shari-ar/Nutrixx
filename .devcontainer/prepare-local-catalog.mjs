@@ -9,8 +9,19 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 
-const releaseId = 'food-catalog-usda-2026-04-30.1';
-const artifactName = `${releaseId}.v1.json.gz`;
+const active = JSON.parse(
+  await readFile('apps/web/config/active-food-catalog.json', 'utf8'),
+);
+if (
+  active.format !== 'nutrixx.active-food-catalog' ||
+  active.schemaVersion !== 1 ||
+  !/^[a-z0-9][a-z0-9.-]{0,199}$/u.test(active.releaseId ?? '') ||
+  active.artifactName !== `${active.releaseId}.v1.json.gz` ||
+  !/^[a-f0-9]{64}$/u.test(active.artifactSha256 ?? '')
+)
+  throw new TypeError('The active catalog descriptor is invalid.');
+const releaseId = active.releaseId;
+const artifactName = active.artifactName;
 const receiptName = `${releaseId}.receipt.json`;
 const baseUrl =
   process.env.NUTRIXX_CATALOG_BASE_URL ??
@@ -34,19 +45,24 @@ async function prepare() {
   await mkdir(outputDirectory, { recursive: true });
   const artifactPath = path.join(outputDirectory, artifactName);
   const receiptPath = path.join(outputDirectory, receiptName);
+  let verifiedArtifact = false;
   try {
-    const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
     const artifact = await readFile(artifactPath);
     const size = (await stat(artifactPath)).size;
     const digest = createHash('sha256').update(artifact).digest('hex');
-    if (
-      receipt.releaseId === releaseId &&
-      receipt.artifact === artifactName &&
-      receipt.compressedByteLength === size &&
-      receipt.artifactSha256 === digest
-    ) {
-      console.log(`Catalog ${releaseId} is already ready.`);
-      return;
+    verifiedArtifact =
+      digest === active.artifactSha256 && size === active.compressedByteLength;
+    if (verifiedArtifact) {
+      const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+      if (
+        receipt.releaseId === releaseId &&
+        receipt.artifact === artifactName &&
+        receipt.compressedByteLength === size &&
+        receipt.artifactSha256 === digest
+      ) {
+        console.log(`Catalog ${releaseId} is already ready.`);
+        return;
+      }
     }
   } catch {
     // A missing or invalid local copy is replaced atomically below.
@@ -55,26 +71,30 @@ async function prepare() {
   const temporaryArtifact = `${artifactPath}.download`;
   const temporaryReceipt = `${receiptPath}.download`;
   try {
-    await download(urlFor(receiptName), temporaryReceipt);
-    await download(urlFor(artifactName), temporaryArtifact);
-    const [receiptText, artifact] = await Promise.all([
-      readFile(temporaryReceipt, 'utf8'),
-      readFile(temporaryArtifact),
-    ]);
+    await download(active.receiptUrl ?? urlFor(receiptName), temporaryReceipt);
+    if (!verifiedArtifact)
+      await download(
+        active.artifactUrl ?? urlFor(artifactName),
+        temporaryArtifact,
+      );
+    const receiptText = await readFile(temporaryReceipt, 'utf8');
+    const artifact = await readFile(
+      verifiedArtifact ? artifactPath : temporaryArtifact,
+    );
     const receipt = JSON.parse(receiptText);
     const digest = createHash('sha256').update(artifact).digest('hex');
     if (
       receipt.releaseId !== releaseId ||
       receipt.artifact !== artifactName ||
       receipt.compressedByteLength !== artifact.length ||
-      receipt.artifactSha256 !== digest
+      receipt.artifactSha256 !== digest ||
+      digest !== active.artifactSha256 ||
+      artifact.length !== active.compressedByteLength
     ) {
       throw new Error('The downloaded catalog receipt did not verify.');
     }
-    await Promise.all([
-      rename(temporaryArtifact, artifactPath),
-      rename(temporaryReceipt, receiptPath),
-    ]);
+    if (!verifiedArtifact) await rename(temporaryArtifact, artifactPath);
+    await rename(temporaryReceipt, receiptPath);
     console.log(
       `Catalog ${releaseId} is ready for local browser installation.`,
     );

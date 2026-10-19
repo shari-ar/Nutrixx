@@ -42,3 +42,8 @@ development override so Windows bind-mounted source and generated outputs stay
 writable. Only `DAC_OVERRIDE` and `FOWNER` are restored after capability
 dropping, and `no-new-privileges` remains active. Production images continue
 to run as the non-root `node` user with all capabilities dropped.
+
+The development override also starts the internal Data Quality Radar at
+`http://localhost:3002/` as its own service. It is available with ordinary
+`npm run dev` as well as the Dev Container, and its host port is bound to
+loopback only. The production Compose file does not expose this operator tool.
