@@ -342,6 +342,8 @@ describe('Food Knowledge foundation', () => {
     ]);
     expect(catalog.getFood(first.foodId)?.foodId).toBe(first.foodId);
     expect(catalog.listPortions(first.foodId, first.revision)).toHaveLength(1);
+    expect(catalog.getSource(first.sourceId)?.sourceId).toBe(first.sourceId);
+    expect(catalog.getSource(deterministicId('source', 'missing'))).toBeNull();
   });
 
   it('loads an integrity-checked active release through the IndexedDB cache', async () => {

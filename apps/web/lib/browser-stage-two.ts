@@ -87,7 +87,10 @@ export interface FoodChoice {
     id?: string;
     nutrientId: string;
     sourceNutrientNumber?: string;
+    sourceNutrientId?: string;
+    sourceNutrientName?: string;
     value: string;
+    source?: string;
   }[];
 }
 
@@ -413,9 +416,7 @@ export class BrowserStageTwoStore {
           const known = composition.filter(
             (observation) => observation.value.state === 'known',
           ).length;
-          const source = catalog.payload.sources.find(
-            (candidate) => candidate.sourceId === food.sourceId,
-          );
+          const source = catalog.getSource(food.sourceId);
           const usdaFoodGroup = food.foodClass.startsWith('usda.sr-legacy')
             ? usdaFoodGroupFromCategory(food.categories[0]?.description ?? '')
             : undefined;
@@ -454,17 +455,36 @@ export class BrowserStageTwoStore {
                 label: value.description.value,
                 gramWeight: value.gramWeight,
               })),
-            nutrients: composition.map((observation) => ({
-              id: observation.observationId,
-              nutrientId: observation.nutrientId,
-              ...(observation.sourceNutrientNumber
-                ? { sourceNutrientNumber: observation.sourceNutrientNumber }
-                : {}),
-              value:
-                observation.value.state === 'known'
-                  ? `${observation.value.amount} ${observation.value.unit.code} / 100 g`
-                  : `Unknown (${observation.value.reason})`,
-            })),
+            nutrients: composition.map((observation) => {
+              const nutrientSource = catalog.getSource(observation.sourceId);
+              return {
+                id: observation.observationId,
+                nutrientId: observation.nutrientId,
+                ...(observation.sourceNutrientNumber
+                  ? { sourceNutrientNumber: observation.sourceNutrientNumber }
+                  : {}),
+                ...(observation.sourceNutrientId
+                  ? { sourceNutrientId: observation.sourceNutrientId }
+                  : {}),
+                ...(observation.sourceNutrientName
+                  ? { sourceNutrientName: observation.sourceNutrientName }
+                  : {}),
+                value:
+                  observation.value.state === 'known'
+                    ? `${observation.value.amount} ${observation.value.unit.code} / 100 g`
+                    : `Unknown (${observation.value.reason})`,
+                ...(nutrientSource
+                  ? {
+                      source: [
+                        nutrientSource.provider,
+                        nutrientSource.dataset,
+                        nutrientSource.sourceRelease,
+                        nutrientSource.sourceRecordId,
+                      ].join(' · '),
+                    }
+                  : {}),
+              };
+            }),
           };
         });
       return [...customChoices, ...recipeChoices, ...catalogChoices];

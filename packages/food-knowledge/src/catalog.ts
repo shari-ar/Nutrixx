@@ -118,13 +118,27 @@ function normalizeSearchText(value: string): string {
 
 export class FoodCatalogIndexV1 {
   readonly #payload: FoodCatalogPayloadV1;
+  readonly #sourceById: ReadonlyMap<
+    string,
+    FoodCatalogPayloadV1['sources'][number]
+  >;
 
   public constructor(input: unknown) {
     this.#payload = FoodCatalogPayloadV1Schema.parse(input);
+    this.#sourceById = new Map(
+      this.#payload.sources.map((source) => [source.sourceId, source]),
+    );
   }
 
   public get payload(): FoodCatalogPayloadV1 {
     return structuredClone(this.#payload);
+  }
+
+  public getSource(
+    sourceId: string,
+  ): FoodCatalogPayloadV1['sources'][number] | null {
+    const source = this.#sourceById.get(sourceId);
+    return source === undefined ? null : structuredClone(source);
   }
 
   public getFood(foodId: string, revision?: number): FoodV1 | null {

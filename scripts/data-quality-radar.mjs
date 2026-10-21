@@ -148,6 +148,22 @@ async function loadArtifact(artifactPath) {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  const usageOptionIndex = args.indexOf('--consumption-snapshot');
+  let consumptionSnapshot;
+  if (usageOptionIndex !== -1) {
+    const snapshotPath = args[usageOptionIndex + 1];
+    if (!snapshotPath || snapshotPath.startsWith('--'))
+      throw new TypeError('--consumption-snapshot requires a local JSON path.');
+    consumptionSnapshot = JSON.parse(
+      await readFile(path.resolve(snapshotPath), 'utf8'),
+    );
+    args.splice(usageOptionIndex, 2);
+  }
+  if (args.length > 1 || args.some((arg) => arg.startsWith('--')))
+    throw new TypeError(
+      'Expected one optional catalog path and one optional consumption snapshot.',
+    );
   const active = JSON.parse(await readFile(activeConfigPath, 'utf8'));
   if (
     active.format !== 'nutrixx.active-food-catalog' ||
@@ -162,11 +178,11 @@ async function main() {
     'apps/web/public/catalog',
     active.artifactName,
   );
-  const artifactPath = path.resolve(process.argv[2] ?? defaultArtifact);
+  const artifactPath = path.resolve(args[0] ?? defaultArtifact);
   const { manifest, payload, sha256, receiptStatus } =
     await loadArtifact(artifactPath);
   if (
-    process.argv[2] === undefined &&
+    args[0] === undefined &&
     (manifest.releaseId !== active.releaseId ||
       sha256 !== active.artifactSha256)
   )
@@ -206,6 +222,7 @@ async function main() {
     observations: payload.composition,
     components: FOOD_COMPONENTS_V1,
     baselineTargetIds,
+    consumptionSnapshot,
   });
   await mkdir(outputDirectory, { recursive: true });
   const jsonPath = path.join(outputDirectory, 'report.json');

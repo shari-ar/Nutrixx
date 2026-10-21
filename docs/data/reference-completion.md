@@ -5,7 +5,7 @@
 | Status        | Implemented intake, replay, guarded publication, and site delivery |
 | Audience      | Data engineering, nutrition science, quality                       |
 | Owner         | Nutrixx Data                                                       |
-| Last reviewed | 2026-10-19                                                         |
+| Last reviewed | 2026-10-21                                                         |
 
 ## Purpose and boundary
 
@@ -15,8 +15,9 @@ cooking nutrient retention, cooking weight yield, and intake references. The
 current increments contain the pure priority contract, a food-composition
 coverage queue built from the pinned local catalog, local proposal intake,
 an inactive candidate builder with next-meal calculation replay, and a
-guarded food-catalog publication path. The initial Web descriptor still
-selects the verified USDA catalog until reviewed data is available.
+guarded food-catalog publication path. The active Web descriptor selects the
+[verified multi-source catalog](./multisource-food-catalog.md); future
+Nutrixx-reviewed claims enter through the same publication path.
 
 A gap is an observation about a pinned reference artifact. Its stable key
 contains the domain subject and deficiency, while the detected release ID and
@@ -66,13 +67,45 @@ The internal [Data Quality Radar](https://github.com/shari-ar/Nutrixx/blob/main/
 searchable queue for the active food catalog. Each candidate identifies a
 latest food revision, its source record, and exact absent, explicitly unknown,
 and unit-incompatible components. An observed zero contributes to known
-coverage. The queue first presents foods with more missing components mapped
-to the adult baseline target set, then foods with more total missing
-components. This order supports coverage triage and carries an explicit
-`unmeasured` impact status. Cooking retention, cooking yield, and intake
-reference work items enter the queue after their domain-specific inventories
+coverage. When an operator supplies a consented actual-consumption snapshot,
+the queue first presents foods consumed by more distinct users. Equal counts
+use the existing order: missing components mapped to the adult baseline target
+set, then total missing components. With no snapshot, the same coverage order
+applies and the interface explicitly marks consumption evidence as unavailable.
+Current recorded meal facts from production users are the sole basis for
+consumption counts. Searches, views, proposed meals, test data, and voided meals
+remain separate activity types. The snapshot aggregates current recorded meal
+facts; each user counts at most once per food during its stated period. Free-mode
+browser records remain local. Sharing usage statistics requires explicit
+opt-in. The queue output includes aggregate counts and period metadata;
+user identifiers and meal records stay in the protected source system. This
+order supports coverage triage and carries an explicit `unmeasured`
+decision-impact status. Cooking retention, cooking yield, and intake reference
+work items enter the queue after their domain-specific inventories
 have been validated; comparable replay evidence will then support an impact
 ranking.
+
+The optional local input is
+`npm run quality:data -- --consumption-snapshot path/to/snapshot.json`.
+Its JSON shape is:
+
+```json
+{
+  "format": "nutrixx.food-consumption-snapshot",
+  "schemaVersion": 1,
+  "catalogReleaseId": "food-catalog-us-ca-au-2026.1",
+  "source": "consented-recorded-meals",
+  "periodStartInclusive": "2026-07-01T00:00:00.000Z",
+  "periodEndExclusive": "2026-10-01T00:00:00.000Z",
+  "foodCounts": [{ "foodId": "catalog-food-id", "uniqueConsumers": 12 }]
+}
+```
+
+Generate these counts only from explicitly consented users' latest,
+non-voided recorded meal facts. Foods absent from the snapshot have zero
+observed consumers, rather than an inferred usage estimate. The input must
+match the audited catalog release; duplicate, unknown, and invalid counts
+fail validation.
 
 ## Local proposal intake
 

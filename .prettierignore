@@ -3,6 +3,7 @@ node_modules/
 apps/web/next-env.d.ts
 dist/
 build/
+reference-workbench/
 coverage/
 .nyc_output/
 package-lock.json

@@ -25,9 +25,16 @@ import {
 } from '../packages/reference-quality/dist/index.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const activeCatalog = JSON.parse(
+  await readFile(
+    path.join(root, 'apps/web/config/active-food-catalog.json'),
+    'utf8',
+  ),
+);
 const defaultCatalog = path.join(
   root,
-  'apps/web/public/catalog/food-catalog-usda-2026-04-30.1.v1.json.gz',
+  'apps/web/public/catalog',
+  activeCatalog.artifactName,
 );
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 

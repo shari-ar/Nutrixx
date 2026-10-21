@@ -5,6 +5,19 @@ import {
   type ReferenceGapV1,
 } from './priority.js';
 
+export interface FoodConsumptionSnapshotV1 {
+  readonly format: 'nutrixx.food-consumption-snapshot';
+  readonly schemaVersion: 1;
+  readonly catalogReleaseId: string;
+  readonly source: 'consented-recorded-meals';
+  readonly periodStartInclusive: string;
+  readonly periodEndExclusive: string;
+  readonly foodCounts: readonly {
+    readonly foodId: string;
+    readonly uniqueConsumers: number;
+  }[];
+}
+
 export interface FoodCompositionQueueInputV1 {
   readonly releaseId: string;
   readonly artifactSha256: string;
@@ -36,6 +49,7 @@ export interface FoodCompositionQueueInputV1 {
     readonly usdaFdcNutrientIds: readonly string[];
   }[];
   readonly baselineTargetIds: readonly string[];
+  readonly consumptionSnapshot?: FoodConsumptionSnapshotV1;
 }
 
 export interface FoodCompositionWorkItemV1 {
@@ -44,6 +58,7 @@ export interface FoodCompositionWorkItemV1 {
   readonly status: 'coverage-candidate';
   readonly priorityBand: 'unmeasured';
   readonly priorityScore: null;
+  readonly uniqueConsumers: number;
   readonly foodName: string;
   readonly sourceRecordId: string;
   readonly knownComponentCount: number;
@@ -58,7 +73,14 @@ export interface FoodCompositionWorkQueueV1 {
   readonly format: 'nutrixx.reference-work-queue';
   readonly schemaVersion: 1;
   readonly priorityPolicyId: typeof REFERENCE_GAP_PRIORITY_POLICY_V1.policyId;
-  readonly reviewOrder: 'missing-baseline-then-total-coverage';
+  readonly reviewOrder: 'unique-consumers-then-missing-baseline-then-total-coverage';
+  readonly consumptionEvidence:
+    | { readonly status: 'not-provided' }
+    | {
+        readonly status: 'aggregated-recorded-consumption';
+        readonly periodStartInclusive: string;
+        readonly periodEndExclusive: string;
+      };
   readonly releaseId: string;
   readonly artifactSha256: string;
   readonly evaluatedAt: string;
@@ -120,6 +142,37 @@ export function buildFoodCompositionWorkQueueV1(
       unknown: new Set(),
       incompatible: new Set(),
     });
+  }
+  const uniqueConsumersByFood = new Map<string, number>();
+  const snapshot = input.consumptionSnapshot;
+  if (snapshot !== undefined) {
+    if (
+      !snapshot ||
+      snapshot.format !== 'nutrixx.food-consumption-snapshot' ||
+      snapshot.schemaVersion !== 1 ||
+      snapshot.source !== 'consented-recorded-meals' ||
+      snapshot.catalogReleaseId !== input.releaseId ||
+      !Array.isArray(snapshot.foodCounts) ||
+      !Number.isFinite(Date.parse(snapshot.periodStartInclusive)) ||
+      !Number.isFinite(Date.parse(snapshot.periodEndExclusive)) ||
+      Date.parse(snapshot.periodStartInclusive) >=
+        Date.parse(snapshot.periodEndExclusive)
+    )
+      throw new TypeError('The consumption snapshot metadata is invalid.');
+    for (const count of snapshot.foodCounts) {
+      if (
+        !count ||
+        typeof count.foodId !== 'string' ||
+        !latest.has(count.foodId) ||
+        uniqueConsumersByFood.has(count.foodId) ||
+        !Number.isSafeInteger(count.uniqueConsumers) ||
+        count.uniqueConsumers < 0
+      )
+        throw new TypeError(
+          'The consumption snapshot food counts are invalid.',
+        );
+      uniqueConsumersByFood.set(count.foodId, count.uniqueConsumers);
+    }
   }
   const latestByRevision = new Map(
     [...latest.values()].map((food) => [
@@ -190,6 +243,7 @@ export function buildFoodCompositionWorkQueueV1(
       status: 'coverage-candidate',
       priorityBand: 'unmeasured',
       priorityScore: null,
+      uniqueConsumers: uniqueConsumersByFood.get(food.foodId) ?? 0,
       foodName: food.name,
       sourceRecordId: food.sourceRecordId,
       knownComponentCount: food.known.size,
@@ -202,6 +256,7 @@ export function buildFoodCompositionWorkQueueV1(
   }
   candidates.sort(
     (left, right) =>
+      right.uniqueConsumers - left.uniqueConsumers ||
       right.missingBaselineComponentIds.length -
         left.missingBaselineComponentIds.length ||
       right.totalComponentCount -
@@ -214,7 +269,14 @@ export function buildFoodCompositionWorkQueueV1(
     format: 'nutrixx.reference-work-queue',
     schemaVersion: 1,
     priorityPolicyId: REFERENCE_GAP_PRIORITY_POLICY_V1.policyId,
-    reviewOrder: 'missing-baseline-then-total-coverage',
+    reviewOrder: 'unique-consumers-then-missing-baseline-then-total-coverage',
+    consumptionEvidence: snapshot
+      ? {
+          status: 'aggregated-recorded-consumption',
+          periodStartInclusive: snapshot.periodStartInclusive,
+          periodEndExclusive: snapshot.periodEndExclusive,
+        }
+      : { status: 'not-provided' },
     releaseId: input.releaseId,
     artifactSha256: input.artifactSha256,
     evaluatedAt: input.evaluatedAt,

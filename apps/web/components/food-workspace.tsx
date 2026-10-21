@@ -196,6 +196,17 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
                     {selected.nutrients.map((nutrient) => (
                       <li key={nutrient.id ?? nutrient.nutrientId}>
                         {nutrient.nutrientId}: {nutrient.value}
+                        {nutrient.source ? (
+                          <span className="block text-xs text-muted">
+                            Source: {nutrient.source}
+                            {nutrient.sourceNutrientId
+                              ? ` · ${nutrient.sourceNutrientId}`
+                              : ''}
+                            {nutrient.sourceNutrientName
+                              ? ` (${nutrient.sourceNutrientName})`
+                              : ''}
+                          </span>
+                        ) : null}
                       </li>
                     ))}
                   </ul>

@@ -133,4 +133,77 @@ describe('food-composition work queue', () => {
       }),
     ).toThrow(/Ambiguous component mapping/u);
   });
+
+  it('ranks actual unique consumers first and uses coverage only for ties', () => {
+    const snapshot = {
+      format: 'nutrixx.food-consumption-snapshot' as const,
+      schemaVersion: 1 as const,
+      catalogReleaseId: fixture.releaseId,
+      source: 'consented-recorded-meals' as const,
+      periodStartInclusive: '2026-07-01T00:00:00.000Z',
+      periodEndExclusive: '2026-10-01T00:00:00.000Z',
+      foodCounts: [
+        { foodId: 'potato', uniqueConsumers: 20 },
+        { foodId: 'eggplant', uniqueConsumers: 3 },
+      ],
+    };
+    const ranked = buildFoodCompositionWorkQueueV1({
+      ...fixture,
+      consumptionSnapshot: snapshot,
+    });
+    expect(ranked.items.map((item) => item.foodName)).toEqual([
+      'Potato',
+      'Eggplant',
+    ]);
+    expect(ranked.items.map((item) => item.uniqueConsumers)).toEqual([20, 3]);
+    expect(ranked.consumptionEvidence.status).toBe(
+      'aggregated-recorded-consumption',
+    );
+
+    const tied = buildFoodCompositionWorkQueueV1({
+      ...fixture,
+      consumptionSnapshot: {
+        ...snapshot,
+        foodCounts: snapshot.foodCounts.map((count) => ({
+          ...count,
+          uniqueConsumers: 7,
+        })),
+      },
+    });
+    expect(tied.items.map((item) => item.foodName)).toEqual([
+      'Eggplant',
+      'Potato',
+    ]);
+    expect(
+      buildFoodCompositionWorkQueueV1(fixture).consumptionEvidence,
+    ).toEqual({ status: 'not-provided' });
+  });
+
+  it('rejects stale, duplicate, and invalid consumption counts', () => {
+    const snapshot = {
+      format: 'nutrixx.food-consumption-snapshot' as const,
+      schemaVersion: 1 as const,
+      catalogReleaseId: fixture.releaseId,
+      source: 'consented-recorded-meals' as const,
+      periodStartInclusive: '2026-07-01T00:00:00.000Z',
+      periodEndExclusive: '2026-10-01T00:00:00.000Z',
+      foodCounts: [{ foodId: 'potato', uniqueConsumers: 2 }],
+    };
+    for (const invalid of [
+      { ...snapshot, catalogReleaseId: 'another-catalog' },
+      {
+        ...snapshot,
+        foodCounts: [...snapshot.foodCounts, ...snapshot.foodCounts],
+      },
+      { ...snapshot, foodCounts: [{ foodId: 'potato', uniqueConsumers: -1 }] },
+      { ...snapshot, foodCounts: [{ foodId: 'unknown', uniqueConsumers: 1 }] },
+    ]) {
+      expect(() =>
+        buildFoodCompositionWorkQueueV1({
+          ...fixture,
+          consumptionSnapshot: invalid,
+        }),
+      ).toThrow();
+    }
+  });
 });

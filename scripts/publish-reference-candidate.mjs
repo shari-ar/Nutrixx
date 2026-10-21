@@ -15,9 +15,16 @@ import { FOOD_COMPONENTS_V1 } from '@nutrixx/nutrition-engine';
 import { buildReferenceCandidateV1 } from './build-reference-candidate.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const activeCatalog = JSON.parse(
+  await readFile(
+    path.join(root, 'apps/web/config/active-food-catalog.json'),
+    'utf8',
+  ),
+);
 const defaultCatalog = path.join(
   root,
-  'apps/web/public/catalog/food-catalog-usda-2026-04-30.1.v1.json.gz',
+  'apps/web/public/catalog',
+  activeCatalog.artifactName,
 );
 const defaultOutput = path.join(root, '.temp/reference-publication');
 const publicCatalog = path.join(root, 'apps/web/public/catalog');

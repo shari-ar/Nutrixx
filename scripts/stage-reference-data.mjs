@@ -19,9 +19,16 @@ const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 );
+const activeCatalog = JSON.parse(
+  await readFile(
+    path.join(projectRoot, 'apps/web/config/active-food-catalog.json'),
+    'utf8',
+  ),
+);
 const defaultCatalog = path.join(
   projectRoot,
-  'apps/web/public/catalog/food-catalog-usda-2026-04-30.1.v1.json.gz',
+  'apps/web/public/catalog',
+  activeCatalog.artifactName,
 );
 const workbenchRoot = path.join(projectRoot, 'reference-workbench');
 const unzip = promisify(gunzip);

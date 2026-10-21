@@ -13,9 +13,11 @@ coverage, not nutritional accuracy or physiological risk.
 The food-composition queue builder creates an exact coverage candidate for
 each latest food record with missing comparable component observations. It
 separates absent, explicitly unknown, and unit-incompatible observations.
-Its coverage review order considers mapped baseline targets first and total
-missing components second. Impact remains unmeasured until replay evidence
-is supplied.
+With a consented actual-consumption snapshot, its coverage review order
+considers distinct recorded consumers first, mapped baseline gaps second,
+and total missing components third. Without usage evidence, the existing
+coverage order applies. Impact remains unmeasured until replay evidence is
+supplied.
 
 The local intake contract checks proposed food, cooking, and intake-reference
 observations against pinned catalog and component identities. Each surviving

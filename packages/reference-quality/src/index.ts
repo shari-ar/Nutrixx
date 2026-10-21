@@ -8,6 +8,7 @@ export {
 } from './priority.js';
 export {
   buildFoodCompositionWorkQueueV1,
+  type FoodConsumptionSnapshotV1,
   type FoodCompositionQueueInputV1,
   type FoodCompositionWorkItemV1,
   type FoodCompositionWorkQueueV1,

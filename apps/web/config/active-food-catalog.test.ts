@@ -6,10 +6,8 @@ import {
 } from './active-food-catalog';
 
 describe('active food catalog descriptor', () => {
-  it('pins the distributed base artifact at the initial release', () => {
-    expect(ACTIVE_FOOD_CATALOG.releaseId).toBe(
-      'food-catalog-usda-2026-04-30.1',
-    );
+  it('pins the distributed multi-source artifact', () => {
+    expect(ACTIVE_FOOD_CATALOG.releaseId).toBe('food-catalog-us-ca-au-2026.1');
     expect(ACTIVE_FOOD_CATALOG.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
   });
 

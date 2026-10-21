@@ -43,6 +43,10 @@ async function inspectDirectory(directory) {
     missingReadmes.push(path.relative(repositoryRoot, directory) || '.');
   }
 
+  // Operator-created evidence directories are covered by the workbench README.
+  if (path.relative(repositoryRoot, directory) === 'reference-workbench')
+    return;
+
   const entries = await readdir(directory, { withFileTypes: true });
 
   await Promise.all(
