@@ -346,6 +346,50 @@ describe('Food Knowledge foundation', () => {
     expect(catalog.getSource(deterministicId('source', 'missing'))).toBeNull();
   });
 
+  it('prefers USDA, Canada, Australia, then the UK for equally matching foods', () => {
+    const payload = fixturePayload();
+    const usdaFood = payload.foods[0];
+    const usdaSource = payload.sources[0];
+    if (usdaFood === undefined || usdaSource === undefined) {
+      throw new Error('The fixture requires a USDA food and source.');
+    }
+    const alternatives = [
+      { provider: 'public-health-england', dataset: 'cofid' },
+      { provider: 'fsanz', dataset: 'afcd-release-3' },
+      { provider: 'health-canada', dataset: 'cnf' },
+    ].map(({ provider, dataset }) => {
+      const sourceId = deterministicId('source', provider);
+      return {
+        source: {
+          ...usdaSource,
+          sourceId,
+          provider,
+          dataset,
+          sourceRecordId: provider,
+        },
+        food: {
+          ...usdaFood,
+          foodId: deterministicId('food', provider),
+          sourceId,
+        },
+      };
+    });
+    const catalog = new FoodCatalogIndexV1({
+      ...payload,
+      sources: [
+        ...alternatives.map(({ source }) => source),
+        ...payload.sources,
+      ],
+      foods: [...alternatives.map(({ food }) => food), ...payload.foods],
+    });
+
+    expect(
+      catalog
+        .search('apple, raw', { limit: 4 })
+        .map(({ food }) => catalog.getSource(food.sourceId)?.provider),
+    ).toEqual(['usda-fdc', 'health-canada', 'fsanz', 'public-health-england']);
+  });
+
   it('loads an integrity-checked active release through the IndexedDB cache', async () => {
     const indexedDB = new IDBFactory();
     const cache = await IndexedDbReferenceDatasetCache.create({

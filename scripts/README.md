@@ -20,7 +20,8 @@ Small, cross-platform automation used by contributors and CI.
 | `stage-4-browser-runner.mjs`         | Measures full-catalog worker responsiveness in a named browser/device; the optional `local` argument runs an isolated IndexedDB create-and-reload journey |
 | `build-usda-cooking-tables.py`       | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library         |
 | `extract-afcd-release.py`            | Extracts keyed AFCD Release 3 workbook rows and source file digests for the multi-source catalog build                                                    |
-| `build-multisource-food-catalog.mjs` | Integrates USDA, CNF 2026, and AFCD Release 3 with observation-level lineage and a before/after quality report                                            |
+| `extract-cofid-2021.py`              | Extracts aligned CoFID 2021 workbook rows, disambiguates duplicate source codes, and records the source digest                                            |
+| `build-multisource-food-catalog.mjs` | Integrates USDA, CNF 2026, AFCD Release 3, and CoFID 2021 with observation-level lineage and a before/after quality report                                |
 | `verify-active-catalog-assets.mjs`   | Confirms that delivery assets match the pinned active-catalog descriptor and receipt                                                                      |
 
 ## Rules
@@ -75,7 +76,7 @@ The generated JSON records SHA-256 hashes for all three source files.
 and requires page, item, and raw-food NDB evidence for each added row.
 
 The [multi-source catalog contract](../docs/data/multisource-food-catalog.md)
-describes the CNF and AFCD match rules, exclusions, provenance, quality
+describes the CNF, AFCD, and CoFID match rules, exclusions, provenance, quality
 comparison, and delivery. The integration scripts operate on locally supplied
 source files and produce ignored workbench artifacts. The verified compressed
 release is published separately from Git source history.

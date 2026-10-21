@@ -7,7 +7,9 @@ import {
 
 describe('active food catalog descriptor', () => {
   it('pins the distributed multi-source artifact', () => {
-    expect(ACTIVE_FOOD_CATALOG.releaseId).toBe('food-catalog-us-ca-au-2026.1');
+    expect(ACTIVE_FOOD_CATALOG.releaseId).toBe(
+      'food-catalog-us-ca-au-uk-2026.1',
+    );
     expect(ACTIVE_FOOD_CATALOG.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
   });
 

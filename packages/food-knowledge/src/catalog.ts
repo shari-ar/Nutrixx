@@ -116,6 +116,13 @@ function normalizeSearchText(value: string): string {
     .toLocaleLowerCase('und');
 }
 
+const SOURCE_PRIORITY: Readonly<Record<string, number>> = {
+  'usda-fdc': 0,
+  'health-canada': 1,
+  fsanz: 2,
+  'public-health-england': 3,
+};
+
 export class FoodCatalogIndexV1 {
   readonly #payload: FoodCatalogPayloadV1;
   readonly #sourceById: ReadonlyMap<
@@ -243,6 +250,12 @@ export class FoodCatalogIndexV1 {
     for (const match of matches.sort(
       (left, right) =>
         left.score - right.score ||
+        (SOURCE_PRIORITY[
+          this.#sourceById.get(left.food.sourceId)?.provider ?? ''
+        ] ?? Number.MAX_SAFE_INTEGER) -
+          (SOURCE_PRIORITY[
+            this.#sourceById.get(right.food.sourceId)?.provider ?? ''
+          ] ?? Number.MAX_SAFE_INTEGER) ||
         left.matchedDescription.value.localeCompare(
           right.matchedDescription.value,
           'en',

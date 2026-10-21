@@ -18,20 +18,33 @@ import {
   resolveFoodComponentV1,
 } from '@nutrixx/nutrition-engine';
 
-const [basePath, legacyPath, cnfDirectory, afcdPath, outputDirectory] =
-  process.argv.slice(2);
+const [
+  basePath,
+  legacyPath,
+  cnfDirectory,
+  afcdPath,
+  cofidPath,
+  outputDirectory,
+] = process.argv.slice(2);
 if (
-  [basePath, legacyPath, cnfDirectory, afcdPath, outputDirectory].some(
-    (x) => !x,
-  )
+  [
+    basePath,
+    legacyPath,
+    cnfDirectory,
+    afcdPath,
+    cofidPath,
+    outputDirectory,
+  ].some((x) => !x)
 ) {
   throw new TypeError(
-    'Usage: build-multisource-food-catalog.mjs <base.v1.json.gz> <sr-legacy.json> <cnf-csv-directory> <afcd-extract.json> <output-directory>',
+    'Usage: build-multisource-food-catalog.mjs <base.v1.json.gz> <sr-legacy.json> <cnf-csv-directory> <afcd-extract.json> <cofid-extract.json> <output-directory>',
   );
 }
 
-const RELEASE_ID = 'food-catalog-us-ca-au-2026.1';
-const RELEASE_INSTANT = '2026-10-21T04:05:56.904Z';
+const RELEASE_ID = 'food-catalog-us-ca-au-uk-2026.1';
+const RELEASE_INSTANT = '2026-10-21T09:38:57.000Z';
+const COFID_WORKBOOK_SHA256 =
+  '436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d';
 const AFCD_COLUMNS_SHA256 =
   'de5eb458e2333bd3f675af47e5dc7f847f8d0e611cb5dccaf198c0ea5d301c07';
 const unzip = promisify(gunzip);
@@ -113,6 +126,65 @@ const AFCD_COLUMNS = [
   [270, 'TYR'],
   [271, 'TRP'],
   [272, 'VAL'],
+];
+// Only exact, per-100-g-food concepts enter the 112-component registry.
+// CoFID available carbohydrate, retinol equivalent, total vitamin E, and
+// vitamin K1 are distinct from the corresponding broader USDA concepts.
+const COFID_COLUMNS = [
+  ['1.3 Proximates', 'WATER', 'WATER', 'g'],
+  ['1.3 Proximates', 'PROT', 'PROCNT', 'g'],
+  ['1.3 Proximates', 'FAT', 'FAT', 'g'],
+  ['1.3 Proximates', 'KCALS', 'ENERC_KCAL', 'kcal'],
+  ['1.3 Proximates', 'STAR', 'STARCH', 'g'],
+  ['1.3 Proximates', 'TOTSUG', 'SUGAR', 'g'],
+  ['1.3 Proximates', 'GLUC', 'GLUS', 'g'],
+  ['1.3 Proximates', 'FRUCT', 'FRUS', 'g'],
+  ['1.3 Proximates', 'SUCR', 'SUCS', 'g'],
+  ['1.3 Proximates', 'MALT', 'MALS', 'g'],
+  ['1.3 Proximates', 'LACT', 'LACS', 'g'],
+  ['1.3 Proximates', 'ALCO', 'ALC', 'g'],
+  ['1.3 Proximates', 'AOACFIB', 'FIBTG', 'g'],
+  ['1.3 Proximates', 'SATFOD', 'FASAT', 'g'],
+  ['1.3 Proximates', 'TOTn6PFOD', 'FA_O6', 'g'],
+  ['1.3 Proximates', 'TOTn3PFOD', 'FA_O3', 'g'],
+  ['1.3 Proximates', 'MONOFOD', 'FAMS', 'g'],
+  ['1.3 Proximates', 'POLYFOD', 'FAPU', 'g'],
+  ['1.3 Proximates', 'FODTRANS', 'FATRN', 'g'],
+  ['1.3 Proximates', 'CHOL', 'CHOL', 'mg'],
+  ['1.4 Inorganics', 'NA', 'NA', 'mg'],
+  ['1.4 Inorganics', 'K', 'K', 'mg'],
+  ['1.4 Inorganics', 'CA', 'CA', 'mg'],
+  ['1.4 Inorganics', 'MG', 'MG', 'mg'],
+  ['1.4 Inorganics', 'P', 'P', 'mg'],
+  ['1.4 Inorganics', 'FE', 'FE', 'mg'],
+  ['1.4 Inorganics', 'CU', 'CU', 'mg'],
+  ['1.4 Inorganics', 'ZN', 'ZN', 'mg'],
+  ['1.4 Inorganics', 'CL', 'CL', 'mg'],
+  ['1.4 Inorganics', 'MN', 'MN', 'mg'],
+  ['1.4 Inorganics', 'SE', 'SE', 'ug'],
+  ['1.4 Inorganics', 'I', 'I', 'ug'],
+  ['1.5 Vitamins', 'RET', 'RETOL', 'ug'],
+  ['1.5 Vitamins', 'VITD', 'VITD', 'ug'],
+  ['1.5 Vitamins', 'THIA', 'THIA', 'mg'],
+  ['1.5 Vitamins', 'RIBO', 'RIBF', 'mg'],
+  ['1.5 Vitamins', 'NIAC', 'NIA', 'mg'],
+  ['1.5 Vitamins', 'VITB6', 'VITB6A', 'mg'],
+  ['1.5 Vitamins', 'VITB12', 'VITB12', 'ug'],
+  ['1.5 Vitamins', 'FOLT', 'FOLDFE', 'ug'],
+  ['1.5 Vitamins', 'PANTO', 'PANTAC', 'mg'],
+  ['1.5 Vitamins', 'BIOT', 'BIOT', 'ug'],
+  ['1.5 Vitamins', 'VITC', 'VITC', 'mg'],
+  ['1.6 Vitamin Fractions', 'ACAR', 'CARTA', 'ug'],
+  ['1.6 Vitamin Fractions', 'BCAR', 'CARTB', 'ug'],
+  ['1.6 Vitamin Fractions', 'LYCO', 'LYCO', 'ug'],
+  ['1.6 Vitamin Fractions', 'ATOPH', 'TOCPHA', 'mg'],
+  ['1.8 (SFA per 100gFood)', 'FOD16:0', 'PA', 'g'],
+  ['1.8 (SFA per 100gFood)', 'FOD18:0', 'SA', 'g'],
+  ['1.12 (PUFA per 100gFood)', 'FOD18:2cn6', 'LA', 'g'],
+  ['1.12 (PUFA per 100gFood)', 'FOD18:3cn3', 'ALA', 'g'],
+  ['1.12 (PUFA per 100gFood)', 'FOD20:5cn3', 'EPA', 'g'],
+  ['1.12 (PUFA per 100gFood)', 'FOD22:6cn3', 'DHA', 'g'],
+  ['1.13 Phytosterols', 'Total PHYTO', 'PHYTO', 'mg'],
 ];
 const ACCEPTED_CNF_FOOD_SOURCES = new Set(['0', '1', '3', '4', '6', '12']);
 const EXCLUDED_CNF_NUTRIENT_SOURCES = new Set([
@@ -633,6 +705,109 @@ const afterAustralia = auditFoodDataQualityV1({
   evaluatedAt,
 });
 const originalAfterAustralia = originalKnownPairs();
+const cofid = JSON.parse(await readFile(cofidPath, 'utf8'));
+if (
+  cofid.format !== 'nutrixx.cofid-source-extract' ||
+  cofid.release !== '2021' ||
+  cofid.sourceSha256 !== COFID_WORKBOOK_SHA256 ||
+  cofid.foods.length !== 2887 ||
+  JSON.stringify(cofid.duplicateFoodCodes) !== '["13-669"]'
+)
+  throw new TypeError('Unexpected CoFID 2021 extract.');
+for (const [sheet, sourceCode, accessCode, unit] of COFID_COLUMNS) {
+  const key = `${sheet}:${sourceCode}`;
+  const component = COMPONENT_BY_ACCESS.get(accessCode);
+  if (!cofid.columns[key] || !component || component.unit !== unit)
+    throw new TypeError(`Incompatible CoFID mapping: ${key} to ${accessCode}.`);
+}
+const cofidStats = {
+  foods: cofid.foods.length,
+  addedFoods: 0,
+  observations: 0,
+  excludedVolumeBasisFoods: 0,
+  excludedNonNumericValues: 0,
+  duplicateFoodCodes: cofid.duplicateFoodCodes,
+};
+for (const row of cofid.foods) {
+  // CoFID specifies alcoholic beverage observations per 100 ml. There is no
+  // universal gram conversion, so exclude the entire Q group from this release.
+  if (String(row.group).startsWith('Q')) {
+    cofidStats.excludedVolumeBasisFoods += 1;
+    continue;
+  }
+  const sourceId = addSource(
+    payload,
+    'public-health-england',
+    'cofid',
+    '2021',
+    row.key,
+    'uk-ogl-3.0',
+  );
+  const food = addFood(
+    payload,
+    'public-health-england',
+    row.key,
+    row.name,
+    `CoFID group ${row.group}`,
+    sourceId,
+  );
+  cofidStats.addedFoods += 1;
+  for (const [sheet, sourceCode, accessCode, unit] of COFID_COLUMNS) {
+    const key = `${sheet}:${sourceCode}`;
+    const raw = row.values[key];
+    if (raw === undefined) continue;
+    const amount = decimal(raw);
+    if (amount === null) {
+      cofidStats.excludedNonNumericValues += 1;
+      continue;
+    }
+    const component = COMPONENT_BY_ACCESS.get(accessCode);
+    if (component.unit !== unit)
+      throw new TypeError(`CoFID unit changed: ${key}.`);
+    if (
+      addObservation(
+        payload,
+        known,
+        food,
+        component,
+        sourceId,
+        key,
+        cofid.columns[key],
+        amount,
+        null,
+        null,
+      )
+    )
+      cofidStats.observations += 1;
+  }
+}
+const finalManifest = deriveFoodCatalogManifestV1(
+  {
+    ...manifest,
+    releaseId: RELEASE_ID,
+    publishedAt: RELEASE_INSTANT,
+    sourceDatasets: [
+      ...manifest.sourceDatasets,
+      {
+        provider: 'public-health-england',
+        dataset: 'cofid',
+        sourceRelease: '2021',
+        licenseId: 'uk-ogl-3.0',
+        homepage:
+          'https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid',
+      },
+    ],
+  },
+  payload,
+);
+const afterUnitedKingdom = auditFoodDataQualityV1({
+  manifest: finalManifest,
+  payload,
+  components: FOOD_COMPONENTS_V1,
+  baselineTargetIds,
+  evaluatedAt,
+});
+const originalAfterUnitedKingdom = originalKnownPairs();
 await mkdir(outputDirectory, { recursive: true });
 const report = {
   format: 'nutrixx.multisource-integration-report',
@@ -651,6 +826,10 @@ const report = {
       .digest('hex'),
     afcdFoodDetails: afcd.sourceSha256?.foodDetails ?? null,
     afcdNutrientProfiles: afcd.sourceSha256?.nutrientProfiles ?? null,
+    cofidExtract: createHash('sha256')
+      .update(await readFile(cofidPath))
+      .digest('hex'),
+    cofidWorkbook: cofid.sourceSha256,
   },
   stages: [
     {
@@ -667,6 +846,15 @@ const report = {
       ...summary(afterAustralia, originalAfterAustralia, originalFoodIds.size),
       integration: afcdStats,
     },
+    {
+      source: 'United Kingdom CoFID 2021',
+      ...summary(
+        afterUnitedKingdom,
+        originalAfterUnitedKingdom,
+        originalFoodIds.size,
+      ),
+      integration: cofidStats,
+    },
   ],
   coverageByComponent: FOOD_COMPONENTS_V1.map((component) => ({
     componentId: component.componentId,
@@ -681,6 +869,10 @@ const report = {
       afterAustralia.rows.find(
         (row) => row.componentId === component.componentId,
       )?.knownFoods ?? 0,
+    unitedKingdom:
+      afterUnitedKingdom.rows.find(
+        (row) => row.componentId === component.componentId,
+      )?.knownFoods ?? 0,
   })),
 };
 await writeFile(
@@ -688,7 +880,7 @@ await writeFile(
   `${JSON.stringify(report, null, 2)}\n`,
 );
 const release = await createFoodCatalogReleaseV1({
-  manifest,
+  manifest: finalManifest,
   payload,
   hash: sha256Canonical,
 });
@@ -709,7 +901,7 @@ const receipt = {
   compressedByteLength: artifact.length,
   artifactSha256: createHash('sha256').update(artifact).digest('hex'),
   uncompressedPayloadByteLength: release.byteLength,
-  manifest,
+  manifest: finalManifest,
   manifestSha256: release.manifestSha256,
   payloadSha256: release.payloadSha256,
 };

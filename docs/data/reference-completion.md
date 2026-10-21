@@ -93,7 +93,7 @@ Its JSON shape is:
 {
   "format": "nutrixx.food-consumption-snapshot",
   "schemaVersion": 1,
-  "catalogReleaseId": "food-catalog-us-ca-au-2026.1",
+  "catalogReleaseId": "food-catalog-us-ca-au-uk-2026.1",
   "source": "consented-recorded-meals",
   "periodStartInclusive": "2026-07-01T00:00:00.000Z",
   "periodEndExclusive": "2026-10-01T00:00:00.000Z",
