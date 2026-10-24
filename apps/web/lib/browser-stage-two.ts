@@ -89,6 +89,8 @@ export interface FoodChoice {
     sourceNutrientNumber?: string;
     sourceNutrientId?: string;
     sourceNutrientName?: string;
+    sourceReference?: string;
+    sourceConfidenceCode?: string;
     value: string;
     source?: string;
   }[];
@@ -469,6 +471,9 @@ export class BrowserStageTwoStore {
                 ...(observation.sourceNutrientName
                   ? { sourceNutrientName: observation.sourceNutrientName }
                   : {}),
+                ...(observation.sourceConfidenceCode
+                  ? { sourceConfidenceCode: observation.sourceConfidenceCode }
+                  : {}),
                 value:
                   observation.value.state === 'known'
                     ? `${observation.value.amount} ${observation.value.unit.code} / 100 g`
@@ -481,6 +486,9 @@ export class BrowserStageTwoStore {
                         nutrientSource.sourceRelease,
                         nutrientSource.sourceRecordId,
                       ].join(' · '),
+                      ...(nutrientSource.sourceReference
+                        ? { sourceReference: nutrientSource.sourceReference }
+                        : {}),
                     }
                   : {}),
               };

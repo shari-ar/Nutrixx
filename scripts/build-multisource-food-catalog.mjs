@@ -24,6 +24,7 @@ const [
   cnfDirectory,
   afcdPath,
   cofidPath,
+  ciqualPath,
   outputDirectory,
 ] = process.argv.slice(2);
 if (
@@ -33,20 +34,29 @@ if (
     cnfDirectory,
     afcdPath,
     cofidPath,
+    ciqualPath,
     outputDirectory,
   ].some((x) => !x)
 ) {
   throw new TypeError(
-    'Usage: build-multisource-food-catalog.mjs <base.v1.json.gz> <sr-legacy.json> <cnf-csv-directory> <afcd-extract.json> <cofid-extract.json> <output-directory>',
+    'Usage: build-multisource-food-catalog.mjs <base.v1.json.gz> <sr-legacy.json> <cnf-csv-directory> <afcd-extract.json> <cofid-extract.json> <ciqual-extract.json> <output-directory>',
   );
 }
 
-const RELEASE_ID = 'food-catalog-us-ca-au-uk-2026.1';
-const RELEASE_INSTANT = '2026-10-21T09:38:57.000Z';
+const RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.1';
+const RELEASE_INSTANT = '2026-10-21T16:00:00.000Z';
 const COFID_WORKBOOK_SHA256 =
   '436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d';
 const AFCD_COLUMNS_SHA256 =
   'de5eb458e2333bd3f675af47e5dc7f847f8d0e611cb5dccaf198c0ea5d301c07';
+const CIQUAL_SOURCE_SHA256 = {
+  workbook: '2c3495c8136d17356c50db410918da2102cb28096cb497c9cdf83c5f8ecb10ba',
+  composition:
+    '8c46a9032ece4eab4ffccc9dfcb0c490ec2f416aa664cc1ee013b241c6bdd4af',
+  components:
+    '3a231ea3e9836e4ac0b6ff94511e010210b2523d1b8b486c6b29e211066ba3f3',
+  sources: '73e6a0c573f88c23f23b4670a016c616edea806b3d92340942cdbdb9b4323137',
+};
 const unzip = promisify(gunzip);
 const COMPONENT_BY_ACCESS = new Map(
   FOOD_COMPONENTS_V1.map((component) => [component.accessCode, component]),
@@ -186,6 +196,59 @@ const COFID_COLUMNS = [
   ['1.12 (PUFA per 100gFood)', 'FOD22:6cn3', 'DHA', 'g'],
   ['1.13 Phytosterols', 'Total PHYTO', 'PHYTO', 'mg'],
 ];
+// Ciqual codes come from the official 2025 constituent XML. Available
+// carbohydrate, retinol equivalents, and broad vitamin K have different
+// definitions from the Nutrixx registry and therefore remain unmapped.
+const CIQUAL_COMPONENTS = [
+  ['328', 'ENERC_KCAL', 'kcal'],
+  ['400', 'WATER', 'g'],
+  ['10110', 'NA', 'mg'],
+  ['10120', 'MG', 'mg'],
+  ['10150', 'P', 'mg'],
+  ['10170', 'CL', 'mg'],
+  ['10190', 'K', 'mg'],
+  ['10200', 'CA', 'mg'],
+  ['10251', 'MN', 'mg'],
+  ['10260', 'FE', 'mg'],
+  ['10290', 'CU', 'mg'],
+  ['10300', 'ZN', 'mg'],
+  ['10340', 'SE', 'ug'],
+  ['10530', 'I', 'ug'],
+  ['25000', 'PROCNT', 'g'],
+  ['32000', 'SUGAR', 'g'],
+  ['32210', 'FRUS', 'g'],
+  ['32250', 'GLUS', 'g'],
+  ['32410', 'LACS', 'g'],
+  ['32430', 'MALS', 'g'],
+  ['32480', 'SUCS', 'g'],
+  ['33110', 'STARCH', 'g'],
+  ['34100', 'FIBTG', 'g'],
+  ['40000', 'FAT', 'g'],
+  ['40302', 'FASAT', 'g'],
+  ['40303', 'FAMS', 'g'],
+  ['40304', 'FAPU', 'g'],
+  ['41600', 'PA', 'g'],
+  ['41800', 'SA', 'g'],
+  ['41819', 'OA', 'g'],
+  ['41826', 'LA', 'g'],
+  ['41833', 'ALA', 'g'],
+  ['42053', 'EPA', 'g'],
+  ['42263', 'DHA', 'g'],
+  ['51200', 'RETOL', 'ug'],
+  ['51330', 'CARTB', 'ug'],
+  ['52100', 'VITD', 'ug'],
+  ['55100', 'VITC', 'mg'],
+  ['56100', 'THIA', 'mg'],
+  ['56200', 'RIBF', 'mg'],
+  ['56310', 'NIA', 'mg'],
+  ['56400', 'PANTAC', 'mg'],
+  ['56500', 'VITB6A', 'mg'],
+  ['56600', 'VITB12', 'ug'],
+  ['56702', 'FOLDFE', 'ug'],
+  ['60000', 'ALC', 'g'],
+  ['71010', 'TOCPHA', 'mg'],
+  ['75100', 'CHOL', 'mg'],
+];
 const ACCEPTED_CNF_FOOD_SOURCES = new Set(['0', '1', '3', '4', '6', '12']);
 const EXCLUDED_CNF_NUTRIENT_SOURCES = new Set([
   '5',
@@ -284,6 +347,7 @@ function addSource(
   sourceRelease,
   recordId,
   licenseId,
+  sourceReference = null,
 ) {
   const sourceId = deterministicId(
     'source',
@@ -295,6 +359,7 @@ function addSource(
     dataset,
     sourceRelease,
     sourceRecordId: recordId,
+    ...(sourceReference ? { sourceReference } : {}),
     licenseId,
     retrievedAt: RELEASE_INSTANT,
   });
@@ -346,6 +411,7 @@ function addObservation(
   amount,
   derivationCode,
   dataPoints,
+  evidence = null,
 ) {
   const key = claimKey(food, component);
   if (known.has(key)) return false;
@@ -362,6 +428,9 @@ function addObservation(
     sourceNutrientName: sourceNutrientName.slice(0, 500),
     ...(derivationCode === null ? {} : { derivationCode }),
     ...(dataPoints === null ? {} : { dataPoints }),
+    ...(evidence?.sourceConfidenceCode
+      ? { sourceConfidenceCode: evidence.sourceConfidenceCode }
+      : {}),
     preparationState: 'unspecified',
     value: {
       state: 'known',
@@ -781,7 +850,7 @@ for (const row of cofid.foods) {
       cofidStats.observations += 1;
   }
 }
-const finalManifest = deriveFoodCatalogManifestV1(
+const unitedKingdomManifest = deriveFoodCatalogManifestV1(
   {
     ...manifest,
     releaseId: RELEASE_ID,
@@ -801,13 +870,140 @@ const finalManifest = deriveFoodCatalogManifestV1(
   payload,
 );
 const afterUnitedKingdom = auditFoodDataQualityV1({
-  manifest: finalManifest,
+  manifest: unitedKingdomManifest,
   payload,
   components: FOOD_COMPONENTS_V1,
   baselineTargetIds,
   evaluatedAt,
 });
 const originalAfterUnitedKingdom = originalKnownPairs();
+const ciqual = JSON.parse(await readFile(ciqualPath, 'utf8'));
+if (
+  ciqual.format !== 'nutrixx.ciqual-source-extract' ||
+  ciqual.release !== '2025' ||
+  JSON.stringify(ciqual.sourceSha256) !==
+    JSON.stringify(CIQUAL_SOURCE_SHA256) ||
+  ciqual.foods.length !== 3484 ||
+  ciqual.counts.xmlRows !== 257816
+)
+  throw new TypeError('Unexpected Ciqual 2025 extract.');
+for (const [sourceCode, accessCode, unit] of CIQUAL_COMPONENTS) {
+  const sourceComponent = ciqual.components[sourceCode];
+  const component = COMPONENT_BY_ACCESS.get(accessCode);
+  const sourceUnit = sourceComponent?.name.match(
+    /\(([^()]*)\/100\s?g\)\s*$/u,
+  )?.[1];
+  if (
+    !sourceComponent?.name ||
+    !component ||
+    component.unit !== unit ||
+    !(unit === 'ug'
+      ? ['ug', 'µg', 'μg', '�g'].includes(sourceUnit)
+      : sourceUnit === unit)
+  )
+    throw new TypeError(
+      `Incompatible Ciqual mapping: ${sourceCode} to ${accessCode}.`,
+    );
+}
+const ciqualStats = {
+  foods: ciqual.foods.length,
+  addedFoods: 0,
+  observations: 0,
+  unquantified: 0,
+  mappedComponents: CIQUAL_COMPONENTS.length,
+  confidenceCodes: { A: 0, B: 0, C: 0, D: 0 },
+};
+const ciqualEvidenceSources = new Map();
+function ciqualObservationSourceId(value, foodSourceId) {
+  if (!value.sourceCode) return foodSourceId;
+  const existing = ciqualEvidenceSources.get(value.sourceCode);
+  if (existing) return existing;
+  const sourceId = addSource(
+    payload,
+    'anses-ciqual',
+    'ciqual',
+    '2025',
+    `source:${value.sourceCode}`,
+    'fr-etalab-open-license-2.0',
+    ciqual.sources[value.sourceCode],
+  );
+  ciqualEvidenceSources.set(value.sourceCode, sourceId);
+  return sourceId;
+}
+for (const row of ciqual.foods) {
+  const sourceId = addSource(
+    payload,
+    'anses-ciqual',
+    'ciqual',
+    '2025',
+    row.code,
+    'fr-etalab-open-license-2.0',
+  );
+  const food = addFood(
+    payload,
+    'anses-ciqual',
+    row.code,
+    row.name,
+    row.group,
+    sourceId,
+  );
+  ciqualStats.addedFoods += 1;
+  for (const [sourceCode, accessCode] of CIQUAL_COMPONENTS) {
+    const value = row.values[sourceCode];
+    if (!value) continue;
+    const amount = decimal(value.raw.replace(',', '.'));
+    if (amount === null) {
+      ciqualStats.unquantified += 1;
+      continue;
+    }
+    const evidence = {
+      sourceConfidenceCode: value.confidence,
+    };
+    if (
+      addObservation(
+        payload,
+        known,
+        food,
+        COMPONENT_BY_ACCESS.get(accessCode),
+        ciqualObservationSourceId(value, sourceId),
+        sourceCode,
+        ciqual.components[sourceCode].name,
+        amount,
+        null,
+        null,
+        evidence,
+      )
+    ) {
+      ciqualStats.observations += 1;
+      if (value.confidence in ciqualStats.confidenceCodes)
+        ciqualStats.confidenceCodes[value.confidence] += 1;
+    }
+  }
+}
+const finalManifest = deriveFoodCatalogManifestV1(
+  {
+    ...unitedKingdomManifest,
+    sourceDatasets: [
+      ...unitedKingdomManifest.sourceDatasets,
+      {
+        provider: 'anses-ciqual',
+        dataset: 'ciqual',
+        sourceRelease: '2025',
+        licenseId: 'fr-etalab-open-license-2.0',
+        homepage: 'https://ciqual.anses.fr/cms/en/2025-anses-ciqual-table',
+      },
+    ],
+  },
+  payload,
+);
+const afterFrance = auditFoodDataQualityV1({
+  manifest: finalManifest,
+  payload,
+  components: FOOD_COMPONENTS_V1,
+  baselineTargetIds,
+  evaluatedAt,
+});
+const originalAfterFrance = originalKnownPairs();
 await mkdir(outputDirectory, { recursive: true });
 const report = {
   format: 'nutrixx.multisource-integration-report',
@@ -830,6 +1026,10 @@ const report = {
       .update(await readFile(cofidPath))
       .digest('hex'),
     cofidWorkbook: cofid.sourceSha256,
+    ciqualExtract: createHash('sha256')
+      .update(await readFile(ciqualPath))
+      .digest('hex'),
+    ciqualOfficialFiles: ciqual.sourceSha256,
   },
   stages: [
     {
@@ -855,6 +1055,11 @@ const report = {
       ),
       integration: cofidStats,
     },
+    {
+      source: 'France Ciqual 2025',
+      ...summary(afterFrance, originalAfterFrance, originalFoodIds.size),
+      integration: ciqualStats,
+    },
   ],
   coverageByComponent: FOOD_COMPONENTS_V1.map((component) => ({
     componentId: component.componentId,
@@ -873,6 +1078,9 @@ const report = {
       afterUnitedKingdom.rows.find(
         (row) => row.componentId === component.componentId,
       )?.knownFoods ?? 0,
+    france:
+      afterFrance.rows.find((row) => row.componentId === component.componentId)
+        ?.knownFoods ?? 0,
   })),
 };
 await writeFile(

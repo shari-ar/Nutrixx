@@ -36,6 +36,7 @@ export const FoodCatalogSourceV1Schema = z.strictObject({
   dataset: CanonicalCodeSchema,
   sourceRelease: z.string().trim().min(1).max(128),
   sourceRecordId: z.string().trim().min(1).max(128),
+  sourceReference: z.string().trim().min(1).max(4096).optional(),
   licenseId: z.string().trim().min(1).max(128),
   retrievedAt: UtcInstantSchema,
 });
@@ -90,6 +91,7 @@ export const FoodCompositionObservationV1Schema = z.strictObject({
   sourceNutrientId: z.string().trim().min(1).max(128),
   sourceNutrientName: z.string().trim().min(1).max(500),
   sourceNutrientNumber: z.string().trim().min(1).max(128).optional(),
+  sourceConfidenceCode: z.string().trim().min(1).max(128).optional(),
   derivationCode: z.string().trim().min(1).max(128).optional(),
   dataPoints: z.int().nonnegative().optional(),
   preparationState: CanonicalCodeSchema,

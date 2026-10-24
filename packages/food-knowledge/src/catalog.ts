@@ -121,6 +121,7 @@ const SOURCE_PRIORITY: Readonly<Record<string, number>> = {
   'health-canada': 1,
   fsanz: 2,
   'public-health-england': 3,
+  'anses-ciqual': 4,
 };
 
 export class FoodCatalogIndexV1 {

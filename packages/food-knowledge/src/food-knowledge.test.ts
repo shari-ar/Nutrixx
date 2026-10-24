@@ -346,7 +346,7 @@ describe('Food Knowledge foundation', () => {
     expect(catalog.getSource(deterministicId('source', 'missing'))).toBeNull();
   });
 
-  it('prefers USDA, Canada, Australia, then the UK for equally matching foods', () => {
+  it('prefers USDA, Canada, Australia, the UK, then France for equally matching foods', () => {
     const payload = fixturePayload();
     const usdaFood = payload.foods[0];
     const usdaSource = payload.sources[0];
@@ -354,6 +354,7 @@ describe('Food Knowledge foundation', () => {
       throw new Error('The fixture requires a USDA food and source.');
     }
     const alternatives = [
+      { provider: 'anses-ciqual', dataset: 'ciqual' },
       { provider: 'public-health-england', dataset: 'cofid' },
       { provider: 'fsanz', dataset: 'afcd-release-3' },
       { provider: 'health-canada', dataset: 'cnf' },
@@ -385,9 +386,15 @@ describe('Food Knowledge foundation', () => {
 
     expect(
       catalog
-        .search('apple, raw', { limit: 4 })
+        .search('apple, raw', { limit: 5 })
         .map(({ food }) => catalog.getSource(food.sourceId)?.provider),
-    ).toEqual(['usda-fdc', 'health-canada', 'fsanz', 'public-health-england']);
+    ).toEqual([
+      'usda-fdc',
+      'health-canada',
+      'fsanz',
+      'public-health-england',
+      'anses-ciqual',
+    ]);
   });
 
   it('loads an integrity-checked active release through the IndexedDB cache', async () => {

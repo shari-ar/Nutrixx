@@ -205,6 +205,12 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
                             {nutrient.sourceNutrientName
                               ? ` (${nutrient.sourceNutrientName})`
                               : ''}
+                            {nutrient.sourceConfidenceCode
+                              ? ` · Ciqual confidence ${nutrient.sourceConfidenceCode}`
+                              : ''}
+                            {nutrient.sourceReference
+                              ? ` · ${nutrient.sourceReference}`
+                              : ''}
                           </span>
                         ) : null}
                       </li>

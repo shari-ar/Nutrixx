@@ -21,7 +21,8 @@ Small, cross-platform automation used by contributors and CI.
 | `build-usda-cooking-tables.py`       | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library         |
 | `extract-afcd-release.py`            | Extracts keyed AFCD Release 3 workbook rows and source file digests for the multi-source catalog build                                                    |
 | `extract-cofid-2021.py`              | Extracts aligned CoFID 2021 workbook rows, disambiguates duplicate source codes, and records the source digest                                            |
-| `build-multisource-food-catalog.mjs` | Integrates USDA, CNF 2026, AFCD Release 3, and CoFID 2021 with observation-level lineage and a before/after quality report                                |
+| `extract-ciqual-2025.py`             | Extracts English Ciqual 2025 food identities, XML constituents, native confidence codes, citations, and input digests                                     |
+| `build-multisource-food-catalog.mjs` | Integrates USDA, CNF 2026, AFCD Release 3, CoFID 2021, and Ciqual 2025 with observation-level lineage and a quality report                                |
 | `verify-active-catalog-assets.mjs`   | Confirms that delivery assets match the pinned active-catalog descriptor and receipt                                                                      |
 
 ## Rules
