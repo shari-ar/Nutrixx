@@ -38,6 +38,45 @@ const choice: FoodChoice = {
 };
 
 describe('food workspace', () => {
+  it('shows the source record and review basis behind a linked food', async () => {
+    render(
+      <FoodWorkspace
+        store={{
+          searchFoods: vi.fn(async () => [
+            {
+              ...choice,
+              linkedSources: [
+                {
+                  source: 'anses-ciqual · ciqual · 2025 · 11033',
+                  matchBasis: 'reviewed-food-identity',
+                },
+              ],
+            },
+          ]),
+          recipeChoices: vi.fn(async () => []),
+          listCustomFoods: vi.fn(async () => []),
+          saveCustomFood: vi.fn(async () => foodId),
+          customFoodHistory: vi.fn(async () => []),
+        }}
+      />,
+    );
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a food' }), {
+      target: { value: 'oats' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(
+      within(
+        await screen.findByRole('list', { name: 'Food search results' }),
+      ).getByRole('button', { name: /Test oats/i }),
+    );
+    expect(screen.getByText('Linked reference records')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'anses-ciqual · ciqual · 2025 · 11033 · Reviewed food identity',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('exposes searchable IDs and units for all 112 custom food components', async () => {
     render(
       <FoodWorkspace

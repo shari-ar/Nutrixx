@@ -22,6 +22,7 @@ Small, cross-platform automation used by contributors and CI.
 | `extract-afcd-release.py`            | Extracts keyed AFCD Release 3 workbook rows and source file digests for the multi-source catalog build                                                    |
 | `extract-cofid-2021.py`              | Extracts aligned CoFID 2021 workbook rows, disambiguates duplicate source codes, and records the source digest                                            |
 | `extract-ciqual-2025.py`             | Extracts English Ciqual 2025 food identities, XML constituents, native confidence codes, citations, and input digests                                     |
+| `food-identity-links.json`           | Pins reviewed, exact source food identities for deterministic cross-country linking                                                                       |
 | `build-multisource-food-catalog.mjs` | Integrates USDA, CNF 2026, AFCD Release 3, CoFID 2021, and Ciqual 2025 with observation-level lineage and a quality report                                |
 | `verify-active-catalog-assets.mjs`   | Confirms that delivery assets match the pinned active-catalog descriptor and receipt                                                                      |
 
@@ -77,7 +78,7 @@ The generated JSON records SHA-256 hashes for all three source files.
 and requires page, item, and raw-food NDB evidence for each added row.
 
 The [multi-source catalog contract](../docs/data/multisource-food-catalog.md)
-describes the CNF, AFCD, and CoFID match rules, exclusions, provenance, quality
+describes the CNF, AFCD, CoFID, and Ciqual match rules, exclusions, provenance, quality
 comparison, and delivery. The integration scripts operate on locally supplied
 source files and produce ignored workbench artifacts. The verified compressed
 release is published separately from Git source history.

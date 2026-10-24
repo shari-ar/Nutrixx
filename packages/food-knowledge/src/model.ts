@@ -56,6 +56,18 @@ export const FoodV1Schema = z.strictObject({
   ),
   preparationStates: z.array(CanonicalCodeSchema).min(1),
   sourceId: CanonicalIdSchema,
+  sourceIdentityLinks: z
+    .array(
+      z.strictObject({
+        sourceId: CanonicalIdSchema,
+        matchBasis: z.enum([
+          'official-crosswalk',
+          'source-declared-identifier',
+          'reviewed-food-identity',
+        ]),
+      }),
+    )
+    .optional(),
 });
 
 export const FoodPortionV1Schema = z.strictObject({
@@ -199,6 +211,21 @@ export const FoodCatalogPayloadV1Schema = z
           path: ['foods'],
           message: `Food ${food.foodId} references an unavailable source.`,
         });
+      }
+      const linkedSources = new Set<string>();
+      for (const link of food.sourceIdentityLinks ?? []) {
+        if (
+          !sourceIds.has(link.sourceId) ||
+          link.sourceId === food.sourceId ||
+          linkedSources.has(link.sourceId)
+        ) {
+          context.addIssue({
+            code: 'custom',
+            path: ['foods'],
+            message: `Food ${food.foodId} has an invalid source identity link.`,
+          });
+        }
+        linkedSources.add(link.sourceId);
       }
     }
     for (const portion of payload.portions) {

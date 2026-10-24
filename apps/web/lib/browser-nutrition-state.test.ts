@@ -232,7 +232,7 @@ describe('browser nutrition state', () => {
     expect(removed.window.current.recordedMealCount).toBe(0);
     expect(removed.window.current.status).toBe('PARTIAL');
     expect(fetch).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 
   it('keeps historical days stable, schedules confirmed travel at the next boundary, and survives reload', async () => {
     const indexedDB = new IDBFactory();

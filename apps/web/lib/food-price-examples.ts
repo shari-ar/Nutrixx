@@ -1,6 +1,6 @@
 // Illustrative USD prices for three exact foods in the active catalog.
 // They are product examples, not USDA facts or current market quotations.
-const EXAMPLE_RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.1';
+const EXAMPLE_RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.2';
 
 const EXAMPLE_USD_PER_100G: Readonly<Record<string, string>> = {
   '2f20cf47-a43c-5431-a46e-768e022d2901': '0.4', // Fuji apple, raw

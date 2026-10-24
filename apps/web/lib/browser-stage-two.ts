@@ -80,6 +80,10 @@ export interface FoodChoice {
   readonly usdaFoodGroup?: string;
   readonly sourceNdbNumber?: string;
   readonly provenance: string;
+  readonly linkedSources?: readonly {
+    source: string;
+    matchBasis: string;
+  }[];
   readonly completeness: string;
   readonly categories?: readonly string[];
   readonly portions?: readonly { label: string; gramWeight: string }[];
@@ -449,6 +453,22 @@ export class BrowserStageTwoStore {
             provenance: source
               ? `${source.provider} · ${source.dataset} · ${source.sourceRelease}`
               : 'Published catalog source',
+            linkedSources: (food.sourceIdentityLinks ?? []).flatMap((link) => {
+              const linked = catalog.getSource(link.sourceId);
+              return linked
+                ? [
+                    {
+                      source: [
+                        linked.provider,
+                        linked.dataset,
+                        linked.sourceRelease,
+                        linked.sourceRecordId,
+                      ].join(' · '),
+                      matchBasis: link.matchBasis,
+                    },
+                  ]
+                : [];
+            }),
             completeness: `${known} known · ${composition.length - known} explicitly unknown`,
             categories: food.categories.map((category) => category.description),
             portions: catalog

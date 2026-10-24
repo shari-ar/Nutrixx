@@ -14,6 +14,7 @@ import {
   type FoodPortionV1,
   type FoodV1,
 } from './model.js';
+import { FOOD_SOURCE_PRIORITY_V1 } from './identity.js';
 
 export interface CreateFoodCatalogReleaseV1Options {
   readonly manifest: FoodCatalogManifestV1;
@@ -115,14 +116,6 @@ function normalizeSearchText(value: string): string {
     .trim()
     .toLocaleLowerCase('und');
 }
-
-const SOURCE_PRIORITY: Readonly<Record<string, number>> = {
-  'usda-fdc': 0,
-  'health-canada': 1,
-  fsanz: 2,
-  'public-health-england': 3,
-  'anses-ciqual': 4,
-};
 
 export class FoodCatalogIndexV1 {
   readonly #payload: FoodCatalogPayloadV1;
@@ -251,10 +244,10 @@ export class FoodCatalogIndexV1 {
     for (const match of matches.sort(
       (left, right) =>
         left.score - right.score ||
-        (SOURCE_PRIORITY[
+        (FOOD_SOURCE_PRIORITY_V1[
           this.#sourceById.get(left.food.sourceId)?.provider ?? ''
         ] ?? Number.MAX_SAFE_INTEGER) -
-          (SOURCE_PRIORITY[
+          (FOOD_SOURCE_PRIORITY_V1[
             this.#sourceById.get(right.food.sourceId)?.provider ?? ''
           ] ?? Number.MAX_SAFE_INTEGER) ||
         left.matchedDescription.value.localeCompare(

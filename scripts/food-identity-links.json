@@ -1,0 +1,1171 @@
+{
+  "format": "nutrixx.reviewed-food-identity-links",
+  "schemaVersion": 1,
+  "groups": [
+    {
+      "name": "amaranth leaves, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168385",
+          "sourceName": "Amaranth leaves, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-149",
+          "sourceName": "Amaranth leaves, raw"
+        }
+      ]
+    },
+    {
+      "name": "arrowhead, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169203",
+          "sourceName": "Arrowhead, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1986",
+          "sourceName": "Arrowhead, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-151",
+          "sourceName": "Arrowhead, raw"
+        }
+      ]
+    },
+    {
+      "name": "artichoke, globe, raw",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F000144",
+          "sourceName": "Artichoke, globe, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-153",
+          "sourceName": "Artichoke, globe, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20052",
+          "sourceName": "Artichoke, globe, raw"
+        }
+      ]
+    },
+    {
+      "name": "asparagus, green, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "2710823",
+          "sourceName": "Asparagus, green, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F000155",
+          "sourceName": "Asparagus, green, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20279",
+          "sourceName": "Asparagus, green, raw"
+        }
+      ]
+    },
+    {
+      "name": "asparagus, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168389",
+          "sourceName": "Asparagus, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1990",
+          "sourceName": "Asparagus, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-157",
+          "sourceName": "Asparagus, raw"
+        }
+      ]
+    },
+    {
+      "name": "bamboo shoots, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169210",
+          "sourceName": "Bamboo shoots, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1999",
+          "sourceName": "Bamboo shoots, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20198",
+          "sourceName": "Bamboo shoots, raw"
+        }
+      ]
+    },
+    {
+      "name": "basil, fresh",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "172232",
+          "sourceName": "Basil, fresh"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-804",
+          "sourceName": "Basil, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11033",
+          "sourceName": "Basil, fresh"
+        }
+      ]
+    },
+    {
+      "name": "beetroot, raw",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-164",
+          "sourceName": "Beetroot, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20091",
+          "sourceName": "Beetroot, raw"
+        }
+      ]
+    },
+    {
+      "name": "blackberry, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1515",
+          "sourceName": "Blackberry, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F001267",
+          "sourceName": "Blackberry, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13029",
+          "sourceName": "Blackberry, raw"
+        }
+      ]
+    },
+    {
+      "name": "blueberry, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1705",
+          "sourceName": "Blueberry, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F001290",
+          "sourceName": "Blueberry, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13028",
+          "sourceName": "Blueberry, raw"
+        }
+      ]
+    },
+    {
+      "name": "breadfruit, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "171714",
+          "sourceName": "Breadfruit, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1522",
+          "sourceName": "Breadfruit, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-167",
+          "sourceName": "Breadfruit, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "54500",
+          "sourceName": "Breadfruit, raw"
+        }
+      ]
+    },
+    {
+      "name": "cabbage, green, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "2346407",
+          "sourceName": "Cabbage, green, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-510",
+          "sourceName": "Cabbage, green, raw"
+        }
+      ]
+    },
+    {
+      "name": "cabbage, white, raw",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F002015",
+          "sourceName": "Cabbage, white, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-509",
+          "sourceName": "Cabbage, white, raw"
+        }
+      ]
+    },
+    {
+      "name": "cardoon, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169981",
+          "sourceName": "Cardoon, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2042",
+          "sourceName": "Cardoon, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20054",
+          "sourceName": "Cardoon, raw"
+        }
+      ]
+    },
+    {
+      "name": "carrot, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2380",
+          "sourceName": "Carrot, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20009",
+          "sourceName": "Carrot, raw"
+        }
+      ]
+    },
+    {
+      "name": "cassava, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169985",
+          "sourceName": "Cassava, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-208",
+          "sourceName": "Cassava, raw"
+        }
+      ]
+    },
+    {
+      "name": "celeriac, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "170400",
+          "sourceName": "Celeriac, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2049",
+          "sourceName": "Celeriac, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-219",
+          "sourceName": "Celeriac, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20055",
+          "sourceName": "Celeriac, raw"
+        }
+      ]
+    },
+    {
+      "name": "chard, swiss, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169991",
+          "sourceName": "Chard, swiss, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2052",
+          "sourceName": "Chard, swiss, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-223",
+          "sourceName": "Chard, Swiss, raw"
+        }
+      ]
+    },
+    {
+      "name": "chervil, dried",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-811",
+          "sourceName": "Chervil, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "10999",
+          "sourceName": "Chervil, dried"
+        }
+      ]
+    },
+    {
+      "name": "chicken, breast, meat and skin, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "2727569",
+          "sourceName": "Chicken, breast, meat and skin, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "36029",
+          "sourceName": "Chicken, breast, meat and skin, raw"
+        }
+      ]
+    },
+    {
+      "name": "chicken, wing, meat and skin, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "2727568",
+          "sourceName": "Chicken, wing, meat and skin, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "36023",
+          "sourceName": "Chicken, wing, meat and skin, raw"
+        }
+      ]
+    },
+    {
+      "name": "chicory, raw",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F002884",
+          "sourceName": "Chicory, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20026",
+          "sourceName": "Chicory, raw"
+        }
+      ]
+    },
+    {
+      "name": "cranberry, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1538",
+          "sourceName": "Cranberry, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F003249",
+          "sourceName": "Cranberry, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13113",
+          "sourceName": "Cranberry, raw"
+        }
+      ]
+    },
+    {
+      "name": "curly kale, raw",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-234",
+          "sourceName": "Curly kale, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20218",
+          "sourceName": "Curly kale, raw"
+        }
+      ]
+    },
+    {
+      "name": "dill, dried",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-825",
+          "sourceName": "Dill, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11063",
+          "sourceName": "Dill, dried"
+        }
+      ]
+    },
+    {
+      "name": "dill, fresh",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-824",
+          "sourceName": "Dill, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11093",
+          "sourceName": "Dill, fresh"
+        }
+      ]
+    },
+    {
+      "name": "drumstick leaves, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168416",
+          "sourceName": "Drumstick leaves, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-236",
+          "sourceName": "Drumstick leaves, raw"
+        }
+      ]
+    },
+    {
+      "name": "drumstick pods, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "170483",
+          "sourceName": "Drumstick pods, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-238",
+          "sourceName": "Drumstick pods, raw"
+        }
+      ]
+    },
+    {
+      "name": "endive, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168412",
+          "sourceName": "Endive, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-240",
+          "sourceName": "Endive, raw"
+        }
+      ]
+    },
+    {
+      "name": "fig, dried",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F003832",
+          "sourceName": "Fig, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13013",
+          "sourceName": "Fig, dried"
+        }
+      ]
+    },
+    {
+      "name": "fig, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1711",
+          "sourceName": "Fig, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13012",
+          "sourceName": "Fig, raw"
+        }
+      ]
+    },
+    {
+      "name": "goji berry, dried",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F004244",
+          "sourceName": "Goji berry, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13183",
+          "sourceName": "Goji berry, dried"
+        }
+      ]
+    },
+    {
+      "name": "horseradish, raw",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-258",
+          "sourceName": "Horseradish, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11016",
+          "sourceName": "Horseradish, raw"
+        }
+      ]
+    },
+    {
+      "name": "jackfruit, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "174687",
+          "sourceName": "Jackfruit, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1581",
+          "sourceName": "Jackfruit, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-259",
+          "sourceName": "Jackfruit, raw"
+        }
+      ]
+    },
+    {
+      "name": "kohlrabi, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168424",
+          "sourceName": "Kohlrabi, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2109",
+          "sourceName": "Kohlrabi, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20065",
+          "sourceName": "Kohlrabi, raw"
+        }
+      ]
+    },
+    {
+      "name": "marjoram, dried",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-835",
+          "sourceName": "Marjoram, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11034",
+          "sourceName": "Marjoram, dried"
+        }
+      ]
+    },
+    {
+      "name": "mint, dried",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-837",
+          "sourceName": "Mint, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11029",
+          "sourceName": "Mint, dried"
+        }
+      ]
+    },
+    {
+      "name": "mint, fresh",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-836",
+          "sourceName": "Mint, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11027",
+          "sourceName": "Mint, fresh"
+        }
+      ]
+    },
+    {
+      "name": "mushrooms, oyster, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168580",
+          "sourceName": "Mushrooms, oyster, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-293",
+          "sourceName": "Mushrooms, oyster, raw"
+        }
+      ]
+    },
+    {
+      "name": "mushrooms, white, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169251",
+          "sourceName": "Mushrooms, white, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-505",
+          "sourceName": "Mushrooms, white, raw"
+        }
+      ]
+    },
+    {
+      "name": "okra, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169260",
+          "sourceName": "Okra, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F006195",
+          "sourceName": "Okra, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-300",
+          "sourceName": "Okra, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "58100",
+          "sourceName": "Okra, raw"
+        }
+      ]
+    },
+    {
+      "name": "oregano, dried",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F006281",
+          "sourceName": "Oregano, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11035",
+          "sourceName": "Oregano, dried"
+        }
+      ]
+    },
+    {
+      "name": "parsley, dried",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-845",
+          "sourceName": "Parsley, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11024",
+          "sourceName": "Parsley, dried"
+        }
+      ]
+    },
+    {
+      "name": "parsley, fresh",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "170416",
+          "sourceName": "Parsley, fresh"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2405",
+          "sourceName": "Parsley, fresh"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-844",
+          "sourceName": "Parsley, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11014",
+          "sourceName": "Parsley, fresh"
+        }
+      ]
+    },
+    {
+      "name": "parsnip, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2406",
+          "sourceName": "Parsnip, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-312",
+          "sourceName": "Parsnip, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20181",
+          "sourceName": "Parsnip, raw"
+        }
+      ]
+    },
+    {
+      "name": "quince, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1675",
+          "sourceName": "Quince, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13010",
+          "sourceName": "Quince, raw"
+        }
+      ]
+    },
+    {
+      "name": "radish, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2443",
+          "sourceName": "Radish, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20045",
+          "sourceName": "Radish, raw"
+        }
+      ]
+    },
+    {
+      "name": "raspberry, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1747",
+          "sourceName": "Raspberry, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F007619",
+          "sourceName": "Raspberry, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13015",
+          "sourceName": "Raspberry, raw"
+        }
+      ]
+    },
+    {
+      "name": "rhubarb, stalk, raw",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F007628",
+          "sourceName": "Rhubarb, stalk, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13047",
+          "sourceName": "Rhubarb, stalk, raw"
+        }
+      ]
+    },
+    {
+      "name": "rosemary, dried",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F007715",
+          "sourceName": "Rosemary, dried"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-882",
+          "sourceName": "Rosemary, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11036",
+          "sourceName": "Rosemary, dried"
+        }
+      ]
+    },
+    {
+      "name": "rosemary, fresh",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "173473",
+          "sourceName": "Rosemary, fresh"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-892",
+          "sourceName": "Rosemary, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11068",
+          "sourceName": "Rosemary, fresh"
+        }
+      ]
+    },
+    {
+      "name": "sage, dried",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F007726",
+          "sourceName": "Sage, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11037",
+          "sourceName": "Sage, dried"
+        }
+      ]
+    },
+    {
+      "name": "sage, fresh",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-853",
+          "sourceName": "Sage, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11069",
+          "sourceName": "Sage, fresh"
+        }
+      ]
+    },
+    {
+      "name": "seaweed, agar, dried",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "170090",
+          "sourceName": "Seaweed, agar, dried"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2318",
+          "sourceName": "Seaweed, agar, dried"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11085",
+          "sourceName": "Seaweed, agar, dried"
+        }
+      ]
+    },
+    {
+      "name": "seaweed, agar, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169280",
+          "sourceName": "Seaweed, agar, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2202",
+          "sourceName": "Seaweed, agar, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11084",
+          "sourceName": "Seaweed, agar, raw"
+        }
+      ]
+    },
+    {
+      "name": "spinach, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168462",
+          "sourceName": "Spinach, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2213",
+          "sourceName": "Spinach, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20059",
+          "sourceName": "Spinach, raw"
+        }
+      ]
+    },
+    {
+      "name": "strawberry, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "1749",
+          "sourceName": "Strawberry, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F008952",
+          "sourceName": "Strawberry, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "13014",
+          "sourceName": "Strawberry, raw"
+        }
+      ]
+    },
+    {
+      "name": "taro leaves, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "168487",
+          "sourceName": "Taro leaves, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2249",
+          "sourceName": "Taro leaves, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-380",
+          "sourceName": "Taro leaves, raw"
+        }
+      ]
+    },
+    {
+      "name": "taro leaves, steamed",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2250",
+          "sourceName": "Taro leaves, steamed"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-381",
+          "sourceName": "Taro leaves, steamed"
+        }
+      ]
+    },
+    {
+      "name": "taro, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "169308",
+          "sourceName": "Taro, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2247",
+          "sourceName": "Taro, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-376",
+          "sourceName": "Taro, raw"
+        }
+      ]
+    },
+    {
+      "name": "tarragon, fresh",
+      "members": [
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-857",
+          "sourceName": "Tarragon, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11092",
+          "sourceName": "Tarragon, fresh"
+        }
+      ]
+    },
+    {
+      "name": "thyme, dried, ground",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F009160",
+          "sourceName": "Thyme, dried, ground"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-883",
+          "sourceName": "Thyme, dried, ground"
+        }
+      ]
+    },
+    {
+      "name": "thyme, fresh",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "173470",
+          "sourceName": "Thyme, fresh"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-893",
+          "sourceName": "Thyme, fresh"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "11070",
+          "sourceName": "Thyme, fresh"
+        }
+      ]
+    },
+    {
+      "name": "tomato, cherry, raw",
+      "members": [
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F009190",
+          "sourceName": "Tomato, cherry, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20172",
+          "sourceName": "Tomato, cherry, raw"
+        }
+      ]
+    },
+    {
+      "name": "tomato, green, raw",
+      "members": [
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2255",
+          "sourceName": "Tomato, green, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20119",
+          "sourceName": "Tomato, green, raw"
+        }
+      ]
+    },
+    {
+      "name": "watercress, raw",
+      "members": [
+        {
+          "provider": "usda-fdc",
+          "sourceRecordId": "170068",
+          "sourceName": "Watercress, raw"
+        },
+        {
+          "provider": "health-canada",
+          "sourceRecordId": "2276",
+          "sourceName": "Watercress, raw"
+        },
+        {
+          "provider": "fsanz",
+          "sourceRecordId": "F009532",
+          "sourceName": "Watercress, raw"
+        },
+        {
+          "provider": "public-health-england",
+          "sourceRecordId": "13-669@2827",
+          "sourceName": "Watercress, raw"
+        },
+        {
+          "provider": "anses-ciqual",
+          "sourceRecordId": "20022",
+          "sourceName": "Watercress, raw"
+        }
+      ]
+    }
+  ]
+}

@@ -17,6 +17,19 @@ type FoodStore = Pick<
   | 'customFoodHistory'
 >;
 
+function matchBasisLabel(value: string): string {
+  switch (value) {
+    case 'official-crosswalk':
+      return 'Official identifier crosswalk';
+    case 'source-declared-identifier':
+      return 'Identifier declared by the source';
+    case 'reviewed-food-identity':
+      return 'Reviewed food identity';
+    default:
+      return value;
+  }
+}
+
 export function FoodWorkspace({ store }: { store?: FoodStore }) {
   const runtime = useMemo<FoodStore>(
     () =>
@@ -166,6 +179,20 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
               <dt className="text-xs text-muted">Provenance</dt>
               <dd>{selected.provenance}</dd>
             </div>
+            {selected.linkedSources?.length ? (
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-muted">Linked reference records</dt>
+                <dd>
+                  <ul className="mt-1 space-y-1">
+                    {selected.linkedSources.map((link) => (
+                      <li key={link.source}>
+                        {link.source} · {matchBasisLabel(link.matchBasis)}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-xs text-muted">Completeness</dt>
               <dd>{selected.completeness}</dd>

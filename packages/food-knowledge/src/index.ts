@@ -8,6 +8,11 @@ export {
   type FoodSearchResultV1,
 } from './catalog.js';
 export {
+  FOOD_SOURCE_ORDER_V1,
+  FOOD_SOURCE_PRIORITY_V1,
+  ReviewedFoodIdentityResolverV1,
+} from './identity.js';
+export {
   FOOD_DATA_QUALITY_RADAR_VERSION_V1,
   FRESH_SOURCE_WINDOW_DAYS_V1,
   auditFoodDataQualityV1,

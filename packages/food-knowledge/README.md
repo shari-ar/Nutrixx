@@ -10,6 +10,7 @@ catalog releases.
 - Allow one optional approximate USD price per 100 g on a food; absent means
   unavailable. Prices are illustrative product data, not USDA source facts.
 - Preserve measured zero independently from unknown composition.
+- Resolve reviewed source food identities while retaining source-specific numeric lineage.
 - Validate catalog referential integrity and release-level quality metadata.
 - Build integrity-protected reference releases for the shared reference cache.
 - Provide deterministic, locale-aware local search and food-detail queries.

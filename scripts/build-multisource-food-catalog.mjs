@@ -10,6 +10,8 @@ import {
   auditFoodDataQualityV1,
   createFoodCatalogReleaseV1,
   deriveFoodCatalogManifestV1,
+  FOOD_SOURCE_PRIORITY_V1,
+  ReviewedFoodIdentityResolverV1,
 } from '@nutrixx/food-knowledge';
 import { sha256Canonical } from '@nutrixx/persistence-indexeddb';
 import {
@@ -43,8 +45,8 @@ if (
   );
 }
 
-const RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.1';
-const RELEASE_INSTANT = '2026-10-21T16:00:00.000Z';
+const RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.2';
+const RELEASE_INSTANT = '2026-10-24T00:00:00.000Z';
 const COFID_WORKBOOK_SHA256 =
   '436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d';
 const AFCD_COLUMNS_SHA256 =
@@ -400,6 +402,15 @@ function addFood(payload, provider, recordId, name, category, sourceId) {
   return food;
 }
 
+function addFoodIdentityLink(food, sourceId, matchBasis) {
+  if (food.sourceId === sourceId) return;
+  const links = (food.sourceIdentityLinks ??= []);
+  if (links.some((link) => link.sourceId === sourceId)) {
+    throw new TypeError(`Repeated food identity source: ${sourceId}.`);
+  }
+  links.push({ sourceId, matchBasis });
+}
+
 function addObservation(
   payload,
   known,
@@ -451,6 +462,25 @@ const payload = base.payload;
 const sourceById = new Map(
   payload.sources.map((source) => [source.sourceId, source]),
 );
+const reviewedIdentity = new ReviewedFoodIdentityResolverV1(
+  JSON.parse(
+    await readFile(
+      new URL('./food-identity-links.json', import.meta.url),
+      'utf8',
+    ),
+  ),
+);
+for (const food of payload.foods) {
+  const source = sourceById.get(food.sourceId);
+  if (source) {
+    reviewedIdentity.register(
+      source.provider,
+      source.sourceRecordId,
+      food.descriptions[0].value,
+      food,
+    );
+  }
+}
 const foodByFdcId = new Map(
   payload.foods.map((food) => [
     sourceById.get(food.sourceId)?.sourceRecordId,
@@ -539,6 +569,7 @@ const cnfFoodByCode = new Map();
 const cnfStats = {
   foods: cnfFoods.length,
   linkedFoods: 0,
+  reviewedLinkedFoods: 0,
   addedFoods: 0,
   observations: 0,
   excludedAssumedZeros: 0,
@@ -555,6 +586,14 @@ for (const row of cnfFoods) {
       ? byNdb.get(ndb)[0]
       : null;
   const linked = linkedId ? foodByFdcId.get(linkedId) : null;
+  const reviewed = reviewedIdentity.resolve(
+    'health-canada',
+    row.Food_Code,
+    row.Food_Description_EN,
+  );
+  if (linked && reviewed && linked.foodId !== reviewed.foodId) {
+    throw new TypeError(`Conflicting CNF identity: ${row.Food_Code}.`);
+  }
   const sourceId = addSource(
     payload,
     'health-canada',
@@ -565,6 +604,7 @@ for (const row of cnfFoods) {
   );
   const food =
     linked ??
+    reviewed ??
     addFood(
       payload,
       'health-canada',
@@ -573,7 +613,18 @@ for (const row of cnfFoods) {
       cnfGroups.get(row.CNF_Food_Group_Code),
       sourceId,
     );
-  cnfStats[linked ? 'linkedFoods' : 'addedFoods'] += 1;
+  if (linked) addFoodIdentityLink(food, sourceId, 'official-crosswalk');
+  else if (reviewed) {
+    addFoodIdentityLink(food, sourceId, 'reviewed-food-identity');
+    cnfStats.reviewedLinkedFoods += 1;
+  }
+  cnfStats[linked || reviewed ? 'linkedFoods' : 'addedFoods'] += 1;
+  reviewedIdentity.register(
+    'health-canada',
+    row.Food_Code,
+    row.Food_Description_EN,
+    food,
+  );
   cnfFoodByCode.set(row.Food_Code, { food, sourceId });
 }
 for (const row of await readCnf('Nutrient_Amount.csv')) {
@@ -670,6 +721,7 @@ for (const [column, accessCode] of AFCD_COLUMNS) {
 const afcdStats = {
   foods: afcd.foods.length,
   linkedFoods: 0,
+  reviewedLinkedFoods: 0,
   addedFoods: 0,
   observations: 0,
   excludedZeros: 0,
@@ -686,6 +738,10 @@ for (const row of afcd.foods) {
     row.derivation === 'Borrowed' && uniqueIds.length === 1
       ? foodByFdcId.get(uniqueIds[0])
       : null;
+  const reviewed = reviewedIdentity.resolve('fsanz', row.key, row.name);
+  if (linked && reviewed && linked.foodId !== reviewed.foodId) {
+    throw new TypeError(`Conflicting AFCD identity: ${row.key}.`);
+  }
   if (uniqueIds.length > 0 && !linked) afcdStats.excludedUncertainLinks += 1;
   const sourceId = addSource(
     payload,
@@ -696,8 +752,16 @@ for (const row of afcd.foods) {
     'source-terms-unverified',
   );
   const food =
-    linked ?? addFood(payload, 'fsanz', row.key, row.name, null, sourceId);
-  afcdStats[linked ? 'linkedFoods' : 'addedFoods'] += 1;
+    linked ??
+    reviewed ??
+    addFood(payload, 'fsanz', row.key, row.name, null, sourceId);
+  if (linked) addFoodIdentityLink(food, sourceId, 'source-declared-identifier');
+  else if (reviewed) {
+    addFoodIdentityLink(food, sourceId, 'reviewed-food-identity');
+    afcdStats.reviewedLinkedFoods += 1;
+  }
+  afcdStats[linked || reviewed ? 'linkedFoods' : 'addedFoods'] += 1;
+  reviewedIdentity.register('fsanz', row.key, row.name, food);
   for (const [column, accessCode] of AFCD_COLUMNS) {
     const value = row.values[String(column)];
     if (typeof value !== 'number' || value < 0 || !Number.isFinite(value))
@@ -730,23 +794,26 @@ for (const row of afcd.foods) {
   }
 }
 
-// Unknown USDA observations are superseded by a known, precisely mapped source value.
-payload.composition = payload.composition.filter((observation) => {
-  if (observation.value.state !== 'unknown') return true;
-  const component = FOOD_COMPONENTS_V1.find(
-    (item) =>
-      item.componentId === observation.nutrientId ||
-      item.usdaFdcNutrientIds.some(
-        (id) => `source.usda-fdc.${id}` === observation.nutrientId,
-      ),
-  );
-  return (
-    !component ||
-    !known.has(
-      `${observation.foodId}:${observation.foodRevision}:${component.componentId}`,
-    )
-  );
-});
+// A known value from a precisely linked source supersedes an unknown USDA cell.
+function removeSupersededUnknowns() {
+  payload.composition = payload.composition.filter((observation) => {
+    if (observation.value.state !== 'unknown') return true;
+    const component = FOOD_COMPONENTS_V1.find(
+      (item) =>
+        item.componentId === observation.nutrientId ||
+        item.usdaFdcNutrientIds.some(
+          (id) => `source.usda-fdc.${id}` === observation.nutrientId,
+        ),
+    );
+    return (
+      !component ||
+      !known.has(
+        `${observation.foodId}:${observation.foodRevision}:${component.componentId}`,
+      )
+    );
+  });
+}
+removeSupersededUnknowns();
 
 const manifest = deriveFoodCatalogManifestV1(
   {
@@ -791,6 +858,7 @@ for (const [sheet, sourceCode, accessCode, unit] of COFID_COLUMNS) {
 }
 const cofidStats = {
   foods: cofid.foods.length,
+  linkedFoods: 0,
   addedFoods: 0,
   observations: 0,
   excludedVolumeBasisFoods: 0,
@@ -812,15 +880,24 @@ for (const row of cofid.foods) {
     row.key,
     'uk-ogl-3.0',
   );
-  const food = addFood(
-    payload,
+  const reviewed = reviewedIdentity.resolve(
     'public-health-england',
     row.key,
     row.name,
-    `CoFID group ${row.group}`,
-    sourceId,
   );
-  cofidStats.addedFoods += 1;
+  const food =
+    reviewed ??
+    addFood(
+      payload,
+      'public-health-england',
+      row.key,
+      row.name,
+      `CoFID group ${row.group}`,
+      sourceId,
+    );
+  if (reviewed) addFoodIdentityLink(food, sourceId, 'reviewed-food-identity');
+  cofidStats[reviewed ? 'linkedFoods' : 'addedFoods'] += 1;
+  reviewedIdentity.register('public-health-england', row.key, row.name, food);
   for (const [sheet, sourceCode, accessCode, unit] of COFID_COLUMNS) {
     const key = `${sheet}:${sourceCode}`;
     const raw = row.values[key];
@@ -850,6 +927,7 @@ for (const row of cofid.foods) {
       cofidStats.observations += 1;
   }
 }
+removeSupersededUnknowns();
 const unitedKingdomManifest = deriveFoodCatalogManifestV1(
   {
     ...manifest,
@@ -907,6 +985,7 @@ for (const [sourceCode, accessCode, unit] of CIQUAL_COMPONENTS) {
 }
 const ciqualStats = {
   foods: ciqual.foods.length,
+  linkedFoods: 0,
   addedFoods: 0,
   observations: 0,
   unquantified: 0,
@@ -939,15 +1018,13 @@ for (const row of ciqual.foods) {
     row.code,
     'fr-etalab-open-license-2.0',
   );
-  const food = addFood(
-    payload,
-    'anses-ciqual',
-    row.code,
-    row.name,
-    row.group,
-    sourceId,
-  );
-  ciqualStats.addedFoods += 1;
+  const reviewed = reviewedIdentity.resolve('anses-ciqual', row.code, row.name);
+  const food =
+    reviewed ??
+    addFood(payload, 'anses-ciqual', row.code, row.name, row.group, sourceId);
+  if (reviewed) addFoodIdentityLink(food, sourceId, 'reviewed-food-identity');
+  ciqualStats[reviewed ? 'linkedFoods' : 'addedFoods'] += 1;
+  reviewedIdentity.register('anses-ciqual', row.code, row.name, food);
   for (const [sourceCode, accessCode] of CIQUAL_COMPONENTS) {
     const value = row.values[sourceCode];
     if (!value) continue;
@@ -980,6 +1057,8 @@ for (const row of ciqual.foods) {
     }
   }
 }
+removeSupersededUnknowns();
+const reviewedIdentityStats = reviewedIdentity.assertComplete();
 const finalManifest = deriveFoodCatalogManifestV1(
   {
     ...unitedKingdomManifest,
@@ -1004,6 +1083,38 @@ const afterFrance = auditFoodDataQualityV1({
   evaluatedAt,
 });
 const originalAfterFrance = originalKnownPairs();
+const finalSourceById = new Map(
+  payload.sources.map((source) => [source.sourceId, source]),
+);
+const identityLinkCounts = {
+  foodsWithMultipleSources: 0,
+  officialCrosswalk: 0,
+  sourceDeclaredIdentifier: 0,
+  reviewedFoodIdentity: 0,
+};
+for (const food of payload.foods) {
+  const links = food.sourceIdentityLinks ?? [];
+  if (links.length > 0) identityLinkCounts.foodsWithMultipleSources += 1;
+  const primary = finalSourceById.get(food.sourceId);
+  const primaryPriority = FOOD_SOURCE_PRIORITY_V1[primary?.provider ?? ''];
+  for (const link of links) {
+    const secondary = finalSourceById.get(link.sourceId);
+    const secondaryPriority =
+      FOOD_SOURCE_PRIORITY_V1[secondary?.provider ?? ''];
+    if (
+      primaryPriority === undefined ||
+      secondaryPriority === undefined ||
+      secondaryPriority <= primaryPriority
+    ) {
+      throw new TypeError(`Invalid source priority for food ${food.foodId}.`);
+    }
+    if (link.matchBasis === 'official-crosswalk')
+      identityLinkCounts.officialCrosswalk += 1;
+    else if (link.matchBasis === 'source-declared-identifier')
+      identityLinkCounts.sourceDeclaredIdentifier += 1;
+    else identityLinkCounts.reviewedFoodIdentity += 1;
+  }
+}
 await mkdir(outputDirectory, { recursive: true });
 const report = {
   format: 'nutrixx.multisource-integration-report',
@@ -1031,6 +1142,8 @@ const report = {
       .digest('hex'),
     ciqualOfficialFiles: ciqual.sourceSha256,
   },
+  reviewedIdentity: reviewedIdentityStats,
+  identityLinkCounts,
   stages: [
     {
       source: 'USDA',
