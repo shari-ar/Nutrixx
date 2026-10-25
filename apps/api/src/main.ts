@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { parseApiEnvironment } from '@nutrixx/config/environment';
 
 import { configureApp } from './app.config.js';
@@ -19,7 +20,9 @@ if (rootEnvFile) {
 const environment = parseApiEnvironment(process.env);
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.useBodyParser('json', { limit: '10mb' });
 
   configureApp(app, environment);
 

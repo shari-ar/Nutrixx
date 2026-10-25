@@ -9,6 +9,7 @@ the source document.
 | Path           | Responsibility                                    |
 | -------------- | ------------------------------------------------- |
 | `openapi/`     | Authored, reviewable API source contracts         |
+| `postman/`     | Importable operator collections and usage notes   |
 | `dist/`        | Generated bundled contracts; never edit or commit |
 | `package.json` | Contract lint and bundle commands                 |
 

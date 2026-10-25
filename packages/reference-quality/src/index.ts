@@ -32,3 +32,15 @@ export {
   type ReferenceReviewV1,
   type ReviewedClaimV1,
 } from './release-candidate.js';
+export {
+  AgentCurationBatchV1Schema,
+  AgentCuratedFoodCompositionRecordV1Schema,
+  AgentFoodCompositionClaimV1Schema,
+  agentFoodCompositionClaimKeyV1,
+  validateAgentCurationBatchV1,
+  type AgentCurationBatchV1,
+  type AgentCurationContextV1,
+  type AgentCuratedFoodCompositionRecordV1,
+  type AgentFoodCompositionClaimV1,
+  type ValidatedAgentCurationBatchV1,
+} from './agent-curation.js';

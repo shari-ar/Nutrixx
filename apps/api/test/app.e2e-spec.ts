@@ -37,6 +37,49 @@ describe('AppController (e2e)', () => {
     expect(response.body).toEqual({ status: 'ok' });
   });
 
+  it('/api/v1/internal/curation/runs rejects access while disabled', async () => {
+    const previous = process.env['NUTRIXX_CURATION_ENABLED'];
+    delete process.env['NUTRIXX_CURATION_ENABLED'];
+    try {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/internal/curation/runs')
+        .send({});
+
+      expect(response.status).toBe(503);
+    } finally {
+      if (previous === undefined)
+        delete process.env['NUTRIXX_CURATION_ENABLED'];
+      else process.env['NUTRIXX_CURATION_ENABLED'] = previous;
+    }
+  });
+
+  it('/api/v1/internal/curation/runs/:runId protects persisted status', async () => {
+    const previousEnabled = process.env['NUTRIXX_CURATION_ENABLED'];
+    const previousToken = process.env['NUTRIXX_CURATION_TOKEN'];
+    process.env['NUTRIXX_CURATION_ENABLED'] = 'true';
+    process.env['NUTRIXX_CURATION_TOKEN'] = 'test-token';
+    try {
+      const unauthorized = await request(app.getHttpServer()).get(
+        '/api/v1/internal/curation/runs/00000000-0000-0000-0000-000000000000',
+      );
+      const unavailable = await request(app.getHttpServer())
+        .get(
+          '/api/v1/internal/curation/runs/00000000-0000-0000-0000-000000000000',
+        )
+        .set('Authorization', 'Bearer test-token');
+
+      expect(unauthorized.status).toBe(401);
+      expect(unavailable.status).toBe(404);
+    } finally {
+      if (previousEnabled === undefined)
+        delete process.env['NUTRIXX_CURATION_ENABLED'];
+      else process.env['NUTRIXX_CURATION_ENABLED'] = previousEnabled;
+      if (previousToken === undefined)
+        delete process.env['NUTRIXX_CURATION_TOKEN'];
+      else process.env['NUTRIXX_CURATION_TOKEN'] = previousToken;
+    }
+  });
+
   afterEach(async () => {
     await app.close();
   });

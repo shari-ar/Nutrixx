@@ -8,6 +8,7 @@ Small, cross-platform automation used by contributors and CI.
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `check-doc-language.mjs`             | Enforces international scope and affirmative language across technical documentation                                                                      |
 | `check-readmes.mjs`                  | Enforces README presence in project-owned directories                                                                                                     |
+| `check-agent-curation-assets.mjs`    | Verifies the agent prompt checksum and Postman collection against the active catalog and API routes                                                       |
 | `install-git-hooks.mjs`              | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                                     |
 | `run-with-node-env.mjs`              | Runs a command with an explicit, cross-platform Node environment                                                                                          |
 | `data-quality-radar.mjs`             | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                          |
@@ -17,6 +18,9 @@ Small, cross-platform automation used by contributors and CI.
 | `build-reference-candidate.mjs`      | Verifies reviewed evidence, replays the next-meal engine, and writes an inactive candidate                                                                |
 | `build-reference-candidate.test.mjs` | Exercises deterministic replay, reviewer separation, and evidence tampering with a synthetic catalog                                                      |
 | `publish-reference-candidate.mjs`    | Revalidates replay, materializes a catalog release, and switches the Web descriptor only on explicit activation                                           |
+| `process-agent-curation.mjs`         | Validates an agent batch per claim, updates canonical Nutrixx fallbacks, and builds an inactive catalog plus provenance receipt                           |
+| `process-agent-curation.test.mjs`    | Proves that Nutrixx fills an unknown cell and automatically yields when any external provider later supplies a known value                                |
+| `run-agent-curation-worker.mjs`      | Serializes catalog builds, prepares package output, persists lifecycle failures, and invokes the agent-curation processor                                 |
 | `stage-4-browser-runner.mjs`         | Measures full-catalog worker responsiveness in a named browser/device; the optional `local` argument runs an isolated IndexedDB create-and-reload journey |
 | `build-usda-cooking-tables.py`       | Builds pinned cooking tables and an exact FDC-to-NDB crosswalk from USDA Release 6, Release 2, and SR Legacy files with Python's standard library         |
 | `extract-afcd-release.py`            | Extracts keyed AFCD Release 3 workbook rows and source file digests for the multi-source catalog build                                                    |

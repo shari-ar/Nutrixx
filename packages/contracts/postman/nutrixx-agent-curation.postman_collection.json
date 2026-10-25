@@ -1,0 +1,172 @@
+{
+  "info": {
+    "_postman_id": "f7e20121-0409-42b8-a4ea-692812bb6b93",
+    "name": "Nutrixx Agent Curation",
+    "description": "Token-protected local workflow for submitting an agent curation batch and reading its asynchronous catalog-build status.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{curationToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "curationToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agentBatchJson",
+      "value": "{\n  \"format\": \"nutrixx.agent-curation-batch\",\n  \"schemaVersion\": 1,\n  \"batchId\": \"replace-with-agent-output\",\n  \"generatedAt\": \"2026-10-25T00:00:00.000Z\",\n  \"catalog\": {\n    \"releaseId\": \"food-catalog-us-ca-au-uk-fr-2026.2\",\n    \"artifactSha256\": \"8ef0f19b3168dcd2ffb6caf7c3c0a6889f84ae22c3bce2eabda899483a0acc27\"\n  },\n  \"agent\": {\n    \"agentId\": \"replace-with-agent-id\",\n    \"model\": \"replace-with-model-id\",\n    \"instructionSha256\": \"590dbf27e73074169408015d72358e89d62bd9bb6c23b509bbdefa512951c107\"\n  },\n  \"claims\": []\n}",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Submit Agent Curation Batch",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const token = pm.collectionVariables.get('curationToken');",
+              "if (!token || token.trim().length < 16) {",
+              "  throw new Error('Set curationToken to the high-entropy token configured in the root .env file.');",
+              "}",
+              "const raw = pm.collectionVariables.get('agentBatchJson');",
+              "let batch;",
+              "try {",
+              "  batch = JSON.parse(raw);",
+              "} catch {",
+              "  throw new Error('agentBatchJson must contain the bare JSON object returned by the curation agent.');",
+              "}",
+              "if (batch.format !== 'nutrixx.agent-curation-batch' || batch.schemaVersion !== 1) {",
+              "  throw new Error('agentBatchJson uses an unsupported curation-batch contract.');",
+              "}",
+              "if (!Array.isArray(batch.claims) || batch.claims.length < 1) {",
+              "  throw new Error('Replace the template with an agent batch containing at least one claim.');",
+              "}",
+              "pm.collectionVariables.set('submittedBatchId', batch.batchId);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('The batch was accepted for asynchronous processing', function () {",
+              "  pm.response.to.have.status(202);",
+              "});",
+              "if (pm.response.code === 202) {",
+              "  const result = pm.response.json();",
+              "  pm.test('The response contains a queued curation run', function () {",
+              "    pm.expect(result.format).to.eql('nutrixx.agent-curation-run');",
+              "    pm.expect(result.schemaVersion).to.eql(1);",
+              "    pm.expect(result.status).to.eql('queued');",
+              "    pm.expect(result.runId).to.be.a('string').and.not.empty;",
+              "  });",
+              "  pm.collectionVariables.set('runId', result.runId);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{agentBatchJson}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/internal/curation/runs",
+          "host": ["{{baseUrl}}"],
+          "path": ["internal", "curation", "runs"]
+        },
+        "description": "Queues the exact JSON batch stored in agentBatchJson and captures the returned runId."
+      },
+      "response": []
+    },
+    {
+      "name": "2 - Get Curation Run Status",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const token = pm.collectionVariables.get('curationToken');",
+              "if (!token || token.trim().length < 16) {",
+              "  throw new Error('Set curationToken before reading a curation run.');",
+              "}",
+              "const runId = pm.collectionVariables.get('runId');",
+              "if (!runId) {",
+              "  throw new Error('Submit a curation batch first so Postman can capture runId.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('The persisted run status is available', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const result = pm.response.json();",
+              "  pm.test('The status follows the curation-run contract', function () {",
+              "    pm.expect(result.format).to.eql('nutrixx.agent-curation-run');",
+              "    pm.expect(result.runId).to.eql(pm.collectionVariables.get('runId'));",
+              "    pm.expect(['queued', 'running', 'completed', 'failed']).to.include(result.status);",
+              "  });",
+              "  console.log('Nutrixx curation run status:', result.status, result);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/internal/curation/runs/{{runId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["internal", "curation", "runs", "{{runId}}"]
+        },
+        "description": "Reads the latest persisted state for the run captured by the submit request."
+      },
+      "response": []
+    }
+  ]
+}

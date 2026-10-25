@@ -5,7 +5,7 @@
 | Status        | Implemented intake, replay, guarded publication, and site delivery |
 | Audience      | Data engineering, nutrition science, quality                       |
 | Owner         | Nutrixx Data                                                       |
-| Last reviewed | 2026-10-21                                                         |
+| Last reviewed | 2026-10-24                                                         |
 
 ## Purpose and boundary
 
@@ -266,6 +266,45 @@ Previously recorded references retain their release ID. The internal Data
 Quality Radar audits the descriptor-selected release and presents its
 candidate ID, reviewed claim count, current coverage, and updated work queue.
 Operator source files and replay cases stay in the ignored local workbench.
+
+## Agent-native Nutrixx fallback completion
+
+Nutrixx-curated food-composition values use a separate machine-first path.
+An agent submits one batch containing up to 5,000 independently attributable
+claims to `POST /api/v1/internal/curation/runs` with the local bearer token.
+The API returns `202 Accepted` immediately. The caller polls the returned
+`statusUrl` until the run is `completed` or `failed`.
+
+Each claim targets one exact food ID, revision, preparation state, component,
+unit, and per-100-gram edible basis. Its evidence passport records the source
+title, publisher, HTTPS URL, edition, license reference, precise locator,
+retrieval time, source-content SHA-256, and extraction method. Invalid claims
+enter the run quarantine independently; valid claims in the same batch keep
+processing. Duplicate claim IDs and duplicate food-component targets in one
+batch enter quarantine.
+
+The processor updates the canonical
+`reference-data/nutrixx-curated/claims.v1.json` input and builds an immutable,
+inactive catalog artifact, receipt, and report under the ignored run directory.
+The receipt connects every projected observation to its agent identity,
+instruction digest, and evidence passport. Git history audits canonical claim
+changes; generated artifacts remain outside Git and enter delivery through the
+normal immutable release path.
+
+Nutrixx-curated is a permanent fallback class rather than a numbered provider.
+Every external provider, including one added later, outranks it. A curated
+claim remains in canonical data while the compiler omits it from the active
+projection whenever an external known value exists for the same exact cell.
+This makes external supersession automatic and reversible without losing the
+Nutrixx evidence record. The Data Quality Radar can guide agent work, while
+batch order remains independent from radar priority.
+
+The local endpoint is available only when `NUTRIXX_CURATION_ENABLED=true` and
+requires `Authorization: Bearer <NUTRIXX_CURATION_TOKEN>`. A successful run has
+`publicationState: pending-activation`. Immutable hosting and descriptor
+activation proceed through the explicit delivery workflow. Local development
+requires explicit operator enablement with a unique, high-entropy token in the
+ignored root `.env` file.
 
 ## Completion workflow
 

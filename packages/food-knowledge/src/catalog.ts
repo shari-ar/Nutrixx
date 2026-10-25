@@ -14,7 +14,7 @@ import {
   type FoodPortionV1,
   type FoodV1,
 } from './model.js';
-import { FOOD_SOURCE_PRIORITY_V1 } from './identity.js';
+import { compareFoodSourcePriorityV1 } from './identity.js';
 
 export interface CreateFoodCatalogReleaseV1Options {
   readonly manifest: FoodCatalogManifestV1;
@@ -244,12 +244,10 @@ export class FoodCatalogIndexV1 {
     for (const match of matches.sort(
       (left, right) =>
         left.score - right.score ||
-        (FOOD_SOURCE_PRIORITY_V1[
-          this.#sourceById.get(left.food.sourceId)?.provider ?? ''
-        ] ?? Number.MAX_SAFE_INTEGER) -
-          (FOOD_SOURCE_PRIORITY_V1[
-            this.#sourceById.get(right.food.sourceId)?.provider ?? ''
-          ] ?? Number.MAX_SAFE_INTEGER) ||
+        compareFoodSourcePriorityV1(
+          this.#sourceById.get(left.food.sourceId)?.provider ?? '',
+          this.#sourceById.get(right.food.sourceId)?.provider ?? '',
+        ) ||
         left.matchedDescription.value.localeCompare(
           right.matchedDescription.value,
           'en',

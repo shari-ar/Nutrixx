@@ -18,6 +18,8 @@ servers:
 tags:
   - name: System
     description: Service identity and operational readiness.
+  - name: Internal curation
+    description: Token-protected local reference-data build operations.
 
 security: []
 
@@ -64,8 +66,250 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
 
+  /internal/curation/runs:
+    post:
+      operationId: createAgentCurationRun
+      summary: Submit an agent curation batch
+      description: >-
+        Queues a local asynchronous validation and catalog build without
+        activating the resulting release.
+      tags:
+        - Internal curation
+      security:
+        - CurationBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCurationBatch'
+      responses:
+        '202':
+          description: The curation run was queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentCurationRun'
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+        '503':
+          $ref: '#/components/responses/InternalServerError'
+
+  /internal/curation/runs/{runId}:
+    get:
+      operationId: getAgentCurationRun
+      summary: Get an agent curation run
+      tags:
+        - Internal curation
+      security:
+        - CurationBearer: []
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The persisted run status was returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentCurationRun'
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+
 components:
   schemas:
+    AgentCurationBatch:
+      type: object
+      additionalProperties: false
+      required:
+        - format
+        - schemaVersion
+        - batchId
+        - generatedAt
+        - catalog
+        - agent
+        - claims
+      properties:
+        format:
+          type: string
+          const: nutrixx.agent-curation-batch
+        schemaVersion:
+          type: integer
+          const: 1
+        batchId:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$
+        generatedAt:
+          type: string
+          format: date-time
+        catalog:
+          $ref: '#/components/schemas/CatalogIdentity'
+        agent:
+          $ref: '#/components/schemas/CurationAgent'
+        claims:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          items:
+            $ref: '#/components/schemas/AgentFoodCompositionClaim'
+
+    CatalogIdentity:
+      type: object
+      additionalProperties: false
+      required:
+        - releaseId
+        - artifactSha256
+      properties:
+        releaseId:
+          type: string
+        artifactSha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+
+    CurationAgent:
+      type: object
+      additionalProperties: false
+      required:
+        - agentId
+        - model
+        - instructionSha256
+      properties:
+        agentId:
+          type: string
+        model:
+          type: string
+        instructionSha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+
+    AgentFoodCompositionClaim:
+      type: object
+      additionalProperties: false
+      required:
+        - claimId
+        - foodId
+        - foodRevision
+        - preparationState
+        - componentId
+        - value
+        - evidence
+      properties:
+        claimId:
+          type: string
+        foodId:
+          type: string
+        foodRevision:
+          type: integer
+          minimum: 1
+        preparationState:
+          type: string
+        componentId:
+          type: string
+        value:
+          $ref: '#/components/schemas/CuratedCompositionValue'
+        evidence:
+          $ref: '#/components/schemas/CuratedEvidence'
+
+    CuratedCompositionValue:
+      type: object
+      additionalProperties: false
+      required:
+        - amount
+        - unit
+        - basis
+      properties:
+        amount:
+          type: string
+          pattern: ^(?:0|[1-9][0-9]*)(?:\.[0-9]*[1-9])?$
+        unit:
+          type: object
+          additionalProperties: false
+          required:
+            - system
+            - code
+          properties:
+            system:
+              type: string
+              const: ucum
+            code:
+              type: string
+              enum: [kcal, g, mg, ug]
+        basis:
+          type: string
+          const: per-100-gram-edible
+
+    CuratedEvidence:
+      type: object
+      additionalProperties: false
+      required:
+        - sourceTitle
+        - publisher
+        - sourceUrl
+        - sourceEdition
+        - licenseId
+        - locator
+        - retrievedAt
+        - sourceContentSha256
+        - method
+      properties:
+        sourceTitle:
+          type: string
+        publisher:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+          pattern: ^https://
+        sourceEdition:
+          type: string
+        licenseId:
+          type: string
+        locator:
+          type: string
+        retrievedAt:
+          type: string
+          format: date-time
+        sourceContentSha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        method:
+          type: string
+          enum:
+            - direct-transcription
+            - unit-conversion
+            - calculation
+            - evidence-synthesis
+        note:
+          type: string
+
+    AgentCurationRun:
+      type: object
+      additionalProperties: true
+      required:
+        - format
+        - schemaVersion
+        - runId
+        - status
+      properties:
+        format:
+          type: string
+          const: nutrixx.agent-curation-run
+        schemaVersion:
+          type: integer
+          const: 1
+        runId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        statusUrl:
+          type: string
+          format: uri-reference
     ApiInfo:
       type: object
       additionalProperties: false
@@ -136,3 +380,9 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
+
+  securitySchemes:
+    CurationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-local-token

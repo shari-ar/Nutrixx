@@ -73,6 +73,9 @@ services:
     command: npm run start:dev --workspace=@nutrixx/api
     environment:
       NODE_ENV: development
+      NUTRIXX_CURATION_ENABLED: ${NUTRIXX_CURATION_ENABLED:-false}
+      NUTRIXX_CURATION_TOKEN: ${NUTRIXX_CURATION_TOKEN:-}
+      NUTRIXX_PROJECT_ROOT: /workspace
     volumes:
       - ../..:/workspace
       - api_root_node_modules:/workspace/node_modules

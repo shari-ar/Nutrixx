@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { ReviewedFoodIdentityResolverV1 } from './identity.js';
+import {
+  NUTRIXX_FALLBACK_PROVIDER_V1,
+  ReviewedFoodIdentityResolverV1,
+  compareFoodSourcePriorityV1,
+} from './identity.js';
 import type { FoodV1 } from './model.js';
 
 const reviewed = {
@@ -97,5 +101,28 @@ describe('reviewed cross-source food identity', () => {
     expect(() => new ReviewedFoodIdentityResolverV1(inverted)).toThrow(
       'Invalid reviewed food identity',
     );
+  });
+});
+
+describe('food source priority', () => {
+  it('keeps every current and future external source ahead of Nutrixx', () => {
+    expect(
+      compareFoodSourcePriorityV1(
+        'future-external-provider',
+        NUTRIXX_FALLBACK_PROVIDER_V1,
+      ),
+    ).toBeLessThan(0);
+    expect(
+      compareFoodSourcePriorityV1(
+        NUTRIXX_FALLBACK_PROVIDER_V1,
+        'future-external-provider',
+      ),
+    ).toBeGreaterThan(0);
+  });
+
+  it('retains the declared external-source order', () => {
+    expect(
+      compareFoodSourcePriorityV1('usda-fdc', 'health-canada'),
+    ).toBeLessThan(0);
   });
 });

@@ -15,6 +15,26 @@ export const FOOD_SOURCE_PRIORITY_V1: Readonly<Record<string, number>> =
     FOOD_SOURCE_ORDER_V1.map((provider, index) => [provider, index]),
   );
 
+export const NUTRIXX_FALLBACK_PROVIDER_V1 = 'nutrixx-curated' as const;
+
+/**
+ * Every external provider, including providers added in the future, outranks
+ * Nutrixx-curated fallback values. Known external providers retain their
+ * declared order; new external providers sort after them and before Nutrixx.
+ */
+export function compareFoodSourcePriorityV1(
+  leftProvider: string,
+  rightProvider: string,
+): number {
+  if (leftProvider === rightProvider) return 0;
+  if (leftProvider === NUTRIXX_FALLBACK_PROVIDER_V1) return 1;
+  if (rightProvider === NUTRIXX_FALLBACK_PROVIDER_V1) return -1;
+  return (
+    (FOOD_SOURCE_PRIORITY_V1[leftProvider] ?? FOOD_SOURCE_ORDER_V1.length) -
+    (FOOD_SOURCE_PRIORITY_V1[rightProvider] ?? FOOD_SOURCE_ORDER_V1.length)
+  );
+}
+
 const IdentityMemberSchema = z.strictObject({
   provider: z.enum(FOOD_SOURCE_ORDER_V1),
   sourceRecordId: z.string().trim().min(1).max(128),

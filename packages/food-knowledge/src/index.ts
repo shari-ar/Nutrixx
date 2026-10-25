@@ -10,7 +10,9 @@ export {
 export {
   FOOD_SOURCE_ORDER_V1,
   FOOD_SOURCE_PRIORITY_V1,
+  NUTRIXX_FALLBACK_PROVIDER_V1,
   ReviewedFoodIdentityResolverV1,
+  compareFoodSourcePriorityV1,
 } from './identity.js';
 export {
   FOOD_DATA_QUALITY_RADAR_VERSION_V1,

@@ -16,6 +16,7 @@
 | [Current physical storage ER](current-storage-er.md)        | IndexedDB object stores and PostgreSQL adapter table        |
 | [Publication and quality](publication-and-quality.md)       | Ingestion, validation, activation, and rollback             |
 | [Reference completion](reference-completion.md)             | Gap identity, measured priority, and completion workflow    |
+| [Agent curation prompt](agent-curation-prompt.md)           | Standard machine prompt and exact batch-output contract     |
 | [First USDA catalog release](first-usda-catalog-release.md) | Reproducible first local catalog release evidence           |
 
 The operational schemas are derived from aggregates and access patterns after
