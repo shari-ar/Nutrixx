@@ -1,6 +1,14 @@
 {
   "format": "nutrixx.reviewed-food-identity-links",
   "schemaVersion": 1,
+  "sourceOrder": [
+    "usda-fdc",
+    "health-canada",
+    "fsanz",
+    "public-health-england",
+    "anses-ciqual"
+  ],
+  "pending": [],
   "groups": [
     {
       "name": "amaranth leaves, raw",

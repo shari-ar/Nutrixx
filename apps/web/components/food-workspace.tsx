@@ -30,6 +30,19 @@ function matchBasisLabel(value: string): string {
   }
 }
 
+function evidenceTypeLabel(value: string): string {
+  switch (value) {
+    case 'external-source':
+      return 'External Source';
+    case 'model-knowledge':
+      return 'Model Knowledge';
+    case 'agent-derived':
+      return 'Agent-derived';
+    default:
+      return value;
+  }
+}
+
 export function FoodWorkspace({ store }: { store?: FoodStore }) {
   const runtime = useMemo<FoodStore>(
     () =>
@@ -237,6 +250,58 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
                               : ''}
                             {nutrient.sourceReference
                               ? ` · ${nutrient.sourceReference}`
+                              : ''}
+                          </span>
+                        ) : null}
+                        {nutrient.agentProvenance ? (
+                          <span className="block text-xs text-muted">
+                            Collected by Nutrixx Agent ·{' '}
+                            {evidenceTypeLabel(
+                              nutrient.agentProvenance.evidenceType,
+                            )}{' '}
+                            · {nutrient.agentProvenance.agentId} ·{' '}
+                            {nutrient.agentProvenance.model}
+                            {nutrient.agentProvenance.sourceTitle
+                              ? ` · ${nutrient.agentProvenance.sourceTitle}`
+                              : ''}
+                            {nutrient.agentProvenance.publisher
+                              ? ` · ${nutrient.agentProvenance.publisher}`
+                              : ''}
+                            {nutrient.agentProvenance.locator
+                              ? ` · ${nutrient.agentProvenance.locator}`
+                              : ''}
+                            {nutrient.agentProvenance.method
+                              ? ` · ${nutrient.agentProvenance.method}`
+                              : ''}
+                            {nutrient.agentProvenance.sourceUrl ? (
+                              <>
+                                {' · '}
+                                <a
+                                  className="text-accent underline"
+                                  href={nutrient.agentProvenance.sourceUrl}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  Open source
+                                </a>
+                              </>
+                            ) : null}
+                            {nutrient.agentProvenance.knowledgeDescription
+                              ? ` · ${nutrient.agentProvenance.knowledgeDescription}`
+                              : ''}
+                            {nutrient.agentProvenance.derivation
+                              ? ` · ${nutrient.agentProvenance.derivation}`
+                              : ''}
+                            {nutrient.agentProvenance.inputs?.map((input) => (
+                              <span
+                                className="block pl-3"
+                                key={`${input.description}:${input.provenance}`}
+                              >
+                                Input: {input.description} · {input.provenance}
+                              </span>
+                            ))}
+                            {nutrient.agentProvenance.note
+                              ? ` · ${nutrient.agentProvenance.note}`
                               : ''}
                           </span>
                         ) : null}

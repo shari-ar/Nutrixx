@@ -18,6 +18,33 @@ const workbenchRoot = path.join(
 );
 const lockPath = path.join(workbenchRoot, '.build-lock');
 const statusPath = path.join(workbenchRoot, 'runs', runId, 'status.json');
+const queuePath = path.join(projectRoot, '.temp/data-quality-radar/queue.json');
+
+function coverageSnapshot(queue) {
+  const totalCells = queue.totalFoods * queue.totalComponents;
+  const missingCells = queue.items.reduce(
+    (sum, item) => sum + item.totalComponentCount - item.knownComponentCount,
+    0,
+  );
+  const comparableCells = totalCells - missingCells;
+  return {
+    releaseId: queue.releaseId,
+    totalCells,
+    comparableCells,
+    coverageFraction:
+      totalCells === 0
+        ? '0'
+        : (comparableCells / totalCells)
+            .toFixed(6)
+            .replace(/0+$/u, '')
+            .replace(/\.$/u, ''),
+    candidateFoods: queue.candidateFoods,
+  };
+}
+
+async function readCoverageSnapshot() {
+  return coverageSnapshot(JSON.parse(await readFile(queuePath, 'utf8')));
+}
 
 async function atomicStatus(value) {
   const temporary = `${statusPath}.${process.pid}.next`;
@@ -86,8 +113,22 @@ function buildPackages() {
     );
 }
 
+function refreshRadar() {
+  const result = spawnSync(
+    process.execPath,
+    ['--max-old-space-size=4096', 'scripts/data-quality-radar.mjs'],
+    { cwd: projectRoot, stdio: 'inherit' },
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0)
+    throw new Error(
+      `The data-quality radar refresh exited with code ${String(result.status)}.`,
+    );
+}
+
 await acquireLock();
 try {
+  const coverageBefore = await readCoverageSnapshot();
   await atomicStatus({
     status: 'running',
     phase: 'building-curation-dependencies',
@@ -97,7 +138,27 @@ try {
   const { processAgentCurationRunV1 } = await import(
     './process-agent-curation.mjs'
   );
-  await processAgentCurationRunV1({ runId });
+  const completed = await processAgentCurationRunV1({
+    runId,
+    deferCompletion: true,
+  });
+  await atomicStatus({
+    status: 'running',
+    phase: 'refreshing-local-catalog-operations',
+  });
+  refreshRadar();
+  const coverageAfter = await readCoverageSnapshot();
+  await atomicStatus({
+    ...completed,
+    coverage: {
+      before: coverageBefore,
+      after: coverageAfter,
+      comparableCellDelta:
+        coverageAfter.comparableCells - coverageBefore.comparableCells,
+      candidateFoodDelta:
+        coverageAfter.candidateFoods - coverageBefore.candidateFoods,
+    },
+  });
 } catch (error) {
   let current;
   try {

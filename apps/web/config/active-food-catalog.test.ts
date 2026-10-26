@@ -6,14 +6,12 @@ import {
 } from './active-food-catalog';
 
 describe('active food catalog descriptor', () => {
-  it('pins the distributed multi-source artifact', () => {
-    expect(ACTIVE_FOOD_CATALOG.releaseId).toBe(
-      'food-catalog-us-ca-au-uk-fr-2026.2',
-    );
+  it('pins one valid catalog artifact', () => {
+    expect(ACTIVE_FOOD_CATALOG.releaseId).toMatch(/^[a-z0-9][a-z0-9.-]+$/);
     expect(ACTIVE_FOOD_CATALOG.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it('requires exact release filenames, digests, and delivery for reviewed releases', () => {
+  it('requires exact filenames and state-consistent delivery URLs', () => {
     expect(() =>
       validateActiveFoodCatalog({
         ...ACTIVE_FOOD_CATALOG,
@@ -23,8 +21,8 @@ describe('active food catalog descriptor', () => {
     expect(() =>
       validateActiveFoodCatalog({
         ...ACTIVE_FOOD_CATALOG,
-        candidateId: 'a'.repeat(64),
-        reviewedClaimCount: 1,
+        artifactUrl: 'https://example.test/catalog.gz',
+        receiptUrl: null,
       }),
     ).toThrow(/invalid/);
   });

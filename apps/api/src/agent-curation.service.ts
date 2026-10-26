@@ -1,7 +1,8 @@
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import {
   closeSync,
   existsSync,
+  mkdirSync,
   openSync,
   readFileSync,
   renameSync,
@@ -51,6 +52,17 @@ function tokensMatch(received: string, expected: string): boolean {
   );
 }
 
+function errorCode(error: unknown): string | undefined {
+  if (
+    typeof error !== 'object' ||
+    error === null ||
+    !('code' in error) ||
+    typeof error.code !== 'string'
+  )
+    return undefined;
+  return error.code;
+}
+
 @Injectable()
 export class AgentCurationService {
   readonly #projectRoot = path.resolve(
@@ -60,13 +72,44 @@ export class AgentCurationService {
     this.#projectRoot,
     'reference-workbench/agent-curation/runs',
   );
+  readonly #expectedToken = this.#initializeToken();
+
+  #initializeToken(): string | undefined {
+    const configured = process.env['NUTRIXX_CURATION_TOKEN']?.trim();
+    if (configured) return configured;
+    const tokenPath = process.env['NUTRIXX_CURATION_TOKEN_FILE'];
+    if (!tokenPath || process.env['NUTRIXX_CURATION_ENABLED'] !== 'true')
+      return undefined;
+    mkdirSync(path.dirname(tokenPath), { recursive: true });
+    try {
+      const existing = readFileSync(tokenPath, 'utf8').trim();
+      if (existing.length >= 32) return existing;
+      throw new TypeError('The local curation token file is invalid.');
+    } catch (error) {
+      if (errorCode(error) !== 'ENOENT') throw error;
+    }
+    const generated = randomBytes(32).toString('base64url');
+    try {
+      writeFileSync(tokenPath, generated, { flag: 'wx', mode: 0o600 });
+      return generated;
+    } catch (error) {
+      if (errorCode(error) !== 'EEXIST') throw error;
+      const existing = readFileSync(tokenPath, 'utf8').trim();
+      if (existing.length < 32)
+        throw new TypeError('The local curation token file is invalid.', {
+          cause: error,
+        });
+      return existing;
+    }
+  }
 
   #authorize(authorization: string | undefined): void {
     if (process.env['NUTRIXX_CURATION_ENABLED'] !== 'true')
       throw new ServiceUnavailableException(
         'The local curation API is disabled.',
       );
-    const expected = process.env['NUTRIXX_CURATION_TOKEN'];
+    const expected =
+      process.env['NUTRIXX_CURATION_TOKEN']?.trim() || this.#expectedToken;
     if (!expected)
       throw new ServiceUnavailableException(
         'The local curation API token is not configured.',

@@ -97,6 +97,34 @@ export interface FoodChoice {
     sourceConfidenceCode?: string;
     value: string;
     source?: string;
+    agentProvenance?: {
+      evidenceType: 'external-source' | 'model-knowledge' | 'agent-derived';
+      agentId: string;
+      model: string;
+      generatedAt: string;
+      sourceTitle?: string | undefined;
+      publisher?: string | undefined;
+      sourceUrl?: string | undefined;
+      sourceEdition?: string | undefined;
+      locator?: string | undefined;
+      method?:
+        | 'direct-transcription'
+        | 'unit-conversion'
+        | 'calculation'
+        | 'evidence-synthesis'
+        | 'estimation'
+        | undefined;
+      sourceContentSha256?: string | undefined;
+      knowledgeDescription?: string | undefined;
+      derivation?: string | undefined;
+      inputs?:
+        | readonly {
+            description: string;
+            provenance: string;
+          }[]
+        | undefined;
+      note?: string | undefined;
+    };
   }[];
 }
 
@@ -291,8 +319,7 @@ export class BrowserStageTwoStore {
       indexedDB: this.dependencies.indexedDB,
     });
     try {
-      await cache.putRelease(verified);
-      await cache.activateRelease(verified.releaseId);
+      await cache.replaceWithActiveRelease(verified);
       return verified.releaseId;
     } finally {
       await cache.close();
@@ -508,6 +535,11 @@ export class BrowserStageTwoStore {
                       ].join(' · '),
                       ...(nutrientSource.sourceReference
                         ? { sourceReference: nutrientSource.sourceReference }
+                        : {}),
+                      ...(nutrientSource.agentProvenance
+                        ? {
+                            agentProvenance: nutrientSource.agentProvenance,
+                          }
                         : {}),
                     }
                   : {}),

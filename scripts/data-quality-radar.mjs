@@ -17,6 +17,10 @@ import {
 import { buildFoodCompositionWorkQueueV1 } from '../packages/reference-quality/dist/index.js';
 
 import { renderReferenceWorkQueueHtml } from './render-reference-work-queue.mjs';
+import {
+  emptyFoodIdentityReview,
+  renderFoodIdentityReviewHtml,
+} from './render-food-identity-review.mjs';
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -88,7 +92,7 @@ label{display:block;margin:1.5rem 0 .5rem}input{box-sizing:border-box;width:100%
 footer{margin:2rem 0;color:#9cbbca;font-size:.85rem}
 </style></head><body>
 <p class="eyebrow">Internal / local artifact audit</p><h1>Data Quality Radar</h1>
-<p><a href="/queue">Open the Reference Work Queue</a></p>
+<p><a href="/queue">Open the Reference Work Queue</a> · <a href="/identity-review">Open Food Identity Review</a></p>
 <p>Catalog ${escapeHtml(report.releaseId)} · Evaluated ${escapeHtml(report.evaluatedAt)} · ${report.totalComponents} registered components · ${report.latestFoods.toLocaleString('en-US')} latest food records</p>
 <p>Publication: ${active.candidateId === null ? 'pinned base catalog' : `reviewed candidate ${escapeHtml(active.candidateId)} · ${active.reviewedClaimCount} reviewed composition claims`}</p>
 <div class="notice">This is an operational coverage report, not a measure of health accuracy. Known zero counts as known. Missing and explicitly unknown values never become zero. Catalog-only comparability excludes personal history, restrictions, recipes, and final ranking validation.</div>
@@ -132,6 +136,10 @@ async function loadArtifact(artifactPath) {
     : `${artifactPath}.receipt.json`;
   let receiptStatus =
     'not available; artifact hash is recorded but not independently verified';
+  let identityReview = emptyFoodIdentityReview(
+    manifest.releaseId,
+    manifest.publishedAt,
+  );
   try {
     const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
     if (
@@ -140,11 +148,22 @@ async function loadArtifact(artifactPath) {
       receipt.compressedByteLength !== compressed.length
     )
       throw new TypeError('The catalog receipt does not match the artifact.');
+    if (receipt.identityReview !== undefined) {
+      if (
+        receipt.identityReview?.format !== 'nutrixx.food-identity-review' ||
+        receipt.identityReview.schemaVersion !== 1 ||
+        receipt.identityReview.releaseId !== manifest.releaseId ||
+        receipt.identityReview.blocksPublication !== false ||
+        !Array.isArray(receipt.identityReview.items)
+      )
+        throw new TypeError('The catalog identity review is invalid.');
+      identityReview = receipt.identityReview;
+    }
     receiptStatus = 'verified against local release receipt';
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error;
   }
-  return { manifest, payload, sha256, receiptStatus };
+  return { manifest, payload, sha256, receiptStatus, identityReview };
 }
 
 async function main() {
@@ -179,7 +198,7 @@ async function main() {
     active.artifactName,
   );
   const artifactPath = path.resolve(args[0] ?? defaultArtifact);
-  const { manifest, payload, sha256, receiptStatus } =
+  const { manifest, payload, sha256, receiptStatus, identityReview } =
     await loadArtifact(artifactPath);
   if (
     args[0] === undefined &&
@@ -217,6 +236,8 @@ async function main() {
       name:
         food.descriptions.find((description) => description.kind === 'primary')
           ?.value ?? food.descriptions[0].value,
+      descriptions: food.descriptions.map((description) => description.value),
+      preparationStates: food.preparationStates,
       sourceRecordId: sources.get(food.sourceId)?.sourceRecordId ?? food.foodId,
     })),
     observations: payload.composition,
@@ -229,6 +250,14 @@ async function main() {
   const htmlPath = path.join(outputDirectory, 'index.html');
   const queueJsonPath = path.join(outputDirectory, 'queue.json');
   const queueHtmlPath = path.join(outputDirectory, 'queue.html');
+  const identityReviewJsonPath = path.join(
+    outputDirectory,
+    'identity-review.json',
+  );
+  const identityReviewHtmlPath = path.join(
+    outputDirectory,
+    'identity-review.html',
+  );
   await writeFile(
     jsonPath,
     `${JSON.stringify({ activeRelease: active, artifact: { sha256, receiptStatus }, report }, null, 2)}\n`,
@@ -242,8 +271,17 @@ async function main() {
     `${JSON.stringify({ ...queue, components: FOOD_COMPONENTS_V1 })}\n`,
   );
   await writeFile(queueHtmlPath, renderReferenceWorkQueueHtml());
+  await writeFile(
+    identityReviewJsonPath,
+    `${JSON.stringify(identityReview, null, 2)}\n`,
+  );
+  await writeFile(
+    identityReviewHtmlPath,
+    renderFoodIdentityReviewHtml(identityReview),
+  );
   console.log(`Data quality radar: ${htmlPath}`);
   console.log(`Reference work queue: ${queueHtmlPath}`);
+  console.log(`Food identity review: ${identityReviewHtmlPath}`);
   console.log(`Machine-readable report: ${jsonPath}`);
   console.log(
     `Coverage score: ${report.coverageScore ?? 'unknown'}%; known pairs: ${report.knownFoodComponentPairs}/${report.possibleFoodComponentPairs}.`,

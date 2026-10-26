@@ -93,7 +93,7 @@ Its JSON shape is:
 {
   "format": "nutrixx.food-consumption-snapshot",
   "schemaVersion": 1,
-  "catalogReleaseId": "food-catalog-us-ca-au-uk-fr-2026.2",
+  "catalogReleaseId": "food-catalog-us-ca-au-uk-fr-2026.3",
   "source": "consented-recorded-meals",
   "periodStartInclusive": "2026-07-01T00:00:00.000Z",
   "periodEndExclusive": "2026-10-01T00:00:00.000Z",
@@ -276,16 +276,22 @@ The API returns `202 Accepted` immediately. The caller polls the returned
 `statusUrl` until the run is `completed` or `failed`.
 
 Each claim targets one exact food ID, revision, preparation state, component,
-unit, and per-100-gram edible basis. Its evidence passport records the source
-title, publisher, HTTPS URL, edition, license reference, precise locator,
-retrieval time, source-content SHA-256, and extraction method. Invalid claims
-enter the run quarantine independently; valid claims in the same batch keep
-processing. Duplicate claim IDs and duplicate food-component targets in one
-batch enter quarantine.
+unit, and per-100-gram edible basis. Every value carries its own evidence
+passport. `external-source` identifies any reported dataset, article, website,
+book, label, or other source with its title and locator plus every available
+publisher, URL, edition, license, retrieval, and digest field.
+`model-knowledge` explicitly records that the model supplied the value from its
+existing knowledge. `agent-derived` records a calculation, evidence synthesis,
+or estimation, preserves its derivation, and attributes its material inputs.
+The system assigns the evidence tier from this type. Invalid claims enter the
+run quarantine independently; valid claims in the same batch keep processing.
+Duplicate claim IDs and duplicate food-component targets in one batch enter
+quarantine.
 
 The processor updates the canonical
 `reference-data/nutrixx-curated/claims.v1.json` input and builds an immutable,
-inactive catalog artifact, receipt, and report under the ignored run directory.
+locally active catalog artifact plus a receipt and report under the ignored run
+directory.
 The receipt connects every projected observation to its agent identity,
 instruction digest, and evidence passport. Git history audits canonical claim
 changes; generated artifacts remain outside Git and enter delivery through the
@@ -299,12 +305,56 @@ This makes external supersession automatic and reversible without losing the
 Nutrixx evidence record. The Data Quality Radar can guide agent work, while
 batch order remains independent from radar priority.
 
-The local endpoint is available only when `NUTRIXX_CURATION_ENABLED=true` and
-requires `Authorization: Bearer <NUTRIXX_CURATION_TOKEN>`. A successful run has
-`publicationState: pending-activation`. Immutable hosting and descriptor
-activation proceed through the explicit delivery workflow. Local development
-requires explicit operator enablement with a unique, high-entropy token in the
-ignored root `.env` file.
+The development Compose stack enables the local endpoint and protects it with
+`Authorization: Bearer <workspace-token>`. The API creates a 256-bit token in
+the ignored `.temp/local-curation-token` file when an explicit
+`NUTRIXX_CURATION_TOKEN` override is absent. A successful run has
+`publicationState: active-local`. The processor writes the verified artifact,
+receipt, and active local descriptor atomically after the build succeeds.
+Immutable remote hosting proceeds through the explicit delivery workflow.
+Production keeps the endpoint disabled unless its operator supplies an explicit
+configuration.
+
+The packet generator accepts exact food names either as quoted arguments or as
+a UTF-8 text/JSON names file. It resolves each name against the active work
+queue, rejects missing or ambiguous identities, and emits two standalone files:
+the versioned agent prompt and a catalog-pinned task packet containing exact
+food revisions, preparation states, missing components, canonical units, and
+the prompt digest. The research agent needs these two files rather than the
+repository. Empty `evidenceSources` leaves research unrestricted. The agent may
+use any external source, Model Knowledge, or an attributable derivation; every
+resulting value still carries its own explicit provenance.
+
+The development-only Reference Work Queue at `http://localhost:3002/queue`
+provides the same packet builder without duplicating its resolution rules. The
+operator uploads the UTF-8 text/JSON names file and receives
+`agent-task-packet.json` directly from the local radar service. The endpoint
+holds no upload or packet after the response; it reads the active queue and
+canonical prompt digest for each request. A neighboring download link serves
+the canonical `agent-prompt.md` directly from its tracked project source. CLI
+generation remains available for automation and additionally writes the
+canonical prompt beside the packet.
+
+The same queue page accepts the completed
+`nutrixx.agent-curation-batch` JSON, submits it through a local same-origin
+proxy, and follows its persisted asynchronous run through completion or
+failure. The proxy reads the workspace token from the ignored local token file
+and keeps it exclusively within the local server path. The API retains the
+submitted batch, status, and worker log in the ignored local run directory for
+the latest-run report. The queue page presents accepted and rejected claim
+counts together with the comparable-cell coverage before and after a completed
+run, and keeps the persisted latest result visible after a page reload.
+
+Agent runs remain local drafts regardless of how many batches accumulate. The
+Reference Work Queue exposes one explicit `Release current catalog` action.
+That action verifies the active artifact and receipt, creates or resumes a
+draft GitHub Release, uploads both immutable assets, publishes the Release only
+after both assets succeed, and then records their immutable HTTPS URLs in the
+active descriptor. A local fine-grained GitHub token with repository Contents
+write access stays exclusively in the Radar server environment. HTTP 403 stops
+publication immediately without retry. No Agent upload triggers publication.
+The queue page is the sole interactive operator workflow for batch submission
+and explicit catalog release.
 
 ## Completion workflow
 

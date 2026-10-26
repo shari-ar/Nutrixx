@@ -11,12 +11,28 @@ const fixture: FoodCompositionQueueInputV1 = {
   artifactSha256: digest,
   evaluatedAt: '2026-10-18T00:00:00.000Z',
   foods: [
-    { foodId: 'potato', revision: 1, name: 'Potato', sourceRecordId: '100' },
-    { foodId: 'potato', revision: 2, name: 'Potato', sourceRecordId: '100' },
+    {
+      foodId: 'potato',
+      revision: 1,
+      name: 'Potato',
+      descriptions: ['Potato'],
+      preparationStates: ['raw'],
+      sourceRecordId: '100',
+    },
+    {
+      foodId: 'potato',
+      revision: 2,
+      name: 'Potato',
+      descriptions: ['Potato'],
+      preparationStates: ['raw'],
+      sourceRecordId: '100',
+    },
     {
       foodId: 'eggplant',
       revision: 1,
       name: 'Eggplant',
+      descriptions: ['Eggplant', 'Aubergine'],
+      preparationStates: ['raw'],
       sourceRecordId: '200',
     },
   ],
@@ -99,6 +115,9 @@ describe('food-composition work queue', () => {
     ]);
     expect(queue.items[0]).toMatchObject({
       sourceRecordId: '200',
+      foodRevision: 1,
+      descriptions: ['Eggplant', 'Aubergine'],
+      preparationStates: ['raw'],
       knownComponentCount: 0,
       missingBaselineComponentIds: ['protein', 'fat'],
       unitIncompatibleComponentIds: ['protein'],

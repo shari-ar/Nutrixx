@@ -1,3 +1,31 @@
+catalog_changes="$(git diff --name-only '@{u}..HEAD' -- \
+  apps/web/config/active-food-catalog.json \
+  reference-data/nutrixx-curated/claims.v1.json)"
+
+descriptor_changed=false
+claims_changed=false
+printf '%s\n' "$catalog_changes" | grep -qx 'apps/web/config/active-food-catalog.json' && descriptor_changed=true
+printf '%s\n' "$catalog_changes" | grep -qx 'reference-data/nutrixx-curated/claims.v1.json' && claims_changed=true
+
+if [ "$claims_changed" = true ] && [ "$descriptor_changed" = false ]; then
+  echo 'Nutrixx-curated claims require the matching published catalog descriptor in the same push.' >&2
+  exit 1
+fi
+
+if [ "$descriptor_changed" = true ]; then
+  descriptor="$(git show HEAD:apps/web/config/active-food-catalog.json)"
+  printf '%s\n' "$descriptor" | grep -Eq '"artifactUrl": "https://' || {
+    echo 'The committed catalog descriptor is a local draft. Publish it from port 3002 before pushing catalog data.' >&2
+    exit 1
+  }
+  printf '%s\n' "$descriptor" | grep -Eq '"receiptUrl": "https://' || {
+    echo 'The committed catalog receipt is local. Publish it from port 3002 before pushing catalog data.' >&2
+    exit 1
+  }
+fi
+
+echo 'Catalog publication boundary: valid'
+
 if command -v npm >/dev/null 2>&1; then
   npm run check
 elif command -v docker >/dev/null 2>&1; then

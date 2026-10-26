@@ -271,6 +271,46 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
     }
   }
 
+  public async replaceWithActiveRelease(
+    input: ReferenceReleaseInputV1,
+  ): Promise<void> {
+    this.#assertOpen();
+    await this.#validateRelease(input);
+    const transaction = this.#database.transaction(
+      [RELEASE_STORE, CACHE_METADATA_STORE],
+      'readwrite',
+      { durability: 'strict' },
+    );
+    const completion = transactionComplete(transaction);
+    try {
+      const now = this.#now();
+      const releases = transaction.objectStore(RELEASE_STORE);
+      await requestResult(releases.clear());
+      await requestResult(
+        releases.add({
+          ...structuredClone(input),
+          cachedAt: now,
+          lastAccessedAt: now,
+        } satisfies CachedReferenceReleaseV1),
+      );
+      await requestResult(
+        transaction.objectStore(CACHE_METADATA_STORE).put({
+          key: ACTIVE_RELEASE_KEY,
+          releaseId: input.releaseId,
+        } satisfies ActiveReleaseMetadata),
+      );
+      await completion;
+    } catch (error) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already be aborting.
+      }
+      await completion.catch(() => undefined);
+      throw error;
+    }
+  }
+
   public async getRelease(
     releaseId: string,
   ): Promise<CachedReferenceReleaseV1 | null> {

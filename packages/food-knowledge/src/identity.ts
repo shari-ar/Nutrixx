@@ -2,20 +2,27 @@ import * as z from 'zod';
 
 import type { FoodV1 } from './model.js';
 
-export const FOOD_SOURCE_ORDER_V1 = [
-  'usda-fdc',
-  'health-canada',
-  'fsanz',
-  'public-health-england',
-  'anses-ciqual',
-] as const;
-
-export const FOOD_SOURCE_PRIORITY_V1: Readonly<Record<string, number>> =
-  Object.fromEntries(
-    FOOD_SOURCE_ORDER_V1.map((provider, index) => [provider, index]),
-  );
-
 export const NUTRIXX_FALLBACK_PROVIDER_V1 = 'nutrixx-curated' as const;
+
+const ProviderCodeSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .regex(/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u);
+
+export function createFoodSourcePriorityV1(
+  sourceOrder: readonly string[],
+): ReadonlyMap<string, number> {
+  const parsed = z.array(ProviderCodeSchema).min(1).parse(sourceOrder);
+  if (new Set(parsed).size !== parsed.length)
+    throw new TypeError('Food source policy contains a repeated provider.');
+  if (parsed.includes(NUTRIXX_FALLBACK_PROVIDER_V1))
+    throw new TypeError(
+      'Nutrixx fallback remains implicit and last in source policy.',
+    );
+  return new Map(parsed.map((provider, index) => [provider, index]));
+}
 
 /**
  * Every external provider, including providers added in the future, outranks
@@ -25,18 +32,20 @@ export const NUTRIXX_FALLBACK_PROVIDER_V1 = 'nutrixx-curated' as const;
 export function compareFoodSourcePriorityV1(
   leftProvider: string,
   rightProvider: string,
+  sourceOrder: readonly string[],
 ): number {
   if (leftProvider === rightProvider) return 0;
   if (leftProvider === NUTRIXX_FALLBACK_PROVIDER_V1) return 1;
   if (rightProvider === NUTRIXX_FALLBACK_PROVIDER_V1) return -1;
+  const priority = createFoodSourcePriorityV1(sourceOrder);
   return (
-    (FOOD_SOURCE_PRIORITY_V1[leftProvider] ?? FOOD_SOURCE_ORDER_V1.length) -
-    (FOOD_SOURCE_PRIORITY_V1[rightProvider] ?? FOOD_SOURCE_ORDER_V1.length)
+    (priority.get(leftProvider) ?? sourceOrder.length) -
+    (priority.get(rightProvider) ?? sourceOrder.length)
   );
 }
 
 const IdentityMemberSchema = z.strictObject({
-  provider: z.enum(FOOD_SOURCE_ORDER_V1),
+  provider: ProviderCodeSchema,
   sourceRecordId: z.string().trim().min(1).max(128),
   sourceName: z.string().trim().min(1).max(500),
 });
@@ -44,15 +53,33 @@ const IdentityMemberSchema = z.strictObject({
 const ReviewedIdentityGroupsSchema = z.strictObject({
   format: z.literal('nutrixx.reviewed-food-identity-links'),
   schemaVersion: z.literal(1),
+  sourceOrder: z.array(ProviderCodeSchema).min(1),
   groups: z.array(
     z.strictObject({
       name: z.string().trim().min(1).max(500),
       members: z.array(IdentityMemberSchema).min(2),
     }),
   ),
+  pending: z.array(
+    IdentityMemberSchema.extend({
+      reason: z.string().trim().min(1).max(1_000),
+      candidateSourceRecords: z
+        .array(
+          z.strictObject({
+            provider: ProviderCodeSchema,
+            sourceRecordId: z.string().trim().min(1).max(128),
+            sourceName: z.string().trim().min(1).max(500),
+          }),
+        )
+        .default([]),
+    }),
+  ),
 });
 
 type IdentityMember = z.infer<typeof IdentityMemberSchema>;
+export type PendingFoodIdentityV1 = z.infer<
+  typeof ReviewedIdentityGroupsSchema
+>['pending'][number];
 
 function normalizeName(value: string): string {
   return value
@@ -73,11 +100,13 @@ export class ReviewedFoodIdentityResolverV1 {
   >();
   readonly #resolved = new Map<number, FoodV1>();
   readonly #observed = new Set<string>();
-  readonly #groupCount: number;
+  readonly #sourceOrder: readonly string[];
+  readonly #pending = new Map<string, PendingFoodIdentityV1>();
 
   public constructor(input: unknown) {
     const reviewed = ReviewedIdentityGroupsSchema.parse(input);
-    this.#groupCount = reviewed.groups.length;
+    createFoodSourcePriorityV1(reviewed.sourceOrder);
+    this.#sourceOrder = reviewed.sourceOrder;
     const names = new Set<string>();
     reviewed.groups.forEach((group, groupIndex) => {
       const normalized = normalizeName(group.name);
@@ -87,10 +116,11 @@ export class ReviewedFoodIdentityResolverV1 {
       names.add(normalized);
       let previousPriority = -1;
       for (const member of group.members) {
-        const priority = FOOD_SOURCE_ORDER_V1.indexOf(member.provider);
+        const priority = this.#sourceOrder.indexOf(member.provider);
         const key = memberKey(member.provider, member.sourceRecordId);
         if (
-          priority <= previousPriority ||
+          priority < previousPriority ||
+          priority === -1 ||
           normalizeName(member.sourceName) !== normalized ||
           this.#members.has(key)
         ) {
@@ -100,6 +130,38 @@ export class ReviewedFoodIdentityResolverV1 {
         this.#members.set(key, { groupIndex, member });
       }
     });
+    for (const pending of reviewed.pending) {
+      const key = memberKey(pending.provider, pending.sourceRecordId);
+      if (
+        !this.#sourceOrder.includes(pending.provider) ||
+        this.#members.has(key) ||
+        this.#pending.has(key)
+      )
+        throw new TypeError(`Invalid pending food identity: ${key}.`);
+      this.#pending.set(key, pending);
+    }
+  }
+
+  public get sourceOrder(): readonly string[] {
+    return [...this.#sourceOrder];
+  }
+
+  public get pending(): readonly PendingFoodIdentityV1[] {
+    return [...this.#pending.values()];
+  }
+
+  public pendingIdentity(
+    provider: string,
+    sourceRecordId: string,
+    sourceName: string,
+  ): PendingFoodIdentityV1 | null {
+    const pending = this.#pending.get(memberKey(provider, sourceRecordId));
+    if (!pending) return null;
+    if (pending.sourceName !== sourceName)
+      throw new TypeError(
+        `The pending food description changed: ${provider}:${sourceRecordId}.`,
+      );
+    return pending;
   }
 
   #reviewedMember(
@@ -146,22 +208,30 @@ export class ReviewedFoodIdentityResolverV1 {
     this.#resolved.set(entry.groupIndex, food);
   }
 
-  public assertComplete(): {
+  public assertComplete(
+    activeProviders: ReadonlySet<string> = new Set(this.#sourceOrder),
+  ): {
     readonly reviewedGroups: number;
     readonly reviewedSourceRecords: number;
   } {
+    const requiredMembers = [...this.#members.entries()].filter(([, entry]) =>
+      activeProviders.has(entry.member.provider),
+    );
+    const requiredGroups = new Set(
+      requiredMembers.map(([, entry]) => entry.groupIndex),
+    );
+    const missing = requiredMembers.find(
+      ([key]) => !this.#observed.has(key),
+    )?.[0];
     if (
-      this.#observed.size !== this.#members.size ||
-      this.#resolved.size !== this.#groupCount
+      missing !== undefined ||
+      [...requiredGroups].some((groupIndex) => !this.#resolved.has(groupIndex))
     ) {
-      const missing = [...this.#members.keys()].find(
-        (key) => !this.#observed.has(key),
-      );
       throw new TypeError(`Unresolved reviewed food identity: ${missing}.`);
     }
     return {
-      reviewedGroups: this.#groupCount,
-      reviewedSourceRecords: this.#observed.size,
+      reviewedGroups: requiredGroups.size,
+      reviewedSourceRecords: requiredMembers.length,
     };
   }
 }

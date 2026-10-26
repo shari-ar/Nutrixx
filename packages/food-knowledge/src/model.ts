@@ -30,6 +30,44 @@ export const LocalizedFoodTextV1Schema = z.strictObject({
   kind: z.enum(['primary', 'alias']),
 });
 
+export const AgentValueProvenanceV1Schema = z.strictObject({
+  evidenceType: z.enum(['external-source', 'model-knowledge', 'agent-derived']),
+  agentId: z.string().trim().min(1).max(200),
+  model: z.string().trim().min(1).max(200),
+  generatedAt: UtcInstantSchema,
+  method: z
+    .enum([
+      'direct-transcription',
+      'unit-conversion',
+      'calculation',
+      'evidence-synthesis',
+      'estimation',
+    ])
+    .optional(),
+  sourceTitle: z.string().trim().min(1).max(300).optional(),
+  publisher: z.string().trim().min(1).max(200).optional(),
+  sourceUrl: z.url().optional(),
+  sourceEdition: z.string().trim().min(1).max(128).optional(),
+  locator: z.string().trim().min(1).max(500).optional(),
+  sourceContentSha256: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/u)
+    .optional(),
+  knowledgeDescription: z.string().trim().min(1).max(2000).optional(),
+  derivation: z.string().trim().min(1).max(4000).optional(),
+  inputs: z
+    .array(
+      z.strictObject({
+        description: z.string().trim().min(1).max(500),
+        provenance: z.string().trim().min(1).max(1000),
+      }),
+    )
+    .min(1)
+    .max(100)
+    .optional(),
+  note: z.string().trim().min(1).max(2000).optional(),
+});
+
 export const FoodCatalogSourceV1Schema = z.strictObject({
   sourceId: CanonicalIdSchema,
   provider: CanonicalCodeSchema,
@@ -39,6 +77,7 @@ export const FoodCatalogSourceV1Schema = z.strictObject({
   sourceReference: z.string().trim().min(1).max(4096).optional(),
   licenseId: z.string().trim().min(1).max(128),
   retrievedAt: UtcInstantSchema,
+  agentProvenance: AgentValueProvenanceV1Schema.optional(),
 });
 
 export const FoodV1Schema = z.strictObject({
@@ -64,6 +103,7 @@ export const FoodV1Schema = z.strictObject({
           'official-crosswalk',
           'source-declared-identifier',
           'reviewed-food-identity',
+          'exact-identity-signature',
         ]),
       }),
     )
@@ -265,6 +305,9 @@ export const FoodCatalogPayloadV1Schema = z
   });
 
 export type FoodV1 = z.infer<typeof FoodV1Schema>;
+export type AgentValueProvenanceV1 = z.infer<
+  typeof AgentValueProvenanceV1Schema
+>;
 export type FoodPortionV1 = z.infer<typeof FoodPortionV1Schema>;
 export type FoodCompositionObservationV1 = z.infer<
   typeof FoodCompositionObservationV1Schema

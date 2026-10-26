@@ -283,6 +283,7 @@ components:
             - unit-conversion
             - calculation
             - evidence-synthesis
+            - estimation
         note:
           type: string
 

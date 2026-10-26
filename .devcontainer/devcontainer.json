@@ -2,19 +2,24 @@
   "name": "Nutrixx Development",
   "dockerComposeFile": [
     "../infra/compose/compose.yaml",
-    "../infra/compose/compose.dev.yaml"
+    "../infra/compose/compose.dev.yaml",
+    "compose.devcontainer.yaml"
   ],
   "service": "api",
   "runServices": ["api", "web", "radar"],
   "workspaceFolder": "/workspace",
   "initializeCommand": [
     "docker",
-    "compose",
+    "buildx",
+    "bake",
+    "--allow=fs.read=infra/docker/Dockerfile",
+    "--load",
+    "--set=*.context=.",
+    "--set=*.dockerfile=infra/docker/Dockerfile",
     "-f",
-    "${localWorkspaceFolder}/infra/compose/compose.yaml",
+    "infra/compose/compose.yaml",
     "-f",
-    "${localWorkspaceFolder}/infra/compose/compose.dev.yaml",
-    "build",
+    "infra/compose/compose.dev.yaml",
     "api",
     "web"
   ],

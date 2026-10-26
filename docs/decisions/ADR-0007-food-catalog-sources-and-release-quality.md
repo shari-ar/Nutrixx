@@ -124,7 +124,7 @@ Every candidate release satisfies all of the following:
 | Traceability           | 100% of foods, portions, and nutrient values resolve to source, release, source ID, basis, and mapping |
 | Structural validity    | Zero unidentified units/bases, non-finite values, canonical ID collisions, or broken relationships     |
 | Missingness            | Zero conversions of absent, unknown, trace, or inapplicable values into measured zero                  |
-| Mapping reconciliation | 100% of source records receive an included, deferred, or quarantined disposition with a reason         |
+| Mapping reconciliation | 100% of source records receive an included or identity-review disposition with a reason                |
 | Scientific regression  | 100% of approved golden fixtures pass their versioned tolerances; zero blocker-severity drift          |
 | International workflow | At least 95% exact food/recipe resolution per locale corpus; explicit consent for approximate matches  |
 | Reproducibility        | A clean rebuild produces the same manifest, normalized record counts, and release hash                 |
@@ -135,9 +135,12 @@ retain their explicit state. Similar-food inference, cross-preparation copying,
 and analytical synthesis require a separately governed derivation method.
 Later nutrition and planning stages apply eligibility rules before calculation.
 
-Outliers enter quarantine with a reason. Identity resolution uses governed
-evidence beyond name equality. Every derivation, including recipe calculation
-and unit normalization, retains its method and input lineage.
+Exact normalized food identities converge into source-independent canonical
+IDs. Explicit preparation and edible-part differences preserve distinct foods.
+Ambiguous identities enter the separate, nonblocking Food Identity Review list
+and remain outside the candidate catalog until an agent records a deterministic
+decision. Every derivation, including recipe calculation and unit normalization,
+retains its method and input lineage.
 
 ## Consequences
 

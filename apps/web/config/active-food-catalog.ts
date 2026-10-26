@@ -32,7 +32,7 @@ export function validateActiveFoodCatalog(input: unknown): ActiveFoodCatalog {
     !(
       item.candidateId === null ||
       (typeof item.candidateId === 'string' &&
-        /^[a-f0-9]{64}$/.test(item.candidateId))
+        /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(item.candidateId))
     ) ||
     !(
       item.artifactUrl === null ||
@@ -48,10 +48,8 @@ export function validateActiveFoodCatalog(input: unknown): ActiveFoodCatalog {
     !Number.isSafeInteger(item.reviewedClaimCount) ||
     item.reviewedClaimCount < 0 ||
     (item.candidateId === null && item.reviewedClaimCount !== 0) ||
-    (item.candidateId !== null &&
-      (item.reviewedClaimCount === 0 ||
-        item.artifactUrl === null ||
-        item.receiptUrl === null))
+    (item.candidateId !== null && item.reviewedClaimCount === 0) ||
+    (item.artifactUrl === null) !== (item.receiptUrl === null)
   )
     throw new TypeError('The active catalog descriptor is invalid.');
   return item as unknown as ActiveFoodCatalog;

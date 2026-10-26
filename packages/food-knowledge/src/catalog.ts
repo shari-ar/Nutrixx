@@ -119,16 +119,27 @@ function normalizeSearchText(value: string): string {
 
 export class FoodCatalogIndexV1 {
   readonly #payload: FoodCatalogPayloadV1;
+  readonly #sourceOrder: readonly string[];
   readonly #sourceById: ReadonlyMap<
     string,
     FoodCatalogPayloadV1['sources'][number]
   >;
 
-  public constructor(input: unknown) {
+  public constructor(input: unknown, sourceOrder?: readonly string[]) {
     this.#payload = FoodCatalogPayloadV1Schema.parse(input);
     this.#sourceById = new Map(
       this.#payload.sources.map((source) => [source.sourceId, source]),
     );
+    this.#sourceOrder =
+      sourceOrder === undefined
+        ? [
+            ...new Set(
+              this.#payload.sources
+                .map((source) => source.provider)
+                .filter((provider) => provider !== 'nutrixx-curated'),
+            ),
+          ]
+        : [...sourceOrder];
   }
 
   public get payload(): FoodCatalogPayloadV1 {
@@ -247,6 +258,7 @@ export class FoodCatalogIndexV1 {
         compareFoodSourcePriorityV1(
           this.#sourceById.get(left.food.sourceId)?.provider ?? '',
           this.#sourceById.get(right.food.sourceId)?.provider ?? '',
+          this.#sourceOrder,
         ) ||
         left.matchedDescription.value.localeCompare(
           right.matchedDescription.value,
@@ -282,6 +294,9 @@ export class CachedFoodKnowledgeRepositoryV1
     if (manifest.releaseId !== release.releaseId) {
       throw new Error('The active food catalog manifest identity is invalid.');
     }
-    return new FoodCatalogIndexV1(release.payload);
+    return new FoodCatalogIndexV1(
+      release.payload,
+      manifest.sourceDatasets.map(({ provider }) => provider),
+    );
   }
 }

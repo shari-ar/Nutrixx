@@ -112,6 +112,25 @@ describe('separate IndexedDB reference dataset cache', () => {
     await cache.close();
   });
 
+  it('atomically replaces prior releases when installing a new active catalog', async () => {
+    const indexedDB = new IDBFactory();
+    const cache = await IndexedDbReferenceDatasetCache.create({
+      databaseName: `nutrixx-reference-replace-${randomUUID()}`,
+      indexedDB,
+      now: () => NOW,
+    });
+    await cache.putRelease(await release('previous', 100));
+    await cache.activateRelease('previous');
+
+    await cache.replaceWithActiveRelease(await release('current', 120));
+
+    await expect(cache.listReleases()).resolves.toMatchObject([
+      { releaseId: 'current', active: true },
+    ]);
+    await expect(cache.getRelease('previous')).resolves.toBeNull();
+    await cache.close();
+  });
+
   it('clears only disposable reference data and resets active metadata', async () => {
     const indexedDB = new IDBFactory();
     const cache = await IndexedDbReferenceDatasetCache.create({

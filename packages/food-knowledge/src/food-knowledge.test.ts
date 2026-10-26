@@ -375,14 +375,23 @@ describe('Food Knowledge foundation', () => {
         },
       };
     });
-    const catalog = new FoodCatalogIndexV1({
-      ...payload,
-      sources: [
-        ...alternatives.map(({ source }) => source),
-        ...payload.sources,
+    const catalog = new FoodCatalogIndexV1(
+      {
+        ...payload,
+        sources: [
+          ...alternatives.map(({ source }) => source),
+          ...payload.sources,
+        ],
+        foods: [...alternatives.map(({ food }) => food), ...payload.foods],
+      },
+      [
+        'usda-fdc',
+        'health-canada',
+        'fsanz',
+        'public-health-england',
+        'anses-ciqual',
       ],
-      foods: [...alternatives.map(({ food }) => food), ...payload.foods],
-    });
+    );
 
     expect(
       catalog

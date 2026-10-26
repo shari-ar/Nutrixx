@@ -3,21 +3,21 @@
 | Field         | Value                                |
 | ------------- | ------------------------------------ |
 | Status        | Integrated local reference release   |
-| Release       | `food-catalog-us-ca-au-uk-fr-2026.2` |
+| Release       | `food-catalog-us-ca-au-uk-fr-2026.3` |
 | Owner         | Nutrixx Data                         |
-| Last reviewed | 2026-10-24                           |
+| Last reviewed | 2026-10-25                           |
 
 ## Source order and numeric lineage
 
 The active release combines the existing USDA FoodData Central catalog, Canadian Nutrient File 2026, Australian Food Composition Database Release 3, the United Kingdom's CoFID 2021, and France's Ciqual 2025. A future Nutrixx-reviewed claim enters through the existing reference proposal, review, replay, and publication workflow. Each known numeric observation carries its own source ID, source record ID, source nutrient identity, provider, dataset, release, and retrieval time. Ciqual observations also retain the native confidence code and a reference to the underlying cited source. The food-detail view displays that observation-level origin.
 
-The merge keeps each known USDA food-component value. A Canadian value fills a gap when the CNF USDA NDB crosswalk identifies one matching USDA food, or when a reviewed identity group identifies the same food. An Australian value fills a gap when an AFCD record explicitly cites one FDC ID and is marked as borrowed, or when a reviewed identity group identifies the same food. Nutrient concepts and units must also map unambiguously. Other source records retain independent food identities.
+The merge keeps each known USDA food-component value. A Canadian value fills a gap when the CNF USDA NDB crosswalk identifies one matching USDA food, or when a reviewed identity group identifies the same food. An Australian value fills a gap when an AFCD record explicitly cites one FDC ID and is marked as borrowed, or when a reviewed identity group identifies the same food. Exact normalized food descriptions converge automatically across every current and future provider. Preparation state, edible part, and other identity-bearing description terms preserve distinct foods.
 
-The food-source preference is USDA, then CNF, then AFCD, then CoFID, then Ciqual. For linked source records, the highest-priority available food remains the catalog identity, and each lower-priority source supplies only a still-missing compatible component. The selected numeric value retains its own source record, nutrient code, and citation. The food record also lists linked source records and the basis of each link. Among equally relevant search matches, the source order determines display order.
+The source policy file declares USDA, CNF, AFCD, CoFID, and Ciqual in priority order. Every future external provider enters that data-driven order, while Nutrixx curated fallback always remains last. The canonical food ID derives from the normalized food identity signature rather than any provider record ID, so source addition, removal, or reordering preserves the user-visible food identity. Each lower-priority source supplies a compatible component when higher-priority sources leave that component open. Every selected value retains its own source record, nutrient code, and citation.
 
 ## Reviewed food identities
 
-`scripts/food-identity-links.json` records 66 reviewed food-form groups and 167 source identities using native record IDs and exact source descriptions. Its initial scope covers distinct, single-food forms such as fresh basil, raw watercress, and raw chicken breast with meat and skin. A build validates each source ID, source description, unique provider membership, and priority order. Existing official CNF and AFCD identifier links take precedence, and any conflicting reviewed link fails the build. Records outside these evidence-backed groups retain independent identities. The build report records each stage's linked-food count, the reviewed group totals, and the resulting component coverage.
+`scripts/food-identity-links.json` records reviewed food-form groups, the external-source order, and pending identity decisions using native record IDs and exact source descriptions. Exact identity signatures merge automatically, and reviewed groups cover evidence-backed equivalents with aligned descriptions. Ambiguous records stay outside the candidate catalog and appear in the dedicated Food Identity Review page in the Data Quality Radar. This list remains nonblocking: catalog publication continues, the active catalog stays available, and an agent can supply the next deterministic identity decision. The same mechanism applies as providers and releases change.
 
 CoFID foods use reviewed identity links where available; the remaining source records have independent identities. The integration maps 54 source columns with exact component and unit meanings. CoFID values marked `Tr` or `N` remain unquantified; numeric zeroes retain their published value. The 31 alcoholic-beverage rows use a per-100-ml basis and remain outside the per-100-g catalog. The source workbook reuses code `13-669` for two distinct foods; the source row number disambiguates their identities. The source's available-carbohydrate, retinol-equivalent, total-vitamin-E, and vitamin-K1 columns remain separate from broader Nutrixx components with different meanings.
 
@@ -35,9 +35,9 @@ The comparison measures known food-component pairs across the 112 recognized com
 | + CNF 2026       | 10,215 |     509,998 |                 44.58% |                 46.06% |
 | + AFCD Release 3 | 11,743 |     560,128 |                 42.59% |                 46.08% |
 | + CoFID 2021     | 14,571 |     663,187 |                 40.64% |                 46.09% |
-| + Ciqual 2025    | 18,006 |     764,935 |                 37.93% |                 46.10% |
+| + Ciqual 2025    | 17,742 |     757,099 |                 38.10% |                 46.10% |
 
-The integration adds 347,706 known pairs. Whole-catalog coverage reaches 37.93% across 18,006 distinct foods. Reviewed identity linking consolidates 84 duplicate source records and adds 283 known nutrient pairs to the original USDA foods compared with the preceding five-source release. Original USDA-food coverage reaches 46.10%. The internal Data Quality Radar continues to expose remaining gaps; its food-composition queue can prioritize subsequent Nutrixx-reviewed completion work.
+The integration adds 339,870 known pairs. Whole-catalog coverage reaches 38.10% across 17,742 canonical foods. Reviewed and exact identity reconciliation consolidates source records while preserving observation-level provenance; the exact-signature pass identifies 230 shared food groups and removes 264 duplicate catalog records. Original USDA-food coverage reaches 46.10%. The internal Data Quality Radar exposes composition gaps and a separate, nonblocking Food Identity Review list.
 
 ## Reproduction and delivery
 

@@ -26,6 +26,8 @@ export interface FoodCompositionQueueInputV1 {
     readonly foodId: string;
     readonly revision: number;
     readonly name: string;
+    readonly descriptions: readonly string[];
+    readonly preparationStates: readonly string[];
     readonly sourceRecordId: string;
   }[];
   readonly observations: readonly {
@@ -60,6 +62,9 @@ export interface FoodCompositionWorkItemV1 {
   readonly priorityScore: null;
   readonly uniqueConsumers: number;
   readonly foodName: string;
+  readonly foodRevision: number;
+  readonly descriptions: readonly string[];
+  readonly preparationStates: readonly string[];
   readonly sourceRecordId: string;
   readonly knownComponentCount: number;
   readonly totalComponentCount: number;
@@ -94,6 +99,8 @@ interface FoodState {
   readonly foodId: string;
   readonly revision: number;
   readonly name: string;
+  readonly descriptions: readonly string[];
+  readonly preparationStates: readonly string[];
   readonly sourceRecordId: string;
   readonly known: Set<string>;
   readonly unknown: Set<string>;
@@ -245,6 +252,9 @@ export function buildFoodCompositionWorkQueueV1(
       priorityScore: null,
       uniqueConsumers: uniqueConsumersByFood.get(food.foodId) ?? 0,
       foodName: food.name,
+      foodRevision: food.revision,
+      descriptions: food.descriptions,
+      preparationStates: food.preparationStates,
       sourceRecordId: food.sourceRecordId,
       knownComponentCount: food.known.size,
       totalComponentCount: input.components.length,

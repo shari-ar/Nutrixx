@@ -8,9 +8,10 @@ import { createGzip, gunzip } from 'node:zlib';
 
 import {
   auditFoodDataQualityV1,
+  compareFoodSourcePriorityV1,
   createFoodCatalogReleaseV1,
   deriveFoodCatalogManifestV1,
-  FOOD_SOURCE_PRIORITY_V1,
+  reconcileExactFoodIdentitiesV1,
   ReviewedFoodIdentityResolverV1,
 } from '@nutrixx/food-knowledge';
 import { sha256Canonical } from '@nutrixx/persistence-indexeddb';
@@ -45,7 +46,7 @@ if (
   );
 }
 
-const RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.2';
+const RELEASE_ID = 'food-catalog-us-ca-au-uk-fr-2026.3';
 const RELEASE_INSTANT = '2026-10-24T00:00:00.000Z';
 const COFID_WORKBOOK_SHA256 =
   '436e9445ef2adb2a75f3d7edd51302de3adad25385f9795fc94ba58bd030e97d';
@@ -458,7 +459,7 @@ function addObservation(
 
 const compressed = await readFile(basePath);
 const base = JSON.parse((await unzip(compressed)).toString('utf8'));
-const payload = base.payload;
+let payload = base.payload;
 const sourceById = new Map(
   payload.sources.map((source) => [source.sourceId, source]),
 );
@@ -1058,7 +1059,95 @@ for (const row of ciqual.foods) {
   }
 }
 removeSupersededUnknowns();
-const reviewedIdentityStats = reviewedIdentity.assertComplete();
+const reviewedIdentityStats = reviewedIdentity.assertComplete(
+  new Set(payload.sources.map((source) => source.provider)),
+);
+const originalAfterFrance = originalKnownPairs();
+const identityReconciliation = reconcileExactFoodIdentitiesV1(payload, {
+  sourceOrder: reviewedIdentity.sourceOrder,
+  canonicalFoodId: (identitySignature) =>
+    deterministicId('canonical-food', identitySignature),
+});
+payload = identityReconciliation.payload;
+const pendingBySourceId = new Map();
+for (const pending of reviewedIdentity.pending) {
+  const source = payload.sources.find(
+    (candidate) =>
+      candidate.provider === pending.provider &&
+      candidate.sourceRecordId === pending.sourceRecordId,
+  );
+  if (!source) continue;
+  pendingBySourceId.set(source.sourceId, pending);
+}
+const excludedFoodKeys = new Set();
+const identityReviewItems = [];
+for (const food of payload.foods) {
+  const pendingSourceIds = [
+    food.sourceId,
+    ...(food.sourceIdentityLinks ?? []).map((link) => link.sourceId),
+  ].filter((sourceId) => pendingBySourceId.has(sourceId));
+  if (pendingSourceIds.length === 0) continue;
+  for (const sourceId of pendingSourceIds) {
+    const pending = pendingBySourceId.get(sourceId);
+    identityReviewItems.push({
+      provider: pending.provider,
+      sourceRecordId: pending.sourceRecordId,
+      sourceName: pending.sourceName,
+      reason: pending.reason,
+      candidateSourceRecords: pending.candidateSourceRecords,
+    });
+  }
+  const usableLinks = (food.sourceIdentityLinks ?? []).filter(
+    (link) => !pendingBySourceId.has(link.sourceId),
+  );
+  if (pendingBySourceId.has(food.sourceId)) {
+    const promoted = usableLinks.sort((left, right) => {
+      const leftSource = payload.sources.find(
+        (source) => source.sourceId === left.sourceId,
+      );
+      const rightSource = payload.sources.find(
+        (source) => source.sourceId === right.sourceId,
+      );
+      return compareFoodSourcePriorityV1(
+        leftSource?.provider ?? '',
+        rightSource?.provider ?? '',
+        reviewedIdentity.sourceOrder,
+      );
+    })[0];
+    if (!promoted) {
+      excludedFoodKeys.add(`${food.foodId}:${food.revision}`);
+      continue;
+    }
+    food.sourceId = promoted.sourceId;
+    food.sourceIdentityLinks = usableLinks.filter(
+      (link) => link.sourceId !== promoted.sourceId,
+    );
+  } else food.sourceIdentityLinks = usableLinks;
+}
+payload.foods = payload.foods.filter(
+  (food) => !excludedFoodKeys.has(`${food.foodId}:${food.revision}`),
+);
+payload.portions = payload.portions.filter(
+  (portion) =>
+    !pendingBySourceId.has(portion.sourceId) &&
+    !excludedFoodKeys.has(`${portion.foodId}:${portion.foodRevision}`),
+);
+payload.composition = payload.composition.filter(
+  (observation) =>
+    !pendingBySourceId.has(observation.sourceId) &&
+    !excludedFoodKeys.has(`${observation.foodId}:${observation.foodRevision}`),
+);
+payload.sources = payload.sources.filter(
+  (source) => !pendingBySourceId.has(source.sourceId),
+);
+const identityReview = {
+  format: 'nutrixx.food-identity-review',
+  schemaVersion: 1,
+  releaseId: RELEASE_ID,
+  generatedAt: evaluatedAt,
+  blocksPublication: false,
+  items: identityReviewItems,
+};
 const finalManifest = deriveFoodCatalogManifestV1(
   {
     ...unitedKingdomManifest,
@@ -1082,7 +1171,6 @@ const afterFrance = auditFoodDataQualityV1({
   baselineTargetIds,
   evaluatedAt,
 });
-const originalAfterFrance = originalKnownPairs();
 const finalSourceById = new Map(
   payload.sources.map((source) => [source.sourceId, source]),
 );
@@ -1091,20 +1179,22 @@ const identityLinkCounts = {
   officialCrosswalk: 0,
   sourceDeclaredIdentifier: 0,
   reviewedFoodIdentity: 0,
+  exactIdentitySignature: 0,
 };
 for (const food of payload.foods) {
   const links = food.sourceIdentityLinks ?? [];
   if (links.length > 0) identityLinkCounts.foodsWithMultipleSources += 1;
   const primary = finalSourceById.get(food.sourceId);
-  const primaryPriority = FOOD_SOURCE_PRIORITY_V1[primary?.provider ?? ''];
   for (const link of links) {
     const secondary = finalSourceById.get(link.sourceId);
-    const secondaryPriority =
-      FOOD_SOURCE_PRIORITY_V1[secondary?.provider ?? ''];
     if (
-      primaryPriority === undefined ||
-      secondaryPriority === undefined ||
-      secondaryPriority <= primaryPriority
+      !primary ||
+      !secondary ||
+      compareFoodSourcePriorityV1(
+        primary.provider,
+        secondary.provider,
+        reviewedIdentity.sourceOrder,
+      ) > 0
     ) {
       throw new TypeError(`Invalid source priority for food ${food.foodId}.`);
     }
@@ -1112,6 +1202,8 @@ for (const food of payload.foods) {
       identityLinkCounts.officialCrosswalk += 1;
     else if (link.matchBasis === 'source-declared-identifier')
       identityLinkCounts.sourceDeclaredIdentifier += 1;
+    else if (link.matchBasis === 'exact-identity-signature')
+      identityLinkCounts.exactIdentitySignature += 1;
     else identityLinkCounts.reviewedFoodIdentity += 1;
   }
 }
@@ -1143,6 +1235,14 @@ const report = {
     ciqualOfficialFiles: ciqual.sourceSha256,
   },
   reviewedIdentity: reviewedIdentityStats,
+  identityReconciliation: {
+    exactGroups: identityReconciliation.exactLinks.length,
+    mergedRecords: identityReconciliation.exactLinks.reduce(
+      (total, link) => total + Math.max(0, link.mergedFoodIds.length - 1),
+      0,
+    ),
+  },
+  identityReview,
   identityLinkCounts,
   stages: [
     {
@@ -1225,6 +1325,7 @@ const receipt = {
   manifest: finalManifest,
   manifestSha256: release.manifestSha256,
   payloadSha256: release.payloadSha256,
+  identityReview,
 };
 await writeFile(
   path.join(outputDirectory, `${RELEASE_ID}.receipt.json`),

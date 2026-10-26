@@ -24,6 +24,61 @@ const AgentCurationAgentIdentityV1Schema = z.strictObject({
   instructionSha256: DigestSchema,
 });
 
+const EvidenceMethodSchema = z.enum([
+  'direct-transcription',
+  'unit-conversion',
+  'calculation',
+  'evidence-synthesis',
+]);
+
+const ExternalSourceEvidenceV1Schema = z.strictObject({
+  evidenceType: z.literal('external-source'),
+  sourceTitle: z.string().trim().min(1).max(300),
+  publisher: z.string().trim().min(1).max(200).optional(),
+  sourceUrl: z
+    .url()
+    .refine((value) => value.startsWith('https://'))
+    .optional(),
+  sourceEdition: z.string().trim().min(1).max(128).optional(),
+  licenseId: z.string().trim().min(1).max(128).optional(),
+  locator: z.string().trim().min(1).max(500),
+  retrievedAt: z.iso.datetime({ precision: 3 }).optional(),
+  sourceContentSha256: DigestSchema.optional(),
+  method: EvidenceMethodSchema,
+  note: z.string().trim().min(1).max(2000).optional(),
+});
+
+const ModelKnowledgeEvidenceV1Schema = z.strictObject({
+  evidenceType: z.literal('model-knowledge'),
+  knowledgeDescription: z.string().trim().min(1).max(2000),
+  note: z.string().trim().min(1).max(2000).optional(),
+});
+
+const AgentDerivedEvidenceV1Schema = z.strictObject({
+  evidenceType: z.literal('agent-derived'),
+  method: z.enum(['calculation', 'evidence-synthesis', 'estimation']),
+  derivation: z.string().trim().min(1).max(4000),
+  inputs: z
+    .array(
+      z.strictObject({
+        description: z.string().trim().min(1).max(500),
+        provenance: z.string().trim().min(1).max(1000),
+      }),
+    )
+    .min(1)
+    .max(100),
+  note: z.string().trim().min(1).max(2000).optional(),
+});
+
+export const AgentFoodCompositionEvidenceV1Schema = z.discriminatedUnion(
+  'evidenceType',
+  [
+    ExternalSourceEvidenceV1Schema,
+    ModelKnowledgeEvidenceV1Schema,
+    AgentDerivedEvidenceV1Schema,
+  ],
+);
+
 export const AgentFoodCompositionClaimV1Schema = z.strictObject({
   claimId: IdentifierSchema,
   foodId: IdentifierSchema,
@@ -35,23 +90,7 @@ export const AgentFoodCompositionClaimV1Schema = z.strictObject({
     unit: UnitSchema,
     basis: z.literal('per-100-gram-edible'),
   }),
-  evidence: z.strictObject({
-    sourceTitle: z.string().trim().min(1).max(300),
-    publisher: z.string().trim().min(1).max(200),
-    sourceUrl: z.url().refine((value) => value.startsWith('https://')),
-    sourceEdition: z.string().trim().min(1).max(128),
-    licenseId: z.string().trim().min(1).max(128),
-    locator: z.string().trim().min(1).max(500),
-    retrievedAt: z.iso.datetime({ precision: 3 }),
-    sourceContentSha256: DigestSchema,
-    method: z.enum([
-      'direct-transcription',
-      'unit-conversion',
-      'calculation',
-      'evidence-synthesis',
-    ]),
-    note: z.string().trim().min(1).max(1000).optional(),
-  }),
+  evidence: AgentFoodCompositionEvidenceV1Schema,
 });
 
 export const AgentCurationBatchV1Schema = z.strictObject({
@@ -74,6 +113,9 @@ export const AgentCuratedFoodCompositionRecordV1Schema = z.strictObject({
 
 export type AgentFoodCompositionClaimV1 = z.infer<
   typeof AgentFoodCompositionClaimV1Schema
+>;
+export type AgentFoodCompositionEvidenceV1 = z.infer<
+  typeof AgentFoodCompositionEvidenceV1Schema
 >;
 export type AgentCurationBatchV1 = z.infer<typeof AgentCurationBatchV1Schema>;
 export type AgentCuratedFoodCompositionRecordV1 = z.infer<

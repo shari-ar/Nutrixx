@@ -10,6 +10,14 @@ import type { FoodV1 } from './model.js';
 const reviewed = {
   format: 'nutrixx.reviewed-food-identity-links',
   schemaVersion: 1,
+  sourceOrder: [
+    'usda-fdc',
+    'health-canada',
+    'fsanz',
+    'public-health-england',
+    'anses-ciqual',
+  ],
+  pending: [],
   groups: [
     {
       name: 'Basil, fresh',
@@ -92,15 +100,76 @@ describe('reviewed cross-source food identity', () => {
 
   it('rejects ambiguous source identities and an inverted source order', () => {
     const duplicate = structuredClone(reviewed);
-    duplicate.groups.push(structuredClone(duplicate.groups[0]));
+    const firstGroup = duplicate.groups[0];
+    if (!firstGroup) throw new Error('The fixture requires an identity group.');
+    duplicate.groups.push(structuredClone(firstGroup));
     expect(() => new ReviewedFoodIdentityResolverV1(duplicate)).toThrow(
       'Repeated reviewed food identity',
     );
     const inverted = structuredClone(reviewed);
-    inverted.groups[0].members.reverse();
+    const invertedGroup = inverted.groups[0];
+    if (!invertedGroup)
+      throw new Error('The fixture requires an identity group.');
+    invertedGroup.members.reverse();
     expect(() => new ReviewedFoodIdentityResolverV1(inverted)).toThrow(
       'Invalid reviewed food identity',
     );
+  });
+
+  it('allows multiple ordered records from one provider', () => {
+    const sameProvider = structuredClone(reviewed);
+    sameProvider.groups[0]?.members.splice(1, 0, {
+      provider: 'usda-fdc',
+      sourceRecordId: '101',
+      sourceName: 'Basil, fresh',
+    });
+    const resolver = new ReviewedFoodIdentityResolverV1(sameProvider);
+    const primary = food('usda-food');
+    resolver.register('usda-fdc', '100', 'Basil, fresh', primary);
+    expect(resolver.resolve('usda-fdc', '101', 'Basil, fresh')).toBe(primary);
+  });
+
+  it('keeps ambiguous identities separate from reviewed links', () => {
+    const withPending = {
+      ...structuredClone(reviewed),
+      pending: [
+        {
+          provider: 'health-canada',
+          sourceRecordId: 'pending-1',
+          sourceName: 'Basil, unspecified',
+          reason: 'Preparation state is ambiguous.',
+          candidateSourceRecords: [
+            {
+              provider: 'usda-fdc',
+              sourceRecordId: '100',
+              sourceName: 'Basil, fresh',
+            },
+          ],
+        },
+      ],
+    };
+    const resolver = new ReviewedFoodIdentityResolverV1(withPending);
+
+    expect(
+      resolver.pendingIdentity(
+        'health-canada',
+        'pending-1',
+        'Basil, unspecified',
+      ),
+    ).toMatchObject({ reason: 'Preparation state is ambiguous.' });
+    expect(
+      resolver.resolve('health-canada', 'pending-1', 'Basil, unspecified'),
+    ).toBeNull();
+  });
+
+  it('keeps reviewed policy valid when a provider is removed', () => {
+    const resolver = new ReviewedFoodIdentityResolverV1(reviewed);
+    resolver.register('usda-fdc', '100', 'Basil, fresh', food('usda-food'));
+
+    expect(resolver.assertComplete(new Set(['usda-fdc']))).toEqual({
+      reviewedGroups: 1,
+      reviewedSourceRecords: 1,
+    });
   });
 });
 
@@ -110,19 +179,39 @@ describe('food source priority', () => {
       compareFoodSourcePriorityV1(
         'future-external-provider',
         NUTRIXX_FALLBACK_PROVIDER_V1,
+        reviewed.sourceOrder,
       ),
     ).toBeLessThan(0);
     expect(
       compareFoodSourcePriorityV1(
         NUTRIXX_FALLBACK_PROVIDER_V1,
         'future-external-provider',
+        reviewed.sourceOrder,
       ),
     ).toBeGreaterThan(0);
   });
 
   it('retains the declared external-source order', () => {
     expect(
-      compareFoodSourcePriorityV1('usda-fdc', 'health-canada'),
+      compareFoodSourcePriorityV1(
+        'usda-fdc',
+        'health-canada',
+        reviewed.sourceOrder,
+      ),
+    ).toBeLessThan(0);
+  });
+
+  it('derives additions and removals entirely from policy data', () => {
+    const changed = ['usda-fdc', 'new-provider', 'anses-ciqual'];
+    expect(
+      compareFoodSourcePriorityV1('new-provider', 'anses-ciqual', changed),
+    ).toBeLessThan(0);
+    expect(
+      compareFoodSourcePriorityV1(
+        'anses-ciqual',
+        NUTRIXX_FALLBACK_PROVIDER_V1,
+        changed,
+      ),
     ).toBeLessThan(0);
   });
 });

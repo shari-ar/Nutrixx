@@ -73,8 +73,9 @@ services:
     command: npm run start:dev --workspace=@nutrixx/api
     environment:
       NODE_ENV: development
-      NUTRIXX_CURATION_ENABLED: ${NUTRIXX_CURATION_ENABLED:-false}
+      NUTRIXX_CURATION_ENABLED: 'true'
       NUTRIXX_CURATION_TOKEN: ${NUTRIXX_CURATION_TOKEN:-}
+      NUTRIXX_CURATION_TOKEN_FILE: /workspace/.temp/local-curation-token
       NUTRIXX_PROJECT_ROOT: /workspace
     volumes:
       - ../..:/workspace
@@ -125,6 +126,13 @@ services:
     command: node .devcontainer/start-data-quality-radar.mjs --foreground
     environment:
       NODE_ENV: development
+      NUTRIXX_CURATION_ENABLED: 'true'
+      NUTRIXX_CURATION_TOKEN: ${NUTRIXX_CURATION_TOKEN:-}
+      NUTRIXX_CURATION_TOKEN_FILE: /workspace/.temp/local-curation-token
+      NUTRIXX_CURATION_API_URL: http://api:3001/api/v1
+      NUTRIXX_GITHUB_TOKEN: ${NUTRIXX_GITHUB_TOKEN:-}
+      NUTRIXX_GITHUB_TOKEN_FILE: /workspace/.temp/local-github-token
+      NUTRIXX_GITHUB_REPOSITORY: ${NUTRIXX_GITHUB_REPOSITORY:-shari-ar/Nutrixx}
     ports:
       - '127.0.0.1:3002:3002'
     volumes:

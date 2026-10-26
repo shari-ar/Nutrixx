@@ -8,12 +8,18 @@ export {
   type FoodSearchResultV1,
 } from './catalog.js';
 export {
-  FOOD_SOURCE_ORDER_V1,
-  FOOD_SOURCE_PRIORITY_V1,
   NUTRIXX_FALLBACK_PROVIDER_V1,
   ReviewedFoodIdentityResolverV1,
   compareFoodSourcePriorityV1,
+  createFoodSourcePriorityV1,
+  type PendingFoodIdentityV1,
 } from './identity.js';
+export {
+  reconcileExactFoodIdentitiesV1,
+  type ExactFoodIdentityLinkV1,
+  type ReconcileExactFoodIdentitiesOptionsV1,
+  type ReconciledFoodIdentitiesV1,
+} from './identity-reconciliation.js';
 export {
   FOOD_DATA_QUALITY_RADAR_VERSION_V1,
   FRESH_SOURCE_WINDOW_DAYS_V1,
@@ -23,6 +29,7 @@ export {
   type FoodDataQualityReportV1,
 } from './data-quality-radar.js';
 export {
+  AgentValueProvenanceV1Schema,
   FoodCatalogCoverageV1Schema,
   FoodCatalogManifestV1Schema,
   FoodCatalogPayloadV1Schema,
@@ -39,6 +46,7 @@ export {
   type FoodCompositionObservationV1,
   type FoodPortionV1,
   type FoodV1,
+  type AgentValueProvenanceV1,
 } from './model.js';
 export {
   StagedUsdaFoodV1Schema,

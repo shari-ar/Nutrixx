@@ -10,6 +10,8 @@
 | `intake.test.ts`            | Known zero, four domains, invalid evidence, and quarantine checks  |
 | `release-candidate.ts`      | Independent review decisions and deterministic projection          |
 | `release-candidate.test.ts` | Review gates, known zero, and provenance fixtures                  |
+| `agent-curation.ts`         | Browser-uploaded Agent batches and per-value evidence passports    |
+| `agent-curation.test.ts`    | External, Model Knowledge, and Agent-derived attribution fixtures  |
 | `index.ts`                  | Explicit public API                                                |
 
 Pure functions in this package make no network or storage requests.

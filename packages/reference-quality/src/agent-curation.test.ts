@@ -28,6 +28,7 @@ function claim(overrides: Record<string, unknown> = {}) {
       basis: 'per-100-gram-edible',
     },
     evidence: {
+      evidenceType: 'external-source',
       sourceTitle: 'Primary composition table',
       publisher: 'Example laboratory',
       sourceUrl: 'https://example.test/table',
@@ -61,6 +62,77 @@ function batch(claims: readonly unknown[]) {
 describe('agent curation intake', () => {
   it('accepts an exact, source-attributed catalog value', () => {
     const result = validateAgentCurationBatchV1(batch([claim()]), context);
+
+    expect(result.accepted).toHaveLength(1);
+    expect(result.quarantined).toEqual([]);
+  });
+
+  it('accepts independently attributed model knowledge', () => {
+    const result = validateAgentCurationBatchV1(
+      batch([
+        claim({
+          evidence: {
+            evidenceType: 'model-knowledge',
+            knowledgeDescription:
+              'The model supplied its existing food-composition knowledge.',
+          },
+        }),
+      ]),
+      context,
+    );
+
+    expect(result.accepted[0]?.evidence).toEqual({
+      evidenceType: 'model-knowledge',
+      knowledgeDescription:
+        'The model supplied its existing food-composition knowledge.',
+    });
+    expect(result.quarantined).toEqual([]);
+  });
+
+  it('accepts an attributable agent derivation', () => {
+    const result = validateAgentCurationBatchV1(
+      batch([
+        claim({
+          evidence: {
+            evidenceType: 'agent-derived',
+            method: 'calculation',
+            derivation: 'Converted 300 ug per kilogram to 30 ug per 100 g.',
+            inputs: [
+              {
+                description: 'Published value: 300 ug/kg',
+                provenance: 'Example paper, table 2',
+              },
+            ],
+          },
+        }),
+      ]),
+      context,
+    );
+
+    expect(result.accepted).toHaveLength(1);
+    expect(result.quarantined).toEqual([]);
+  });
+
+  it('accepts an attributable agent estimate', () => {
+    const result = validateAgentCurationBatchV1(
+      batch([
+        claim({
+          evidence: {
+            evidenceType: 'agent-derived',
+            method: 'estimation',
+            derivation:
+              'Selected the center of the attributable 0.2-0.4 g reference range.',
+            inputs: [
+              {
+                description: 'Reference range: 0.2-0.4 g per 100 g',
+                provenance: 'Model Knowledge for the exact food state',
+              },
+            ],
+          },
+        }),
+      ]),
+      context,
+    );
 
     expect(result.accepted).toHaveLength(1);
     expect(result.quarantined).toEqual([]);

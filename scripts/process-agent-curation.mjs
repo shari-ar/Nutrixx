@@ -34,6 +34,62 @@ function deterministicId(kind, value) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
+function agentEvidenceProjection(record) {
+  const { evidence } = record.claim;
+  const common = {
+    evidenceType: evidence.evidenceType,
+    agentId: record.agent.agentId,
+    model: record.agent.model,
+    generatedAt: record.generatedAt,
+    ...(evidence.note ? { note: evidence.note } : {}),
+  };
+  if (evidence.evidenceType === 'external-source')
+    return {
+      sourceReference:
+        evidence.sourceUrl ?? `${evidence.sourceTitle} · ${evidence.locator}`,
+      licenseId: evidence.licenseId ?? 'LicenseRef-Agent-Reported-Source',
+      retrievedAt: evidence.retrievedAt ?? record.generatedAt,
+      derivationCode: `nutrixx-agent-${evidence.method}`,
+      agentProvenance: {
+        ...common,
+        method: evidence.method,
+        sourceTitle: evidence.sourceTitle,
+        ...(evidence.publisher ? { publisher: evidence.publisher } : {}),
+        ...(evidence.sourceUrl ? { sourceUrl: evidence.sourceUrl } : {}),
+        ...(evidence.sourceEdition
+          ? { sourceEdition: evidence.sourceEdition }
+          : {}),
+        locator: evidence.locator,
+        ...(evidence.sourceContentSha256
+          ? { sourceContentSha256: evidence.sourceContentSha256 }
+          : {}),
+      },
+    };
+  if (evidence.evidenceType === 'model-knowledge')
+    return {
+      sourceReference: `Model Knowledge · ${record.agent.model}`,
+      licenseId: 'LicenseRef-Nutrixx-Model-Knowledge',
+      retrievedAt: record.generatedAt,
+      derivationCode: 'nutrixx-agent-model-knowledge',
+      agentProvenance: {
+        ...common,
+        knowledgeDescription: evidence.knowledgeDescription,
+      },
+    };
+  return {
+    sourceReference: `Agent-derived · ${record.agent.model}`,
+    licenseId: 'LicenseRef-Nutrixx-Agent-Derived',
+    retrievedAt: record.generatedAt,
+    derivationCode: `nutrixx-agent-${evidence.method}`,
+    agentProvenance: {
+      ...common,
+      method: evidence.method,
+      derivation: evidence.derivation,
+      inputs: evidence.inputs,
+    },
+  };
+}
+
 async function atomicJson(filename, value) {
   await mkdir(path.dirname(filename), { recursive: true });
   const temporary = `${filename}.${process.pid}.next`;
@@ -136,6 +192,7 @@ function mergeClaims(previous, incoming, metadata) {
 export async function processAgentCurationRunV1({
   runId,
   rootPath = projectRoot,
+  deferCompletion = false,
 }) {
   if (!/^[a-f0-9-]{36}$/u.test(runId))
     throw new TypeError('The curation run identifier is invalid.');
@@ -277,15 +334,17 @@ export async function processAgentCurationRunV1({
       if (!component) throw new TypeError('A projected component disappeared.');
       const sourceId = deterministicId('source', claim.claimId);
       const observationId = deterministicId('observation', claim.claimId);
+      const evidenceProjection = agentEvidenceProjection(record);
       addedSources.push({
         sourceId,
         provider: NUTRIXX_FALLBACK_PROVIDER_V1,
         dataset: 'agent-curated-food-composition',
         sourceRelease: record.batchId,
         sourceRecordId: claim.claimId,
-        sourceReference: claim.evidence.sourceUrl,
-        licenseId: claim.evidence.licenseId,
-        retrievedAt: claim.evidence.retrievedAt,
+        sourceReference: evidenceProjection.sourceReference,
+        licenseId: evidenceProjection.licenseId,
+        retrievedAt: evidenceProjection.retrievedAt,
+        agentProvenance: evidenceProjection.agentProvenance,
       });
       addedObservations.push({
         observationId,
@@ -294,7 +353,7 @@ export async function processAgentCurationRunV1({
         nutrientId: claim.componentId,
         sourceNutrientId: claim.componentId,
         sourceNutrientName: component.name,
-        derivationCode: `nutrixx-agent-${claim.evidence.method}`,
+        derivationCode: evidenceProjection.derivationCode,
         preparationState: claim.preparationState,
         value: { state: 'known', ...claim.value },
         sourceId,
@@ -384,20 +443,35 @@ export async function processAgentCurationRunV1({
       staleClaimCount: stale.length,
       lineage,
     };
+    const catalogDirectory = path.join(rootPath, 'apps/web/public/catalog');
+    await mkdir(catalogDirectory, { recursive: true });
     await Promise.all([
       atomicJson(claimsPath, canonicalClaims),
       writeFile(path.join(runDirectory, artifactName), artifact),
       atomicJson(path.join(runDirectory, receiptName), receipt),
+      writeFile(path.join(catalogDirectory, artifactName), artifact),
+      atomicJson(path.join(catalogDirectory, receiptName), receipt),
       atomicJson(path.join(runDirectory, 'report.json'), {
         ...receipt,
         shadowed,
         stale,
       }),
     ]);
+    await atomicJson(activeDescriptorPath, {
+      ...descriptor,
+      releaseId,
+      artifactName,
+      artifactSha256: receipt.artifactSha256,
+      compressedByteLength: receipt.compressedByteLength,
+      artifactUrl: null,
+      receiptUrl: null,
+      candidateId: runId,
+      reviewedClaimCount: curatedClaims.length,
+    });
     const completed = {
       status: 'completed',
       completedAt: new Date().toISOString(),
-      publicationState: 'pending-activation',
+      publicationState: 'active-local',
       releaseId,
       artifact: path.relative(rootPath, path.join(runDirectory, artifactName)),
       receipt: path.relative(rootPath, path.join(runDirectory, receiptName)),
@@ -408,7 +482,7 @@ export async function processAgentCurationRunV1({
       shadowedClaimCount: shadowed.length,
       staleClaimCount: stale.length,
     };
-    await writeStatus(completed);
+    if (!deferCompletion) await writeStatus(completed);
     return completed;
   } catch (error) {
     await writeStatus({

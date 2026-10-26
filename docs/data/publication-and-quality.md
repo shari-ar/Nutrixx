@@ -5,7 +5,7 @@
 | Status        | Guarded food-composition publication implemented; broader target state |
 | Audience      | Data engineering, nutrition science, security, operations              |
 | Owner         | Nutrixx Data                                                           |
-| Last reviewed | 2026-10-19                                                             |
+| Last reviewed | 2026-10-25                                                             |
 
 ## Pipeline
 
@@ -33,6 +33,14 @@ implemented local review, differential replay, immutable catalog publication,
 and single Web activation descriptor. The initial descriptor selects the
 verified USDA release while operator-reviewed data is being prepared.
 
+Food identity admission uses a separate deterministic lane. Exact normalized
+identities merge automatically into a source-independent canonical ID. Explicit
+preparation and edible-part differences remain distinct. Ambiguous source
+records enter the nonblocking Food Identity Review list and stay outside the
+candidate artifact until an agent records a decision. Candidate publication
+continues with every admitted record, and provider additions, removals, and
+priority changes preserve existing canonical IDs.
+
 ## Release manifest
 
 Each release contains:
@@ -51,14 +59,15 @@ Each release contains:
 Activation requires resolution of every blocking condition:
 
 - an unknown or incompatible unit/basis in a published quantity;
-- a canonical ID collision or unresolved merge;
+- a canonical ID collision among admitted records;
 - missing source version or incompatible license;
 - an impossible/unsafe range according to an accepted validation rule;
 - a regression beyond the approved threshold;
 - a missing lineage path for a calculated value;
 - unreviewed changes to eligibility, target, or upper-limit semantics.
 
-Outliers enter quarantine with explicit reasons. Corrections create a new release.
+Ambiguous identities enter Food Identity Review with explicit reasons. Other
+outliers use the domain-specific staging lane. Corrections create a new release.
 
 ## Change impact
 

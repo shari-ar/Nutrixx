@@ -1,0 +1,9 @@
+services:
+  api:
+    build: !reset null
+
+  web:
+    build: !reset null
+
+  radar:
+    build: !reset null

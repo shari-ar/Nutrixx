@@ -120,7 +120,22 @@ async function installBase(root, value, releaseId) {
   return descriptor;
 }
 
-function batch(descriptor, batchId) {
+function batch(
+  descriptor,
+  batchId,
+  evidence = {
+    evidenceType: 'external-source',
+    sourceTitle: 'Test table',
+    publisher: 'Test publisher',
+    sourceUrl: 'https://example.test/table',
+    sourceEdition: '1',
+    licenseId: 'TEST-1.0',
+    locator: 'row Apple',
+    retrievedAt: NOW,
+    sourceContentSha256: DIGEST,
+    method: 'direct-transcription',
+  },
+) {
   return {
     format: 'nutrixx.agent-curation-batch',
     schemaVersion: 1,
@@ -147,17 +162,7 @@ function batch(descriptor, batchId) {
           unit: { system: 'ucum', code: 'g' },
           basis: 'per-100-gram-edible',
         },
-        evidence: {
-          sourceTitle: 'Test table',
-          publisher: 'Test publisher',
-          sourceUrl: 'https://example.test/table',
-          sourceEdition: '1',
-          licenseId: 'TEST-1.0',
-          locator: 'row Apple',
-          retrievedAt: NOW,
-          sourceContentSha256: DIGEST,
-          method: 'direct-transcription',
-        },
+        evidence,
       },
     ],
   };
@@ -200,19 +205,55 @@ test('Nutrixx fills an unknown cell and yields automatically to a later external
     'catalog-before-external-value',
   );
   const firstRunId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
-  await prepareRun(directory, firstRunId, batch(firstDescriptor, 'batch-1'));
+  await prepareRun(
+    directory,
+    firstRunId,
+    batch(firstDescriptor, 'batch-1', {
+      evidenceType: 'model-knowledge',
+      knowledgeDescription:
+        'The model supplied its existing food-composition knowledge.',
+    }),
+  );
   const firstStatus = await processAgentCurationRunV1({
     runId: firstRunId,
     rootPath: directory,
   });
   const firstRelease = await generatedRelease(directory, firstStatus);
+  const activeAfterFirstRun = JSON.parse(
+    await readFile(
+      path.join(directory, 'apps/web/config/active-food-catalog.json'),
+      'utf8',
+    ),
+  );
   assert.equal(firstStatus.projectedClaimCount, 1);
+  assert.equal(firstStatus.publicationState, 'active-local');
+  assert.equal(activeAfterFirstRun.releaseId, firstStatus.releaseId);
+  assert.equal(
+    activeAfterFirstRun.artifactSha256,
+    sha256(
+      await readFile(
+        path.join(
+          directory,
+          'apps/web/public/catalog',
+          activeAfterFirstRun.artifactName,
+        ),
+      ),
+    ),
+  );
   assert.equal(firstRelease.payload.composition.length, 1);
   const firstSource = firstRelease.payload.sources.find(
     (source) =>
       source.sourceId === firstRelease.payload.composition[0].sourceId,
   );
   assert.equal(firstSource.provider, NUTRIXX_FALLBACK_PROVIDER_V1);
+  assert.deepEqual(firstSource.agentProvenance, {
+    evidenceType: 'model-knowledge',
+    agentId: 'test-agent',
+    model: 'test-model',
+    generatedAt: NOW,
+    knowledgeDescription:
+      'The model supplied its existing food-composition knowledge.',
+  });
 
   const secondDescriptor = await installBase(
     directory,

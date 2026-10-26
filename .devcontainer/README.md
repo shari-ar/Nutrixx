@@ -8,6 +8,7 @@ stack instead of maintaining a second container definition.
 | File                           | Responsibility                                                 |
 | ------------------------------ | -------------------------------------------------------------- |
 | `devcontainer.json`            | VS Code, Codespaces, ports, workspace, and lifecycle settings  |
+| `compose.devcontainer.yaml`    | Reuses the images built by initialization without rebuilding   |
 | `wait-for-api.mjs`             | Bounded readiness check after the container starts             |
 | `prepare-local-catalog.mjs`    | Retrieves and verifies the current offline catalog release     |
 | `start-data-quality-radar.mjs` | Builds the local radar report and starts its preview server    |
@@ -33,7 +34,16 @@ are unchanged; a changed lockfile or workspace manifest invalidates the
 dependency layer and runs the locked `npm ci` automatically. The one-shot
 `dev-dependencies` service then synchronizes those exact dependencies into the
 named volumes used by API and Web. No lifecycle hook performs an unlocked
-install.
+install. The initialization command evaluates those same Compose files through
+Buildx Bake and grants read access only to the repository's shared Dockerfile.
+This narrow entitlement supports recent Buildx filesystem isolation without
+granting access to any path outside the build input. The Dev Container also
+normalizes the two selected targets to the repository-root context because Bake
+otherwise resolves the Compose files' `../..` context from its invocation
+directory rather than from `infra/compose/`. After initialization, the
+DevContainer-only Compose override removes the three redundant service build
+definitions. VS Code therefore starts the exact images produced from the
+canonical Compose targets instead of asking Compose to build them a second time.
 
 After dependencies are ready, the lifecycle hook retrieves the approved,
 immutable catalog artifact from the same-origin catalog delivery endpoint,
@@ -55,6 +65,18 @@ the searchable queue at `/queue`. The Web application
 continues to use port `3000`. A catalog or report error opens a clear local
 status page instead of displaying a stale report. Neither the preview server nor
 the generated report is part of the production Compose stack or public website.
+The queue page can accept a local food-names text/JSON file and return a
+validated `agent-task-packet.json`. Upload bytes are processed in memory with a
+256 KiB limit and are not retained by the preview service.
+It can also submit the completed agent batch to the local curation API and
+follow the persistent run status. The API creates a workspace token in the
+ignored `.temp` directory and the proxy uses it exclusively on the local server
+path. Agent-result uploads are limited to 16 MiB and are retained by the API's
+ignored local run workspace for audit and failure recovery.
+Repeated successful uploads accumulate in the active local draft without
+publishing anything remotely. The queue exposes one confirmed `Release current
+catalog` action; it is enabled only when a local GitHub token is configured and
+publishes the verified artifact and receipt through the Radar server.
 
 ## GitHub Codespaces
 

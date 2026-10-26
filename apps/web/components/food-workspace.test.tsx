@@ -34,7 +34,20 @@ const choice: FoodChoice = {
     { label: 'one bowl', gramWeight: '80' },
     { label: 'half bowl', gramWeight: '40' },
   ],
-  nutrients: [{ nutrientId: 'protein', value: '10 g / one bowl' }],
+  nutrients: [
+    {
+      nutrientId: 'protein',
+      value: '10 g / one bowl',
+      source: 'nutrixx-curated · agent-curated-food-composition · batch-1',
+      agentProvenance: {
+        evidenceType: 'model-knowledge',
+        agentId: 'nutrixx-agent',
+        model: 'example-model',
+        generatedAt: '2026-10-26T00:00:00.000Z',
+        knowledgeDescription: 'Existing model knowledge for this exact food.',
+      },
+    },
+  ],
 };
 
 describe('food workspace', () => {
@@ -74,6 +87,12 @@ describe('food workspace', () => {
       screen.getByText(
         'anses-ciqual · ciqual · 2025 · 11033 · Reviewed food identity',
       ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Collected by Nutrixx Agent · Model Knowledge/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Existing model knowledge for this exact food/),
     ).toBeInTheDocument();
   });
 

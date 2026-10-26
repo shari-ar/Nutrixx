@@ -46,4 +46,16 @@ to run as the non-root `node` user with all capabilities dropped.
 The development override also starts the internal Data Quality Radar at
 `http://localhost:3002/` as its own service. It is available with ordinary
 `npm run dev` as well as the Dev Container, and its host port is bound to
-loopback only. The production Compose file does not expose this operator tool.
+loopback only. Its same-origin proxy submits agent-curation result files to the
+API and follows persisted run status while keeping the shared bearer token on
+the local server path. The API creates a workspace-local 256-bit token in
+ignored storage and both services receive the same token-file path. The
+production Compose file does not expose this operator tool.
+
+Every successful Agent batch updates only the workspace-local catalog draft.
+The Radar publishes that draft only when an operator selects `Release current
+catalog` on port `3002` and confirms the action. Publication uses a local
+fine-grained `NUTRIXX_GITHUB_TOKEN` with repository Contents write access; the
+token stays on the Radar server path and is never sent to the browser. The
+publisher verifies the artifact and receipt, uploads both to a draft GitHub
+Release, and publishes the Release only after both uploads succeed.
