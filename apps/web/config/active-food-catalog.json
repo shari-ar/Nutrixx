@@ -1,12 +1,12 @@
 {
   "format": "nutrixx.active-food-catalog",
   "schemaVersion": 1,
-  "releaseId": "food-catalog-us-ca-au-uk-fr-2026.2",
-  "artifactName": "food-catalog-us-ca-au-uk-fr-2026.2.v1.json.gz",
-  "artifactSha256": "8ef0f19b3168dcd2ffb6caf7c3c0a6889f84ae22c3bce2eabda899483a0acc27",
-  "compressedByteLength": 42879917,
-  "candidateId": null,
-  "artifactUrl": null,
-  "receiptUrl": null,
-  "reviewedClaimCount": 0
+  "releaseId": "food-catalog-nutrixx-4a993cda58f40d549d37dc39",
+  "artifactName": "food-catalog-nutrixx-4a993cda58f40d549d37dc39.v1.json.gz",
+  "artifactSha256": "acca77e6e86eb5f4785cb8f33498a7f3ceb7d584be1daab83b2d3bd546ceeadd",
+  "compressedByteLength": 42809565,
+  "artifactUrl": "https://github.com/shari-ar/Nutrixx/releases/download/food-catalog-nutrixx-4a993cda58f40d549d37dc39/food-catalog-nutrixx-4a993cda58f40d549d37dc39.v1.json.gz",
+  "receiptUrl": "https://github.com/shari-ar/Nutrixx/releases/download/food-catalog-nutrixx-4a993cda58f40d549d37dc39/food-catalog-nutrixx-4a993cda58f40d549d37dc39.receipt.json",
+  "candidateId": "cdb54f25-2547-4312-85b2-ce5d50067366",
+  "reviewedClaimCount": 3397
 }
