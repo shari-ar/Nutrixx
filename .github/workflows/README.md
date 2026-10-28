@@ -18,6 +18,13 @@ changes reach `main`. The build uses full Git history for accurate page-update
 timestamps, uploads only the generated site, and grants deployment permissions
 only to the deployment job.
 
+`catalog-release.yml` runs only after a successful pull-request CI workflow. Its
+trusted finalizer accepts only automation-owned catalog branches and the two
+catalog activation paths, waits for Documentation, verifies the draft Release
+assets and receipt, publishes the immutable Release, then squash-merges and
+deletes the temporary branch. The active pointer therefore reaches `main` only
+after the Release is downloadable and every validation has passed.
+
 ## Change checklist
 
 - Preserve read-only permissions unless a documented job requires more.

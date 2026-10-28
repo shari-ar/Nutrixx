@@ -22,7 +22,9 @@ test('renders the browser agent task-packet workflow', () => {
   assert.match(html, /coverageSnapshot/u);
   assert.match(html, /id="publish-catalog"/u);
   assert.match(html, /fetch\('\/catalog-release'/u);
-  assert.match(html, /Release current catalog/u);
+  assert.match(html, /Prepare catalog release/u);
+  assert.match(html, /awaiting-ci/u);
+  assert.match(html, /open pull request/u);
   assert.match(html, /window\.confirm/u);
   assert.match(html, /window\.location\.reload\(\)/u);
   assert.match(html, /Model Knowledge/u);

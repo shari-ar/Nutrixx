@@ -352,18 +352,33 @@ run, and keeps the persisted latest result visible after a page reload.
 Agent runs remain local drafts regardless of how many batches accumulate. The
 Web dashboard polls the ignored runtime draft pointer, automatically verifies
 and activates every new revision, and displays `Using Local Draft` while that
-revision is active in the local reference cache. The tracked claims and deployment
-descriptor remain unchanged throughout the session. The
-Reference Work Queue exposes one explicit `Release current catalog` action.
-That action verifies the exact tested draft artifact and receipt, creates or resumes a
-draft GitHub Release, uploads both immutable assets, publishes the Release only
-after both assets succeed, promotes the local claims, records immutable HTTPS
-URLs in the tracked active descriptor, and closes the local session. The
-published artifact retains the browser-tested SHA-256. A local fine-grained GitHub token with repository Contents
-write access stays exclusively in the Radar server environment. HTTP 403 stops
-publication immediately without retry. No Agent upload triggers publication.
-The queue page is the sole interactive operator workflow for batch submission
-and explicit catalog release.
+revision is active in the local reference cache. The tracked claims and
+deployment descriptor remain unchanged throughout the session.
+
+The Reference Work Queue exposes one explicit `Prepare catalog release` action.
+The button is final operator approval. It verifies the exact browser-tested draft
+artifact and receipt, creates or resumes a draft GitHub Release, uploads both
+immutable assets, and opens one automation-owned draft pull request containing only
+the canonical claims and active descriptor. The descriptor uses permanent tag
+URLs rather than temporary draft asset URLs.
+
+CI and Documentation validate the pull-request head independently. A trusted
+`workflow_run` finalizer reads code from `main`, accepts only same-repository
+`catalog-release/` branches with the two approved paths, verifies asset size,
+SHA-256, receipt identity, and canonical URLs, then publishes the draft Release.
+Only after publication succeeds does it squash-merge the activation pull request
+and remove its branch. A validation failure leaves the local draft and GitHub
+Release draft intact. A merge failure after publication leaves the new immutable
+Release available while the previous active pointer remains on `main`; rerunning
+the successful CI finalization safely retries activation. After the merged `main`
+is pulled locally, Radar reconciles and closes the matching local session.
+
+The published artifact retains the browser-tested SHA-256. A local fine-grained
+GitHub token with Contents and Pull requests write access stays exclusively in
+the Radar server environment. The workflow token receives the same narrow write
+permissions only in the finalizer. HTTP 403 stops publication immediately without
+retry. No Agent upload triggers publication. The queue page is the sole
+interactive operator workflow for batch submission and explicit catalog release.
 
 ## Completion workflow
 

@@ -14,6 +14,10 @@ export function localCatalogDraftPaths(rootPath) {
     ),
     session: path.join(rootPath, '.temp/agent-curation/session.v1.json'),
     claims: path.join(rootPath, '.temp/agent-curation/claims.v1.json'),
+    publication: path.join(
+      rootPath,
+      '.temp/agent-curation/publication.v1.json',
+    ),
     browserDraft: path.join(
       rootPath,
       'apps/web/public/catalog/local-draft.json',
@@ -257,6 +261,48 @@ export async function clearLocalCatalogCurationSessionV1({ rootPath }) {
   await Promise.all([
     rm(paths.session, { force: true }),
     rm(paths.claims, { force: true }),
+    rm(paths.publication, { force: true }),
     rm(paths.browserDraft, { force: true }),
   ]);
+}
+
+export async function readLocalCatalogPublicationV1({ rootPath }) {
+  const value = await readJsonIfPresent(
+    localCatalogDraftPaths(rootPath).publication,
+  );
+  if (value === null) return null;
+  if (
+    value.format !== 'nutrixx.local-catalog-publication' ||
+    value.schemaVersion !== 1 ||
+    typeof value.releaseId !== 'string' ||
+    !Number.isSafeInteger(value.pullRequestNumber) ||
+    typeof value.pullRequestUrl !== 'string' ||
+    !value.pullRequestUrl.startsWith('https://')
+  )
+    throw new TypeError('The local catalog publication status is invalid.');
+  return value;
+}
+
+export async function writeLocalCatalogPublicationV1({ rootPath, value }) {
+  await atomicJson(localCatalogDraftPaths(rootPath).publication, value);
+}
+
+export async function reconcilePublishedLocalCatalogV1({ rootPath }) {
+  const paths = localCatalogDraftPaths(rootPath);
+  const sessionValue = await readJsonIfPresent(paths.session);
+  if (sessionValue === null) return false;
+  const session = validateSession(sessionValue);
+  if (session.draftCatalog === null) return false;
+  const active = validateCatalogDescriptorV1(
+    JSON.parse(await readFile(paths.activeDescriptor, 'utf8')),
+  );
+  if (
+    active.releaseId !== session.draftCatalog.releaseId ||
+    active.artifactSha256 !== session.draftCatalog.artifactSha256 ||
+    !active.artifactUrl?.startsWith('https://') ||
+    !active.receiptUrl?.startsWith('https://')
+  )
+    return false;
+  await clearLocalCatalogCurationSessionV1({ rootPath });
+  return true;
 }

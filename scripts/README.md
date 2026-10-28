@@ -33,6 +33,9 @@ Small, cross-platform automation used by contributors and CI.
 | `food-identity-links.json`              | Declares source priority, reviewed exact identities, and unresolved identity decisions                                                                    |
 | `build-multisource-food-catalog.mjs`    | Integrates all declared sources, creates source-independent canonical food identities, and emits lineage, identity-review, and quality artifacts          |
 | `verify-active-catalog-assets.mjs`      | Confirms that delivery assets match the pinned active-catalog descriptor and receipt                                                                      |
+| `github-catalog-release.mjs`            | Provides the fail-fast GitHub API, digest verification, and canonical immutable asset URLs shared by catalog release automation                           |
+| `publish-local-agent-catalog.mjs`       | Verifies the local draft, uploads a draft Release, and prepares the two-file activation pull request without changing `main`                              |
+| `finalize-catalog-release.mjs`          | Verifies successful CI and Documentation, publishes the prepared Release, merges its activation pull request, and removes the temporary branch            |
 
 ## Rules
 

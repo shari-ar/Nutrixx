@@ -11,7 +11,11 @@ import {
   CatalogPublicationError,
   publishLocalAgentCatalog,
 } from '../scripts/publish-local-agent-catalog.mjs';
-import { ensureLocalCatalogCurationSessionV1 } from '../scripts/local-catalog-draft.mjs';
+import {
+  ensureLocalCatalogCurationSessionV1,
+  readLocalCatalogPublicationV1,
+  reconcilePublishedLocalCatalogV1,
+} from '../scripts/local-catalog-draft.mjs';
 
 const workspace = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -85,7 +89,11 @@ async function githubPublicationToken() {
 }
 
 async function catalogPublicationState() {
+  await reconcilePublishedLocalCatalogV1({ rootPath: workspace });
   const session = await ensureLocalCatalogCurationSessionV1({
+    rootPath: workspace,
+  });
+  const pending = await readLocalCatalogPublicationV1({
     rootPath: workspace,
   });
   const descriptor = session.draftCatalog ?? session.baseCatalog;
@@ -98,15 +106,20 @@ async function catalogPublicationState() {
     releaseId: descriptor.releaseId,
     artifactSha256: descriptor.artifactSha256,
     publicationState:
-      !hasDraft &&
-      descriptor.artifactUrl?.startsWith('https://') &&
-      descriptor.receiptUrl?.startsWith('https://')
-        ? 'published'
-        : hasDraft
-          ? 'local-draft'
-          : 'base',
+      hasDraft && pending?.releaseId === descriptor.releaseId
+        ? 'awaiting-ci'
+        : !hasDraft &&
+            descriptor.artifactUrl?.startsWith('https://') &&
+            descriptor.receiptUrl?.startsWith('https://')
+          ? 'published'
+          : hasDraft
+            ? 'local-draft'
+            : 'base',
     artifactUrl: descriptor.artifactUrl ?? null,
     receiptUrl: descriptor.receiptUrl ?? null,
+    pullRequestNumber: pending?.pullRequestNumber ?? null,
+    pullRequestUrl: pending?.pullRequestUrl ?? null,
+    releaseUrl: pending?.releaseUrl ?? null,
     publicationConfigured: Boolean(await githubPublicationToken()),
     publicationActive: catalogPublicationActive,
   };

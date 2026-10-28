@@ -55,8 +55,7 @@ async function fixture() {
     reviewedClaimCount: 0,
   };
   const draftDescriptor = {
-    format: 'nutrixx.active-food-catalog',
-    schemaVersion: 1,
+    ...baseDescriptor,
     releaseId,
     artifactName,
     artifactSha256,
@@ -98,24 +97,20 @@ async function fixture() {
       })}\n`,
     ),
   ]);
-  return {
-    root,
-    releaseId,
-    artifactName,
-    receiptName,
-    descriptorPath,
-    sessionDirectory,
-  };
+  return { root, releaseId, artifactName, descriptorPath, sessionDirectory };
 }
 
-test('publishes both verified assets before activating immutable URLs', async () => {
-  const setup = await fixture();
-  const calls = [];
-  const fetcher = async (url, init = {}) => {
-    calls.push({ url: String(url), method: init.method ?? 'GET' });
-    if (String(url).includes('/releases/tags/'))
+function successfulGitHub(calls) {
+  let blobNumber = 0;
+  return async (url, init = {}) => {
+    const target = String(url);
+    const method = init.method ?? 'GET';
+    calls.push({ url: target, method, body: init.body });
+    if (target.includes('/releases/tags/'))
       return new Response('{}', { status: 404 });
-    if (String(url).endsWith('/releases') && init.method === 'POST')
+    if (target.endsWith('/releases?per_page=100') && method === 'GET')
+      return Response.json([]);
+    if (target.endsWith('/releases') && method === 'POST')
       return Response.json(
         {
           id: 7,
@@ -127,57 +122,97 @@ test('publishes both verified assets before activating immutable URLs', async ()
         },
         { status: 201 },
       );
-    if (String(url).startsWith('https://uploads.github.test/')) {
-      const name = new URL(String(url)).searchParams.get('name');
+    if (target.startsWith('https://uploads.github.test/')) {
+      const name = new URL(target).searchParams.get('name');
+      return Response.json({ name }, { status: 201 });
+    }
+    if (target.endsWith('/git/ref/heads/main'))
+      return Response.json({ object: { sha: 'main-sha' } });
+    if (target.endsWith('/git/blobs') && method === 'POST') {
+      blobNumber += 1;
+      return Response.json({ sha: `blob-${blobNumber}` }, { status: 201 });
+    }
+    if (target.endsWith('/git/commits/main-sha'))
+      return Response.json({ tree: { sha: 'base-tree' } });
+    if (target.endsWith('/git/trees') && method === 'POST')
+      return Response.json({ sha: 'release-tree' }, { status: 201 });
+    if (target.includes('/git/ref/heads/catalog-release/'))
+      return new Response('{}', { status: 404 });
+    if (target.endsWith('/git/commits') && method === 'POST')
+      return Response.json({ sha: 'release-commit' }, { status: 201 });
+    if (target.endsWith('/git/refs') && method === 'POST')
+      return Response.json(
+        { object: { sha: 'release-commit' } },
+        { status: 201 },
+      );
+    if (target.includes('/pulls?')) return Response.json([]);
+    if (target.endsWith('/pulls') && method === 'POST')
       return Response.json(
         {
-          name,
-          browser_download_url: `https://github.test/download/${name}`,
+          number: 19,
+          html_url: 'https://github.test/pulls/19',
         },
         { status: 201 },
       );
-    }
-    if (String(url).endsWith('/releases/7') && init.method === 'PATCH')
-      return Response.json({
-        id: 7,
-        draft: false,
-        html_url: 'https://github.test/releases/7',
-      });
-    throw new Error(`Unexpected request: ${String(url)}`);
+    throw new Error(`Unexpected request: ${method} ${target}`);
   };
+}
 
+test('prepares immutable assets and a release PR without activating main', async () => {
+  const setup = await fixture();
+  const calls = [];
   try {
     const result = await publishLocalAgentCatalog({
       rootPath: setup.root,
       token: 'test-token',
       repository: 'shari-ar/Nutrixx',
-      fetcher,
+      fetcher: successfulGitHub(calls),
     });
     const descriptor = JSON.parse(await readFile(setup.descriptorPath, 'utf8'));
-
-    assert.equal(result.releaseId, setup.releaseId);
+    const publication = JSON.parse(
+      await readFile(
+        path.join(setup.sessionDirectory, 'publication.v1.json'),
+        'utf8',
+      ),
+    );
+    assert.equal(descriptor.releaseId, 'food-catalog-published-base');
+    assert.equal(result.publicationState, 'awaiting-ci');
+    assert.equal(result.pullRequestNumber, 19);
+    assert.equal(publication.releaseId, setup.releaseId);
+    assert.equal(publication.state, 'awaiting-validation');
     assert.equal(
-      descriptor.artifactUrl,
-      `https://github.test/download/${setup.artifactName}`,
+      JSON.parse(
+        await readFile(
+          path.join(setup.sessionDirectory, 'session.v1.json'),
+          'utf8',
+        ),
+      ).draftCatalog.releaseId,
+      setup.releaseId,
     );
     assert.equal(
-      descriptor.receiptUrl,
-      `https://github.test/download/${setup.receiptName}`,
+      calls.some(
+        ({ url, method }) => url.endsWith('/releases/7') && method === 'PATCH',
+      ),
+      false,
     );
-    await assert.rejects(
-      readFile(path.join(setup.sessionDirectory, 'session.v1.json')),
-      /ENOENT/u,
+    const descriptorBlob = calls.find(
+      ({ url, method }) => url.endsWith('/git/blobs') && method === 'POST',
     );
-    assert.deepEqual(
-      calls.map(({ method }) => method),
-      ['GET', 'POST', 'POST', 'POST', 'PATCH'],
+    const pending = JSON.parse(
+      Buffer.from(JSON.parse(descriptorBlob.body).content, 'base64').toString(
+        'utf8',
+      ),
+    );
+    assert.equal(
+      pending.artifactUrl,
+      `https://github.com/shari-ar/Nutrixx/releases/download/${setup.releaseId}/${setup.artifactName}`,
     );
   } finally {
     await rm(setup.root, { recursive: true, force: true });
   }
 });
 
-test('stops immediately on GitHub HTTP 403', async () => {
+test('stops immediately on GitHub HTTP 403 and preserves the local draft', async () => {
   const setup = await fixture();
   let requests = 0;
   try {

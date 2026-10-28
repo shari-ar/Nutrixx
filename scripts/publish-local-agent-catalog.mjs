@@ -1,129 +1,153 @@
-import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  atomicJson,
-  clearLocalCatalogCurationSessionV1,
+  CatalogPublicationError,
+  canonicalReleaseAssetUrl,
+  githubJson,
+  githubJsonOrNull,
+  releaseForTag,
+  repositoryContext,
+  sha256,
+  uploadReleaseAsset,
+} from './github-catalog-release.mjs';
+import {
   ensureLocalCatalogCurationSessionV1,
   localCatalogDraftPaths,
+  writeLocalCatalogPublicationV1,
 } from './local-catalog-draft.mjs';
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 );
+const activeDescriptorPath = 'apps/web/config/active-food-catalog.json';
+const trackedClaimsPath = 'reference-data/nutrixx-curated/claims.v1.json';
 
-export class CatalogPublicationError extends Error {
-  constructor(message, statusCode = 500) {
-    super(message);
-    this.name = 'CatalogPublicationError';
-    this.statusCode = statusCode;
-  }
+export { CatalogPublicationError } from './github-catalog-release.mjs';
+
+function refPath(branchName) {
+  return branchName.split('/').map(encodeURIComponent).join('/');
 }
 
-function sha256(value) {
-  return createHash('sha256').update(value).digest('hex');
-}
-
-async function githubRequest(fetcher, token, url, init = {}) {
-  const response = await fetcher(url, {
-    ...init,
-    signal: init.signal ?? AbortSignal.timeout(10 * 60 * 1000),
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'User-Agent': 'Nutrixx-Local-Catalog-Publisher',
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(init.headers ?? {}),
-    },
+async function createBlob(fetcher, token, apiBase, content) {
+  return githubJson(fetcher, token, `${apiBase}/git/blobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: Buffer.from(content).toString('base64'),
+      encoding: 'base64',
+    }),
   });
-  if (response.status === 403)
-    throw new CatalogPublicationError(
-      'GitHub rejected catalog publication with HTTP 403. Publication stopped without retry.',
-      403,
-    );
-  return response;
 }
 
-async function githubJson(fetcher, token, url, init = {}) {
-  const response = await githubRequest(fetcher, token, url, init);
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new CatalogPublicationError(
-      result.message ?? `GitHub returned HTTP ${response.status}.`,
-      response.status,
-    );
-  return result;
-}
-
-async function releaseForTag(fetcher, token, apiBase, tag) {
-  const response = await githubRequest(
+async function prepareReleasePullRequest({
+  fetcher,
+  token,
+  apiBase,
+  owner,
+  releaseId,
+  descriptorContent,
+  claimsContent,
+}) {
+  const branchName = `catalog-release/${releaseId}`;
+  const branchEndpoint = `${apiBase}/git/ref/heads/${refPath(branchName)}`;
+  const [mainRef, descriptorBlob, claimsBlob] = await Promise.all([
+    githubJson(fetcher, token, `${apiBase}/git/ref/heads/main`),
+    createBlob(fetcher, token, apiBase, descriptorContent),
+    createBlob(fetcher, token, apiBase, claimsContent),
+  ]);
+  const baseCommit = await githubJson(
     fetcher,
     token,
-    `${apiBase}/releases/tags/${encodeURIComponent(tag)}`,
+    `${apiBase}/git/commits/${mainRef.object.sha}`,
   );
-  if (response.status === 404) return null;
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new CatalogPublicationError(
-      result.message ?? `GitHub returned HTTP ${response.status}.`,
-      response.status,
-    );
-  return result;
-}
-
-async function verifyExistingAsset(fetcher, token, asset, expected) {
-  if (asset.size !== expected.bytes)
-    throw new CatalogPublicationError(
-      `The existing GitHub asset differs in size: ${expected.name}`,
-      409,
-    );
-  if (asset.digest) {
-    if (asset.digest !== `sha256:${expected.sha256}`)
-      throw new CatalogPublicationError(
-        `The existing GitHub asset differs in digest: ${expected.name}`,
-        409,
-      );
-    return asset;
-  }
-  const response = await githubRequest(fetcher, token, asset.url, {
-    headers: { Accept: 'application/octet-stream' },
+  const tree = await githubJson(fetcher, token, `${apiBase}/git/trees`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      base_tree: baseCommit.tree.sha,
+      tree: [
+        {
+          path: activeDescriptorPath,
+          mode: '100644',
+          type: 'blob',
+          sha: descriptorBlob.sha,
+        },
+        {
+          path: trackedClaimsPath,
+          mode: '100644',
+          type: 'blob',
+          sha: claimsBlob.sha,
+        },
+      ],
+    }),
   });
-  if (!response.ok)
-    throw new CatalogPublicationError(
-      `The existing GitHub asset could not be verified: ${expected.name}`,
-      response.status,
+  const existingRef = await githubJsonOrNull(fetcher, token, branchEndpoint);
+  let headSha = existingRef?.object.sha;
+  let existingTreeSha = null;
+  if (headSha) {
+    const existingCommit = await githubJson(
+      fetcher,
+      token,
+      `${apiBase}/git/commits/${headSha}`,
     );
-  const content = Buffer.from(await response.arrayBuffer());
-  if (sha256(content) !== expected.sha256)
-    throw new CatalogPublicationError(
-      `The existing GitHub asset differs in digest: ${expected.name}`,
-      409,
-    );
-  return asset;
-}
-
-async function uploadAsset(fetcher, token, release, expected) {
-  const existing = release.assets?.find(
-    (asset) => asset.name === expected.name,
-  );
-  if (existing) return verifyExistingAsset(fetcher, token, existing, expected);
-  const uploadBase = release.upload_url.replace(/\{.*$/u, '');
-  return githubJson(
-    fetcher,
-    token,
-    `${uploadBase}?name=${encodeURIComponent(expected.name)}`,
-    {
+    existingTreeSha = existingCommit.tree.sha;
+  }
+  if (existingTreeSha !== tree.sha) {
+    const commit = await githubJson(fetcher, token, `${apiBase}/git/commits`, {
       method: 'POST',
-      headers: {
-        Accept: 'application/vnd.github+json',
-        'Content-Type': expected.contentType,
-      },
-      body: expected.content,
-    },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `data(catalog): activate ${releaseId}`,
+        tree: tree.sha,
+        parents: [mainRef.object.sha],
+      }),
+    });
+    headSha = commit.sha;
+    if (existingRef)
+      await githubJson(fetcher, token, branchEndpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sha: headSha, force: true }),
+      });
+    else
+      await githubJson(fetcher, token, `${apiBase}/git/refs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref: `refs/heads/${branchName}`,
+          sha: headSha,
+        }),
+      });
+  }
+
+  const pullRequests = await githubJson(
+    fetcher,
+    token,
+    `${apiBase}/pulls?state=open&base=main&head=${encodeURIComponent(`${owner}:${branchName}`)}`,
   );
+  const pullRequest =
+    pullRequests[0] ??
+    (await githubJson(fetcher, token, `${apiBase}/pulls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: `Activate food catalog ${releaseId}`,
+        head: branchName,
+        base: 'main',
+        body: [
+          '<!-- nutrixx-catalog-release -->',
+          `Activates the verified immutable food catalog \`${releaseId}\`.`,
+          '',
+          'The catalog finalization workflow publishes the prepared draft Release only after CI and Documentation succeed, then merges this pull request and removes the release branch.',
+        ].join('\n'),
+        maintainer_can_modify: false,
+        draft: true,
+      }),
+    }));
+  return { branchName, headSha, pullRequest };
 }
 
 export async function publishLocalAgentCatalog({
@@ -137,9 +161,8 @@ export async function publishLocalAgentCatalog({
       'GitHub publication is not configured. Set NUTRIXX_GITHUB_TOKEN locally.',
       503,
     );
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository))
-    throw new CatalogPublicationError('The GitHub repository is invalid.', 500);
-
+  const cleanToken = token.trim();
+  const { owner, apiBase } = repositoryContext(repository);
   const paths = localCatalogDraftPaths(rootPath);
   const session = await ensureLocalCatalogCurationSessionV1({ rootPath });
   if (session.draftCatalog === null)
@@ -159,14 +182,9 @@ export async function publishLocalAgentCatalog({
   );
   if (receiptName === descriptor.artifactName)
     throw new CatalogPublicationError('The catalog artifact name is invalid.');
-  const receiptPath = path.join(
-    rootPath,
-    'apps/web/public/catalog',
-    receiptName,
-  );
   const [artifact, receiptContent] = await Promise.all([
     readFile(artifactPath),
-    readFile(receiptPath),
+    readFile(path.join(rootPath, 'apps/web/public/catalog', receiptName)),
   ]);
   const receipt = JSON.parse(receiptContent.toString('utf8'));
   if (
@@ -177,24 +195,23 @@ export async function publishLocalAgentCatalog({
     receipt.compressedByteLength !== descriptor.compressedByteLength
   )
     throw new CatalogPublicationError(
-      'The active local catalog or receipt failed verification.',
+      'The local catalog or receipt failed verification.',
       409,
     );
 
-  const [owner, name] = repository.split('/');
-  const apiBase = `https://api.github.com/repos/${owner}/${name}`;
   let release = await releaseForTag(
     fetcher,
-    token.trim(),
+    cleanToken,
     apiBase,
     descriptor.releaseId,
   );
   if (!release)
-    release = await githubJson(fetcher, token.trim(), `${apiBase}/releases`, {
+    release = await githubJson(fetcher, cleanToken, `${apiBase}/releases`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tag_name: descriptor.releaseId,
+        target_commitish: 'main',
         name: `Nutrixx Food Catalog ${descriptor.releaseId}`,
         body: `Immutable Nutrixx food-catalog release ${descriptor.releaseId}.`,
         draft: true,
@@ -202,50 +219,63 @@ export async function publishLocalAgentCatalog({
         generate_release_notes: false,
       }),
     });
-
-  const artifactAsset = await uploadAsset(fetcher, token.trim(), release, {
+  await uploadReleaseAsset(fetcher, cleanToken, release, {
     name: descriptor.artifactName,
     content: artifact,
     bytes: artifact.length,
-    sha256: sha256(artifact),
+    sha256: descriptor.artifactSha256,
     contentType: 'application/gzip',
   });
-  const receiptAsset = await uploadAsset(fetcher, token.trim(), release, {
+  await uploadReleaseAsset(fetcher, cleanToken, release, {
     name: receiptName,
     content: receiptContent,
     bytes: receiptContent.length,
     sha256: sha256(receiptContent),
     contentType: 'application/json',
   });
-  if (release.draft)
-    release = await githubJson(
-      fetcher,
-      token.trim(),
-      `${apiBase}/releases/${release.id}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draft: false }),
-      },
-    );
 
-  const publishedDescriptor = {
+  const pendingDescriptor = {
     ...descriptor,
-    artifactUrl: artifactAsset.browser_download_url,
-    receiptUrl: receiptAsset.browser_download_url,
+    artifactUrl: canonicalReleaseAssetUrl(
+      repository,
+      descriptor.releaseId,
+      descriptor.artifactName,
+    ),
+    receiptUrl: canonicalReleaseAssetUrl(
+      repository,
+      descriptor.releaseId,
+      receiptName,
+    ),
   };
   const localClaims = JSON.parse(await readFile(paths.claims, 'utf8'));
-  await Promise.all([
-    atomicJson(paths.activeDescriptor, publishedDescriptor),
-    atomicJson(paths.trackedClaims, localClaims),
-  ]);
-  await clearLocalCatalogCurationSessionV1({ rootPath });
-  return {
+  const prepared = await prepareReleasePullRequest({
+    fetcher,
+    token: cleanToken,
+    apiBase,
+    owner,
     releaseId: descriptor.releaseId,
-    releaseUrl: release.html_url,
-    artifactUrl: artifactAsset.browser_download_url,
-    receiptUrl: receiptAsset.browser_download_url,
+    descriptorContent: `${JSON.stringify(pendingDescriptor, null, 2)}\n`,
+    claimsContent: `${JSON.stringify(localClaims, null, 2)}\n`,
+  });
+  const publication = {
+    format: 'nutrixx.local-catalog-publication',
+    schemaVersion: 1,
+    releaseId: descriptor.releaseId,
     artifactSha256: descriptor.artifactSha256,
+    pullRequestNumber: prepared.pullRequest.number,
+    pullRequestUrl: prepared.pullRequest.html_url,
+    releaseUrl: release.html_url,
+    branchName: prepared.branchName,
+    headSha: prepared.headSha,
+    state: release.draft ? 'awaiting-validation' : 'awaiting-merge',
+    preparedAt: new Date().toISOString(),
+  };
+  await writeLocalCatalogPublicationV1({ rootPath, value: publication });
+  return {
+    ...publication,
+    publicationState: 'awaiting-ci',
+    artifactUrl: pendingDescriptor.artifactUrl,
+    receiptUrl: pendingDescriptor.receiptUrl,
     artifactBytes: artifact.length,
   };
 }
