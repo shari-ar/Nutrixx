@@ -70,9 +70,32 @@ async function startServer() {
   throw new Error('The data quality radar server did not start on port 3002.');
 }
 
+async function hasLocalDraftSession() {
+  try {
+    const session = JSON.parse(
+      await readFile(
+        path.join(workspace, '.temp/agent-curation/session.v1.json'),
+        'utf8',
+      ),
+    );
+    return (
+      session.format === 'nutrixx.local-catalog-curation-session' &&
+      session.schemaVersion === 1 &&
+      session.draftCatalog !== null
+    );
+  } catch (error) {
+    if (error?.code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
 await writeStatus('preparing', 'The local food catalog is being prepared.');
 try {
-  await run(process.execPath, ['.devcontainer/prepare-local-catalog.mjs']);
+  if (await hasLocalDraftSession())
+    console.info(
+      'Using the verified local draft; published-catalog preparation is skipped.',
+    );
+  else await run(process.execPath, ['.devcontainer/prepare-local-catalog.mjs']);
   await run('npm', ['run', 'quality:data']);
   const generatedReport = JSON.parse(
     await readFile(path.join(outputDirectory, 'report.json'), 'utf8'),

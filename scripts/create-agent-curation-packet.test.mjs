@@ -68,6 +68,27 @@ test('creates an agent packet from an exact food name', () => {
   assert.equal(packet.components[0].unit.code, 'g');
 });
 
+test('uses the current draft queue while pinning the packet to the session base', () => {
+  const packet = buildAgentCurationTaskPacketV1({
+    names: ['Egg, whole, cooked'],
+    queue,
+    queueCatalog: { releaseId: 'catalog-1', artifactSha256: digest },
+    packetCatalog: {
+      releaseId: 'catalog-session-base',
+      artifactSha256: 'c'.repeat(64),
+    },
+    instructionSha256: 'b'.repeat(64),
+    generatedAt: '2026-10-25T12:00:00.000Z',
+    batchId: 'batch-2',
+    agentId: 'agent-1',
+    model: 'model-1',
+  });
+  assert.deepEqual(packet.catalog, {
+    releaseId: 'catalog-session-base',
+    artifactSha256: 'c'.repeat(64),
+  });
+});
+
 test('rejects ambiguous partial food names', () => {
   assert.throws(
     () =>

@@ -12,6 +12,10 @@ import {
 } from '../packages/food-knowledge/dist/index.js';
 
 import { processAgentCurationRunV1 } from './process-agent-curation.mjs';
+import {
+  clearLocalCatalogCurationSessionV1,
+  localCatalogDraftPaths,
+} from './local-catalog-draft.mjs';
 
 const SOURCE_ID = '11111111-1111-4111-a111-111111111111';
 const FOOD_ID = '22222222-2222-4222-a222-222222222222';
@@ -108,10 +112,16 @@ async function installBase(root, value, releaseId) {
     artifact,
   );
   const descriptor = {
+    format: 'nutrixx.active-food-catalog',
+    schemaVersion: 1,
     releaseId,
     artifactName,
     artifactSha256: sha256(artifact),
     compressedByteLength: artifact.length,
+    candidateId: null,
+    artifactUrl: `https://example.test/${artifactName}`,
+    receiptUrl: `https://example.test/${releaseId}.receipt.json`,
+    reviewedClaimCount: 0,
   };
   await writeFile(
     path.join(root, 'apps/web/config/active-food-catalog.json'),
@@ -226,16 +236,24 @@ test('Nutrixx fills an unknown cell and yields automatically to a later external
     ),
   );
   assert.equal(firstStatus.projectedClaimCount, 1);
-  assert.equal(firstStatus.publicationState, 'active-local');
-  assert.equal(activeAfterFirstRun.releaseId, firstStatus.releaseId);
+  assert.equal(firstStatus.publicationState, 'local-draft');
+  assert.equal(activeAfterFirstRun.releaseId, firstDescriptor.releaseId);
+  const localDraft = JSON.parse(
+    await readFile(
+      path.join(directory, 'apps/web/public/catalog/local-draft.json'),
+      'utf8',
+    ),
+  );
+  assert.equal(localDraft.catalog.releaseId, firstStatus.releaseId);
+  assert.equal(localDraft.draftRevision, 1);
   assert.equal(
-    activeAfterFirstRun.artifactSha256,
+    localDraft.catalog.artifactSha256,
     sha256(
       await readFile(
         path.join(
           directory,
           'apps/web/public/catalog',
-          activeAfterFirstRun.artifactName,
+          localDraft.catalog.artifactName,
         ),
       ),
     ),
@@ -254,6 +272,10 @@ test('Nutrixx fills an unknown cell and yields automatically to a later external
     knowledgeDescription:
       'The model supplied its existing food-composition knowledge.',
   });
+
+  const draftPaths = localCatalogDraftPaths(directory);
+  await writeFile(draftPaths.trackedClaims, await readFile(draftPaths.claims));
+  await clearLocalCatalogCurationSessionV1({ rootPath: directory });
 
   const secondDescriptor = await installBase(
     directory,
@@ -282,4 +304,62 @@ test('Nutrixx fills an unknown cell and yields automatically to a later external
     ),
     false,
   );
+});
+
+test('multiple packets pinned to one base advance the same local draft', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'nutrixx-session-'));
+  try {
+    await mkdir(path.join(root, 'reference-data/nutrixx-curated'), {
+      recursive: true,
+    });
+    await writeFile(
+      path.join(root, 'reference-data/nutrixx-curated/claims.v1.json'),
+      JSON.stringify({
+        format: 'nutrixx.agent-curated-food-composition',
+        schemaVersion: 1,
+        claims: [],
+      }),
+    );
+    const descriptor = await installBase(
+      root,
+      { state: 'unknown', reason: 'not-provided' },
+      'catalog-session-base',
+    );
+    const firstRunId = 'cccccccc-cccc-4ccc-accc-cccccccccccc';
+    await prepareRun(root, firstRunId, batch(descriptor, 'session-batch-1'));
+    const first = await processAgentCurationRunV1({
+      runId: firstRunId,
+      rootPath: root,
+    });
+
+    const secondInput = batch(descriptor, 'session-batch-2');
+    secondInput.claims[0].claimId = 'claim.apple.protein.second';
+    secondInput.claims[0].value.amount = '0.35';
+    const secondRunId = 'dddddddd-dddd-4ddd-addd-dddddddddddd';
+    await prepareRun(root, secondRunId, secondInput);
+    const second = await processAgentCurationRunV1({
+      runId: secondRunId,
+      rootPath: root,
+    });
+
+    const active = JSON.parse(
+      await readFile(
+        path.join(root, 'apps/web/config/active-food-catalog.json'),
+        'utf8',
+      ),
+    );
+    const runtimeDraft = JSON.parse(
+      await readFile(
+        path.join(root, 'apps/web/public/catalog/local-draft.json'),
+        'utf8',
+      ),
+    );
+    assert.equal(active.releaseId, descriptor.releaseId);
+    assert.equal(first.draftRevision, 1);
+    assert.equal(second.draftRevision, 2);
+    assert.equal(runtimeDraft.draftRevision, 2);
+    assert.equal(runtimeDraft.catalog.releaseId, second.releaseId);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

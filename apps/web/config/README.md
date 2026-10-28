@@ -17,3 +17,6 @@ offline catalog. It pins release identity, compressed size, SHA-256,
 reviewed-candidate identity, and immutable delivery URLs. The guarded
 publication command changes it after replay and artifact validation.
 `active-food-catalog.ts` validates this descriptor during Web builds.
+Local Agent work never changes this tracked pointer. Development writes an
+ignored `public/catalog/local-draft.json` runtime descriptor instead; the Web
+dashboard validates it before offering the exact draft artifact for preview.

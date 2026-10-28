@@ -1,7 +1,14 @@
 import { createHash } from 'node:crypto';
-import { readFile, rename, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import {
+  atomicJson,
+  clearLocalCatalogCurationSessionV1,
+  ensureLocalCatalogCurationSessionV1,
+  localCatalogDraftPaths,
+} from './local-catalog-draft.mjs';
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -18,12 +25,6 @@ export class CatalogPublicationError extends Error {
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
-}
-
-async function atomicJson(filename, value) {
-  const temporary = `${filename}.${process.pid}.next`;
-  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`);
-  await rename(temporary, filename);
 }
 
 async function githubRequest(fetcher, token, url, init = {}) {
@@ -139,11 +140,14 @@ export async function publishLocalAgentCatalog({
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository))
     throw new CatalogPublicationError('The GitHub repository is invalid.', 500);
 
-  const descriptorPath = path.join(
-    rootPath,
-    'apps/web/config/active-food-catalog.json',
-  );
-  const descriptor = JSON.parse(await readFile(descriptorPath, 'utf8'));
+  const paths = localCatalogDraftPaths(rootPath);
+  const session = await ensureLocalCatalogCurationSessionV1({ rootPath });
+  if (session.draftCatalog === null)
+    throw new CatalogPublicationError(
+      'No verified local catalog draft is ready for publication.',
+      409,
+    );
+  const descriptor = session.draftCatalog;
   const artifactPath = path.join(
     rootPath,
     'apps/web/public/catalog',
@@ -230,7 +234,12 @@ export async function publishLocalAgentCatalog({
     artifactUrl: artifactAsset.browser_download_url,
     receiptUrl: receiptAsset.browser_download_url,
   };
-  await atomicJson(descriptorPath, publishedDescriptor);
+  const localClaims = JSON.parse(await readFile(paths.claims, 'utf8'));
+  await Promise.all([
+    atomicJson(paths.activeDescriptor, publishedDescriptor),
+    atomicJson(paths.trackedClaims, localClaims),
+  ]);
+  await clearLocalCatalogCurationSessionV1({ rootPath });
   return {
     releaseId: descriptor.releaseId,
     releaseUrl: release.html_url,

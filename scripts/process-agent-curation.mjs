@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -19,15 +18,18 @@ import {
   agentFoodCompositionClaimKeyV1,
   validateAgentCurationBatchV1,
 } from '../packages/reference-quality/dist/index.js';
+import {
+  activateLocalCatalogDraftV1,
+  atomicJson,
+  ensureLocalCatalogCurationSessionV1,
+  localCatalogDraftPaths,
+  sha256,
+} from './local-catalog-draft.mjs';
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 );
-
-function sha256(value) {
-  return createHash('sha256').update(value).digest('hex');
-}
 
 function deterministicId(kind, value) {
   const hex = sha256(`nutrixx:agent-curation:v1:${kind}:${value}`);
@@ -88,13 +90,6 @@ function agentEvidenceProjection(record) {
       inputs: evidence.inputs,
     },
   };
-}
-
-async function atomicJson(filename, value) {
-  await mkdir(path.dirname(filename), { recursive: true });
-  const temporary = `${filename}.${process.pid}.next`;
-  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`);
-  await rename(temporary, filename);
 }
 
 async function loadCuratedClaims(claimsPath) {
@@ -196,14 +191,8 @@ export async function processAgentCurationRunV1({
 }) {
   if (!/^[a-f0-9-]{36}$/u.test(runId))
     throw new TypeError('The curation run identifier is invalid.');
-  const claimsPath = path.join(
-    rootPath,
-    'reference-data/nutrixx-curated/claims.v1.json',
-  );
-  const activeDescriptorPath = path.join(
-    rootPath,
-    'apps/web/config/active-food-catalog.json',
-  );
+  const draftPaths = localCatalogDraftPaths(rootPath);
+  const claimsPath = draftPaths.claims;
   const runDirectory = path.join(
     rootPath,
     'reference-workbench/agent-curation/runs',
@@ -221,10 +210,9 @@ export async function processAgentCurationRunV1({
 
   await writeStatus({ status: 'running', startedAt: new Date().toISOString() });
   try {
-    const [input, descriptor] = await Promise.all([
-      readFile(inputPath, 'utf8').then(JSON.parse),
-      readFile(activeDescriptorPath, 'utf8').then(JSON.parse),
-    ]);
+    const session = await ensureLocalCatalogCurationSessionV1({ rootPath });
+    const descriptor = session.baseCatalog;
+    const input = JSON.parse(await readFile(inputPath, 'utf8'));
     const catalogPath = path.join(
       rootPath,
       'apps/web/public/catalog',
@@ -457,7 +445,7 @@ export async function processAgentCurationRunV1({
         stale,
       }),
     ]);
-    await atomicJson(activeDescriptorPath, {
+    const draftDescriptor = {
       ...descriptor,
       releaseId,
       artifactName,
@@ -467,11 +455,20 @@ export async function processAgentCurationRunV1({
       receiptUrl: null,
       candidateId: runId,
       reviewedClaimCount: curatedClaims.length,
+    };
+    const updatedSession = await activateLocalCatalogDraftV1({
+      rootPath,
+      session,
+      descriptor: draftDescriptor,
     });
     const completed = {
       status: 'completed',
       completedAt: new Date().toISOString(),
-      publicationState: 'active-local',
+      publicationState: 'local-draft',
+      sessionId: updatedSession.sessionId,
+      draftId: draftDescriptor.candidateId,
+      draftRevision: updatedSession.draftRevision,
+      baseReleaseId: updatedSession.baseCatalog.releaseId,
       releaseId,
       artifact: path.relative(rootPath, path.join(runDirectory, artifactName)),
       receipt: path.relative(rootPath, path.join(runDirectory, receiptName)),

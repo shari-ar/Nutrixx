@@ -1,6 +1,7 @@
 .git
 .temp/
 .tmp/
+apps/web/public/catalog/local-draft.json
 reference-workbench/
 .github
 .devcontainer

@@ -21,14 +21,11 @@ import {
   emptyFoodIdentityReview,
   renderFoodIdentityReviewHtml,
 } from './render-food-identity-review.mjs';
+import { readOperationalCatalogDescriptorV1 } from './local-catalog-draft.mjs';
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
-);
-const activeConfigPath = path.join(
-  projectRoot,
-  'apps/web/config/active-food-catalog.json',
 );
 const outputDirectory = path.join(projectRoot, '.temp/data-quality-radar');
 const unzip = promisify(gunzip);
@@ -183,15 +180,9 @@ async function main() {
     throw new TypeError(
       'Expected one optional catalog path and one optional consumption snapshot.',
     );
-  const active = JSON.parse(await readFile(activeConfigPath, 'utf8'));
-  if (
-    active.format !== 'nutrixx.active-food-catalog' ||
-    active.schemaVersion !== 1 ||
-    !/^[a-z0-9][a-z0-9.-]{0,199}$/u.test(active.releaseId ?? '') ||
-    active.artifactName !== `${active.releaseId}.v1.json.gz` ||
-    !/^[a-f0-9]{64}$/u.test(active.artifactSha256 ?? '')
-  )
-    throw new TypeError('The active catalog descriptor is invalid.');
+  const active = await readOperationalCatalogDescriptorV1({
+    rootPath: projectRoot,
+  });
   const defaultArtifact = path.join(
     projectRoot,
     'apps/web/public/catalog',

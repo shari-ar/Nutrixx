@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { ensureLocalCatalogCurationSessionV1 } from './local-catalog-draft.mjs';
+
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
@@ -75,6 +77,8 @@ export function buildAgentCurationTaskPacketV1({
   names,
   queue,
   activeCatalog,
+  queueCatalog = activeCatalog,
+  packetCatalog = activeCatalog,
   instructionSha256,
   generatedAt,
   batchId,
@@ -84,8 +88,8 @@ export function buildAgentCurationTaskPacketV1({
   if (
     queue?.format !== 'nutrixx.reference-work-queue' ||
     queue.schemaVersion !== 1 ||
-    queue.releaseId !== activeCatalog.releaseId ||
-    queue.artifactSha256 !== activeCatalog.artifactSha256 ||
+    queue.releaseId !== queueCatalog.releaseId ||
+    queue.artifactSha256 !== queueCatalog.artifactSha256 ||
     !Array.isArray(queue.items) ||
     !Array.isArray(queue.components)
   )
@@ -140,8 +144,8 @@ export function buildAgentCurationTaskPacketV1({
     batchId,
     generatedAt,
     catalog: {
-      releaseId: activeCatalog.releaseId,
-      artifactSha256: activeCatalog.artifactSha256,
+      releaseId: packetCatalog.releaseId,
+      artifactSha256: packetCatalog.artifactSha256,
     },
     agent: { agentId, model, instructionSha256 },
     targets,
@@ -152,7 +156,8 @@ export function buildAgentCurationTaskPacketV1({
 
 export async function createAgentCurationTaskPacketV1({
   names,
-  queuePath = path.join(projectRoot, '.temp/data-quality-radar/queue.json'),
+  queuePath,
+  rootPath = projectRoot,
   agentId = 'external-curation-agent',
   model = 'operator-selected-model',
   requestedBatchId,
@@ -160,21 +165,21 @@ export async function createAgentCurationTaskPacketV1({
 }) {
   if (!Array.isArray(names) || names.length === 0)
     throw new TypeError('Provide at least one food name or food ID.');
-  const promptPath = path.join(
-    projectRoot,
-    'docs/data/agent-curation-prompt.md',
-  );
-  const [prompt, checksumText, activeText, queueText] = await Promise.all([
+  const session = await ensureLocalCatalogCurationSessionV1({ rootPath });
+  const queueCatalog = session.draftCatalog ?? session.baseCatalog;
+  const promptPath = path.join(rootPath, 'docs/data/agent-curation-prompt.md');
+  const [prompt, checksumText, queueText] = await Promise.all([
     readFile(promptPath),
     readFile(
-      path.join(projectRoot, 'docs/data/agent-curation-prompt.sha256'),
+      path.join(rootPath, 'docs/data/agent-curation-prompt.sha256'),
       'utf8',
     ),
     readFile(
-      path.join(projectRoot, 'apps/web/config/active-food-catalog.json'),
+      path.resolve(
+        queuePath ?? path.join(rootPath, '.temp/data-quality-radar/queue.json'),
+      ),
       'utf8',
     ),
-    readFile(path.resolve(queuePath), 'utf8'),
   ]);
   const instructionSha256 = createHash('sha256').update(prompt).digest('hex');
   if (checksumText.trim().split(/\s+/u)[0] !== instructionSha256)
@@ -191,7 +196,8 @@ export async function createAgentCurationTaskPacketV1({
     packet: buildAgentCurationTaskPacketV1({
       names,
       queue: JSON.parse(queueText),
-      activeCatalog: JSON.parse(activeText),
+      queueCatalog,
+      packetCatalog: session.baseCatalog,
       instructionSha256,
       generatedAt,
       batchId,

@@ -73,10 +73,15 @@ follow the persistent run status. The API creates a workspace token in the
 ignored `.temp` directory and the proxy uses it exclusively on the local server
 path. Agent-result uploads are limited to 16 MiB and are retained by the API's
 ignored local run workspace for audit and failure recovery.
-Repeated successful uploads accumulate in the active local draft without
-publishing anything remotely. The queue exposes one confirmed `Release current
-catalog` action; it is enabled only when a local GitHub token is configured and
-publishes the verified artifact and receipt through the Radar server.
+Repeated successful uploads advance one identity-bearing local draft while all
+outstanding Agent packets remain valid against the session's immutable base.
+DevContainer startup uses that verified draft directly and avoids replacing or
+downloading the published artifact while the session is open.
+Port `3000` polls, verifies, and activates the current draft automatically and
+displays `Using Local Draft` while that exact revision is active. The queue exposes
+one confirmed `Release current catalog` action; it is enabled only when a local
+GitHub token is configured and publishes the exact tested artifact and receipt
+through the Radar server.
 
 ## GitHub Codespaces
 

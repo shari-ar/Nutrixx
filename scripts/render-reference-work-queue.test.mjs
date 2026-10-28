@@ -26,5 +26,7 @@ test('renders the browser agent task-packet workflow', () => {
   assert.match(html, /window\.confirm/u);
   assert.match(html, /window\.location\.reload\(\)/u);
   assert.match(html, /Model Knowledge/u);
-  assert.match(html, /rebuilds and activates the local catalog/u);
+  assert.match(html, /validates the batch against the session base/u);
+  assert.match(html, /advances the local draft/u);
+  assert.match(html, /Local draft revision/u);
 });

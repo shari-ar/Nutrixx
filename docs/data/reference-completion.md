@@ -309,18 +309,22 @@ The development Compose stack enables the local endpoint and protects it with
 `Authorization: Bearer <workspace-token>`. The API creates a 256-bit token in
 the ignored `.temp/local-curation-token` file when an explicit
 `NUTRIXX_CURATION_TOKEN` override is absent. A successful run has
-`publicationState: active-local`. The processor writes the verified artifact,
-receipt, and active local descriptor atomically after the build succeeds.
-Immutable remote hosting proceeds through the explicit delivery workflow.
+`publicationState: local-draft`. The processor validates the batch against the
+session's immutable base and atomically advances an identity-bearing draft
+revision after the build succeeds. Draft claims, session state, and the browser
+preview pointer stay in ignored local storage. Immutable remote hosting proceeds
+through the explicit delivery workflow.
 Production keeps the endpoint disabled unless its operator supplies an explicit
 configuration.
 
 The packet generator accepts exact food names either as quoted arguments or as
-a UTF-8 text/JSON names file. It resolves each name against the active work
-queue, rejects missing or ambiguous identities, and emits two standalone files:
+a UTF-8 text/JSON names file. It resolves each name against the latest draft
+work queue, rejects missing or ambiguous identities, and emits two standalone files:
 the versioned agent prompt and a catalog-pinned task packet containing exact
 food revisions, preparation states, missing components, canonical units, and
-the prompt digest. The research agent needs these two files rather than the
+the prompt digest. Every packet in one curation session remains pinned to the
+same immutable base identity, so completed results can return in any order while
+the draft continues to advance. The research agent needs these two files rather than the
 repository. Empty `evidenceSources` leaves research unrestricted. The agent may
 use any external source, Model Knowledge, or an attributable derivation; every
 resulting value still carries its own explicit provenance.
@@ -346,11 +350,16 @@ counts together with the comparable-cell coverage before and after a completed
 run, and keeps the persisted latest result visible after a page reload.
 
 Agent runs remain local drafts regardless of how many batches accumulate. The
+Web dashboard polls the ignored runtime draft pointer, automatically verifies
+and activates every new revision, and displays `Using Local Draft` while that
+revision is active in the local reference cache. The tracked claims and deployment
+descriptor remain unchanged throughout the session. The
 Reference Work Queue exposes one explicit `Release current catalog` action.
-That action verifies the active artifact and receipt, creates or resumes a
+That action verifies the exact tested draft artifact and receipt, creates or resumes a
 draft GitHub Release, uploads both immutable assets, publishes the Release only
-after both assets succeed, and then records their immutable HTTPS URLs in the
-active descriptor. A local fine-grained GitHub token with repository Contents
+after both assets succeed, promotes the local claims, records immutable HTTPS
+URLs in the tracked active descriptor, and closes the local session. The
+published artifact retains the browser-tested SHA-256. A local fine-grained GitHub token with repository Contents
 write access stays exclusively in the Radar server environment. HTTP 403 stops
 publication immediately without retry. No Agent upload triggers publication.
 The queue page is the sole interactive operator workflow for batch submission
