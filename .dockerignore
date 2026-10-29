@@ -4,7 +4,9 @@
 apps/web/public/catalog/local-draft.json
 reference-workbench/
 .github
-.devcontainer
+.devcontainer/*
+!.devcontainer/README.md
+!.devcontainer/serve-data-quality-radar.mjs
 .env
 .env.*
 !.env.example
