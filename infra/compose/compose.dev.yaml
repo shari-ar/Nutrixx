@@ -1,3 +1,21 @@
+x-development-service: &development-service
+  user: root
+  working_dir: /workspace
+  cap_add:
+    - DAC_OVERRIDE
+    - FOWNER
+  restart: 'no'
+
+x-curation-environment: &curation-environment
+  NUTRIXX_CURATION_ENABLED: 'true'
+  NUTRIXX_CURATION_TOKEN: ${NUTRIXX_CURATION_TOKEN:-}
+  NUTRIXX_CURATION_TOKEN_FILE: /workspace/.temp/local-curation-token
+
+x-api-workspace-volumes: &api-workspace-volumes
+  - ../..:/workspace
+  - api_root_node_modules:/workspace/node_modules
+  - api_workspace_node_modules:/workspace/apps/api/node_modules
+
 services:
   dev-dependencies:
     image: nutrixx-api:local
@@ -63,59 +81,37 @@ services:
     restart: 'no'
 
   dev-workspace:
+    <<: *development-service
     image: nutrixx-api:local
-    user: root
-    working_dir: /workspace
     command: npm run build:packages
     network_mode: none
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    cap_add:
-      - DAC_OVERRIDE
-      - FOWNER
-    volumes:
-      - ../..:/workspace
-      - api_root_node_modules:/workspace/node_modules
-      - api_workspace_node_modules:/workspace/apps/api/node_modules
+    volumes: *api-workspace-volumes
     depends_on:
       dev-dependencies:
         condition: service_completed_successfully
-    restart: 'no'
 
   api:
+    <<: *development-service
     build:
       target: development
-    user: root
-    cap_add:
-      - DAC_OVERRIDE
-      - FOWNER
-    working_dir: /workspace
     command: npm run start:dev --workspace=@nutrixx/api
     environment:
+      <<: *curation-environment
       NODE_ENV: development
-      NUTRIXX_CURATION_ENABLED: 'true'
-      NUTRIXX_CURATION_TOKEN: ${NUTRIXX_CURATION_TOKEN:-}
-      NUTRIXX_CURATION_TOKEN_FILE: /workspace/.temp/local-curation-token
       NUTRIXX_PROJECT_ROOT: /workspace
-    volumes:
-      - ../..:/workspace
-      - api_root_node_modules:/workspace/node_modules
-      - api_workspace_node_modules:/workspace/apps/api/node_modules
+    volumes: *api-workspace-volumes
     depends_on:
       dev-workspace:
         condition: service_completed_successfully
-    restart: 'no'
 
   web:
+    <<: *development-service
     build:
       target: development
-    user: root
-    cap_add:
-      - DAC_OVERRIDE
-      - FOWNER
-    working_dir: /workspace
     command:
       - npm
       - run
@@ -135,41 +131,30 @@ services:
     depends_on:
       dev-workspace:
         condition: service_completed_successfully
-    restart: 'no'
 
   radar:
+    <<: *development-service
     image: nutrixx-api:local
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
       target: development
-    user: root
-    cap_add:
-      - DAC_OVERRIDE
-      - FOWNER
-    working_dir: /workspace
     command: node .devcontainer/start-data-quality-radar.mjs --foreground
     environment:
+      <<: *curation-environment
       NODE_ENV: development
-      NUTRIXX_CURATION_ENABLED: 'true'
-      NUTRIXX_CURATION_TOKEN: ${NUTRIXX_CURATION_TOKEN:-}
-      NUTRIXX_CURATION_TOKEN_FILE: /workspace/.temp/local-curation-token
       NUTRIXX_CURATION_API_URL: http://api:3001/api/v1
       NUTRIXX_GITHUB_TOKEN: ${NUTRIXX_GITHUB_TOKEN:-}
       NUTRIXX_GITHUB_TOKEN_FILE: /workspace/.temp/local-github-token
       NUTRIXX_GITHUB_REPOSITORY: ${NUTRIXX_GITHUB_REPOSITORY:-shari-ar/Nutrixx}
     ports:
       - '127.0.0.1:3002:3002'
-    volumes:
-      - ../..:/workspace
-      - api_root_node_modules:/workspace/node_modules
-      - api_workspace_node_modules:/workspace/apps/api/node_modules
+    volumes: *api-workspace-volumes
     depends_on:
       dev-workspace:
         condition: service_completed_successfully
       api:
         condition: service_healthy
-    restart: 'no'
 
 volumes:
   api_root_node_modules:

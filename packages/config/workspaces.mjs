@@ -1,0 +1,70 @@
+const dataQuality = [
+  'canonical-schema',
+  'persistence',
+  'consumption',
+  'user-context',
+  'food-knowledge',
+  'nutrition-engine',
+  'reference-quality',
+];
+
+const testBuild = [
+  'canonical-schema',
+  'persistence',
+  'persistence-indexeddb',
+  'food-knowledge',
+  'reference-quality',
+  'recipe-knowledge',
+  'consumption',
+  'user-context',
+  'nutrition-engine',
+  'optimizer-engine',
+];
+
+export const workspaceGroups = Object.freeze({
+  acceptance: Object.freeze([
+    'canonical-schema',
+    'persistence',
+    'food-knowledge',
+    'nutrition-engine',
+    'optimizer-engine',
+  ]),
+  agentCuration: Object.freeze([
+    'canonical-schema',
+    'persistence',
+    'food-knowledge',
+    'nutrition-engine',
+    'reference-quality',
+  ]),
+  allPackages: Object.freeze([
+    'canonical-schema',
+    'persistence',
+    'persistence-indexeddb',
+    'persistence-postgresql',
+    'food-knowledge',
+    'reference-quality',
+    'recipe-knowledge',
+    'consumption',
+    'user-context',
+    'nutrition-engine',
+    'optimizer-engine',
+  ]),
+  dataQuality: Object.freeze(dataQuality),
+  persistenceContract: Object.freeze(['canonical-schema', 'persistence']),
+  referenceCandidate: Object.freeze([...dataQuality, 'optimizer-engine']),
+  referencePublish: Object.freeze([
+    'canonical-schema',
+    'persistence',
+    'persistence-indexeddb',
+    'consumption',
+    'user-context',
+    'food-knowledge',
+    'nutrition-engine',
+    'optimizer-engine',
+    'reference-quality',
+  ]),
+  testBuild: Object.freeze(testBuild),
+  testPackages: Object.freeze(
+    testBuild.filter((name) => name !== 'persistence'),
+  ),
+});

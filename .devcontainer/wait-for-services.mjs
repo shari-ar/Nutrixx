@@ -1,10 +1,20 @@
+import {
+  API_HEALTH_PATH,
+  DEFAULT_API_PORT,
+  DEFAULT_RADAR_PORT,
+  DEFAULT_WEB_PORT,
+} from '@nutrixx/config/application';
+
 const services = [
   {
     name: 'API',
-    url: `http://127.0.0.1:${process.env.API_PORT ?? '3001'}/api/v1/health`,
+    url: `http://127.0.0.1:${process.env.API_PORT ?? String(DEFAULT_API_PORT)}${API_HEALTH_PATH}`,
   },
-  { name: 'Web', url: 'http://web:3000' },
-  { name: 'Data Quality Radar', url: 'http://radar:3002/_health' },
+  { name: 'Web', url: `http://web:${String(DEFAULT_WEB_PORT)}` },
+  {
+    name: 'Data Quality Radar',
+    url: `http://radar:${String(DEFAULT_RADAR_PORT)}/_health`,
+  },
 ];
 
 const deadline = Date.now() + 10 * 60_000;

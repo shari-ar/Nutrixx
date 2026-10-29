@@ -3,13 +3,15 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DEFAULT_RADAR_PORT } from '@nutrixx/config/application';
+
 const workspace = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 );
 const outputDirectory = path.join(workspace, '.temp/data-quality-radar');
 const statusPath = path.join(outputDirectory, 'startup-status.json');
-const healthUrl = 'http://127.0.0.1:3002/_health';
+const healthUrl = `http://127.0.0.1:${String(DEFAULT_RADAR_PORT)}/_health`;
 
 async function writeStatus(state, message) {
   await mkdir(outputDirectory, { recursive: true });
@@ -118,4 +120,6 @@ if (process.argv.includes('--foreground')) {
 } else {
   await startServer();
 }
-console.info('Data quality radar: http://localhost:3002/');
+console.info(
+  `Data quality radar: http://localhost:${String(DEFAULT_RADAR_PORT)}/`,
+);

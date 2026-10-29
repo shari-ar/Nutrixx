@@ -1,5 +1,5 @@
 import {
-  baseCoverageThresholds,
+  baseCoverageConfig,
   baseVitestTestConfig,
 } from '@nutrixx/config/vitest';
 import { defineConfig } from 'vitest/config';
@@ -13,14 +13,10 @@ export default defineConfig({
     include: ['**/*.spec.ts'],
     environment: 'node',
     coverage: {
-      provider: 'v8',
+      ...baseCoverageConfig,
       reportsDirectory: './coverage/unit',
-      reporter: ['text', 'json-summary', 'html', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.spec.ts', 'src/main.ts'],
-      reportOnFailure: true,
-      excludeAfterRemap: true,
-      thresholds: baseCoverageThresholds,
     },
   },
 });

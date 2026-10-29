@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { AGENT_CURATION_RUNS_ROUTE } from '@nutrixx/config/application';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const promptPath = path.join(root, 'docs/data/agent-curation-prompt.md');
 const checksumPath = path.join(root, 'docs/data/agent-curation-prompt.sha256');
@@ -39,7 +41,8 @@ if (
   !radarServer.includes('/^\\/agent-curation-runs\\/([a-f0-9-]{36})$/u') ||
   !queueRenderer.includes('id="agent-result-file"') ||
   !queueRenderer.includes("fetch('/agent-curation-runs'") ||
-  !apiController.includes("@Controller('internal/curation/runs')") ||
+  AGENT_CURATION_RUNS_ROUTE !== 'internal/curation/runs' ||
+  !apiController.includes('@Controller(AGENT_CURATION_RUNS_ROUTE)') ||
   !apiController.includes('@Post()') ||
   !apiController.includes("@Get(':runId')")
 )

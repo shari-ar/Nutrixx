@@ -7,10 +7,11 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
+import { AGENT_CURATION_RUNS_ROUTE } from '@nutrixx/config/application';
 
 import { AgentCurationService } from './agent-curation.service.js';
 
-@Controller('internal/curation/runs')
+@Controller(AGENT_CURATION_RUNS_ROUTE)
 export class AgentCurationController {
   public constructor(private readonly curation: AgentCurationService) {}
 

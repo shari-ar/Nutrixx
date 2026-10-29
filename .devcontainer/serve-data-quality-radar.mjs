@@ -4,6 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  API_BASE_PATH,
+  DEFAULT_API_PORT,
+  DEFAULT_GITHUB_REPOSITORY,
+  DEFAULT_RADAR_PORT,
+} from '@nutrixx/config/application';
+
+import {
   createAgentCurationTaskPacketV1,
   parseAgentCurationFoodNames,
 } from '../scripts/create-agent-curation-packet.mjs';
@@ -26,11 +33,12 @@ const curationRunsDirectory = path.join(
   workspace,
   'reference-workbench/agent-curation/runs',
 );
-const port = 3002;
+const port = DEFAULT_RADAR_PORT;
 const maximumNamesFileBytes = 256 * 1024;
 const maximumAgentBatchBytes = 16 * 1024 * 1024;
 const curationApiBaseUrl =
-  process.env['NUTRIXX_CURATION_API_URL'] ?? 'http://api:3001/api/v1';
+  process.env['NUTRIXX_CURATION_API_URL'] ??
+  `http://api:${String(DEFAULT_API_PORT)}${API_BASE_PATH}`;
 let catalogPublicationActive = false;
 
 class CurationConfigurationError extends Error {}
@@ -306,7 +314,7 @@ const server = createServer(async (request, response) => {
         rootPath: workspace,
         token: await githubPublicationToken(),
         repository:
-          process.env['NUTRIXX_GITHUB_REPOSITORY'] ?? 'shari-ar/Nutrixx',
+          process.env['NUTRIXX_GITHUB_REPOSITORY'] ?? DEFAULT_GITHUB_REPOSITORY,
       });
       response.writeHead(200, {
         'Content-Type': 'application/json; charset=utf-8',

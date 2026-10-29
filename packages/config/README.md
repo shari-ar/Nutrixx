@@ -4,14 +4,16 @@ Shared, versioned configuration primitives for every Nutrixx workspace.
 
 ## Contents
 
-| Path                | Responsibility                                   |
-| ------------------- | ------------------------------------------------ |
-| `environment.mjs`   | Zod runtime-environment contracts                |
-| `environment.d.mts` | Public type declarations for environment helpers |
-| `prettier.mjs`      | Repository formatting policy                     |
-| `typescript/`       | Composable TypeScript presets                    |
-| `vitest.mjs`        | Shared deterministic test defaults               |
-| `vitest.d.mts`      | Public declarations for the Vitest preset        |
+| Path                | Responsibility                                    |
+| ------------------- | ------------------------------------------------- |
+| `application.mjs`   | Product identity, API paths, and runtime defaults |
+| `environment.mjs`   | Zod runtime-environment contracts                 |
+| `environment.d.mts` | Public type declarations for environment helpers  |
+| `prettier.mjs`      | Repository formatting policy                      |
+| `typescript/`       | Composable TypeScript presets                     |
+| `vitest.mjs`        | Shared deterministic test defaults                |
+| `vitest.d.mts`      | Public declarations for the Vitest preset         |
+| `workspaces.mjs`    | Ordered workspace groups for repository commands  |
 
 Application-specific emit, framework, test, and path settings stay in each
 workspace so shared presets do not hide runtime behavior.

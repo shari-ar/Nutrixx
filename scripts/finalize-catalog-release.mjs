@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DEFAULT_GITHUB_REPOSITORY } from '@nutrixx/config/application';
+
 import {
   CatalogPublicationError,
   canonicalReleaseAssetUrl,
@@ -227,7 +229,7 @@ async function verifyPreparedRelease({
 
 export async function finalizeCatalogRelease({
   token,
-  repository = 'shari-ar/Nutrixx',
+  repository = DEFAULT_GITHUB_REPOSITORY,
   workflowRunId,
   fetcher = fetch,
   sleep = (milliseconds) =>

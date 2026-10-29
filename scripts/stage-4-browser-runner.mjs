@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DEFAULT_WEB_PORT } from '@nutrixx/config/application';
+
 const browserPath = process.argv[2];
 const deviceLabel = process.argv[3];
 const mode = process.argv[4] === 'local' ? 'run-local' : 'run';
@@ -120,7 +122,7 @@ try {
   await connection.command('Page.enable');
   await connection.command('Runtime.enable');
   await connection.command('Page.navigate', {
-    url: `http://localhost:3000/acceptance?${mode}`,
+    url: `http://localhost:${String(DEFAULT_WEB_PORT)}/acceptance?${mode}`,
   });
 
   const deadline = Date.now() + 180_000;

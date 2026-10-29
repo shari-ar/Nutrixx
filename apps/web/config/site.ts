@@ -1,9 +1,10 @@
+import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from '@nutrixx/config/application';
+
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: 'Nutrixx',
-  description:
-    'Personalized nutrition guidance built from food, activity, and optional health data.',
+  name: PRODUCT_NAME,
+  description: PRODUCT_DESCRIPTION,
   navigation: [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/planning', label: 'Planning' },

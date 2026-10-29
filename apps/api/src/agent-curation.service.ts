@@ -18,6 +18,7 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { agentCurationRunPath } from '@nutrixx/config/application';
 
 interface AgentCurationRunStatus {
   readonly format: 'nutrixx.agent-curation-run';
@@ -228,7 +229,7 @@ export class AgentCurationService {
     closeSync(logDescriptor);
     return {
       ...queued,
-      statusUrl: `/api/v1/internal/curation/runs/${runId}`,
+      statusUrl: agentCurationRunPath(runId),
     };
   }
 

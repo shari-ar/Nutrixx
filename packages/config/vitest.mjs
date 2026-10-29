@@ -14,3 +14,11 @@ export const baseCoverageThresholds = Object.freeze({
   lines: 80,
   statements: 80,
 });
+
+export const baseCoverageConfig = Object.freeze({
+  provider: 'v8',
+  reporter: ['text', 'json-summary', 'html', 'lcov'],
+  reportOnFailure: true,
+  excludeAfterRemap: true,
+  thresholds: baseCoverageThresholds,
+});

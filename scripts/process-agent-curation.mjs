@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
+import { DEFAULT_GITHUB_REPOSITORY_URL } from '@nutrixx/config/application';
+
 import {
   NUTRIXX_FALLBACK_PROVIDER_V1,
   createFoodCatalogReleaseV1,
@@ -382,7 +384,7 @@ export async function processAgentCurationRunV1({
         dataset: 'agent-curated-food-composition',
         sourceRelease: claimsSha256.slice(0, 24),
         licenseId: 'LicenseRef-Nutrixx-Curated-Data',
-        homepage: 'https://github.com/shari-ar/Nutrixx',
+        homepage: DEFAULT_GITHUB_REPOSITORY_URL,
       });
     const manifest = deriveFoodCatalogManifestV1(
       {

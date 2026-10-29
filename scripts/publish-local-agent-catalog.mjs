@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DEFAULT_GITHUB_REPOSITORY } from '@nutrixx/config/application';
+
 import {
   CatalogPublicationError,
   canonicalReleaseAssetUrl,
@@ -153,7 +155,7 @@ async function prepareReleasePullRequest({
 export async function publishLocalAgentCatalog({
   rootPath = projectRoot,
   token,
-  repository = 'shari-ar/Nutrixx',
+  repository = DEFAULT_GITHUB_REPOSITORY,
   fetcher = fetch,
 }) {
   if (!token?.trim())

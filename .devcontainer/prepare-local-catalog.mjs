@@ -9,6 +9,8 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 
+import { DEFAULT_CATALOG_DELIVERY_URL } from '@nutrixx/config/application';
+
 const active = JSON.parse(
   await readFile('apps/web/config/active-food-catalog.json', 'utf8'),
 );
@@ -24,8 +26,7 @@ const releaseId = active.releaseId;
 const artifactName = active.artifactName;
 const receiptName = `${releaseId}.receipt.json`;
 const baseUrl =
-  process.env.NUTRIXX_CATALOG_BASE_URL ??
-  'https://shari-ar.github.io/Nutrixx/catalog';
+  process.env.NUTRIXX_CATALOG_BASE_URL ?? DEFAULT_CATALOG_DELIVERY_URL;
 const outputDirectory = path.resolve('apps/web/public/catalog');
 
 function urlFor(name) {
