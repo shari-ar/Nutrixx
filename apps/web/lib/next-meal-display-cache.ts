@@ -41,7 +41,7 @@ interface StoredView {
   readonly digest: string;
 }
 
-export function currentPlanningViewPolicyKey(): string {
+function currentPlanningViewPolicyKey(): string {
   const reference = getAdultDriBaselineReleaseV1();
   return [
     'display-v1',

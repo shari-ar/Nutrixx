@@ -5,7 +5,7 @@
 | Status        | Current repository baseline           |
 | Audience      | Contributors and platform engineering |
 | Owner         | Nutrixx Engineering                   |
-| Last reviewed | 2026-09-26                            |
+| Last reviewed | 2026-10-30                            |
 
 This document describes the repository as it operates today. The
 [target operating model](operations/target-operating-model.md) describes the
@@ -25,6 +25,7 @@ internals are intentionally excluded from that catalog.
 | Production-like stack | `infra/compose/compose.yaml`                         |
 | Image definition      | `infra/docker/Dockerfile`                            |
 | Quality gate          | `npm run check`                                      |
+| Security gate         | `npm run security:vulnerabilities`                   |
 | Automation            | `.github/workflows/ci.yml` and `docs.yml`            |
 
 `npm install` changes dependency intent and the lockfile. `npm ci` restores the
@@ -32,15 +33,22 @@ committed dependency graph and is required in CI, containers, and clean setup.
 
 ## CI gates
 
-1. `quality` restores the lockfile, verifies toolchain and directory-documentation
-   policy, and runs format, lint, tests, contract bundling, type checks, and
+1. `security` scans the complete Git history with Gitleaks, applies only exact
+   documented false-positive fingerprints from `.gitleaksignore`, and audits the locked
+   dependency graph. Runtime dependencies block at high severity; the complete
+   graph blocks at critical severity.
+2. `quality` restores the lockfile, verifies the toolchain and documentation
+   policy, detects dead code with Knip, enforces a 0.7% jscpd duplication ceiling,
+   and runs formatting, linting, tests, contract bundling, type checks, and
    production builds.
-2. `containers` validates the Compose model, builds the API and Web runtime
+3. `containers` validates the Compose model, builds the API and Web runtime
    images with BuildKit cache, starts them, waits for health, and probes their
    public endpoints.
+4. `persistence-contract` runs the shared repository contract against
+   PostgreSQL after the security and quality gates succeed.
 
 Third-party actions are pinned to immutable commit SHAs. Dependabot maintains
-npm packages, action SHAs, and the pinned Docker base-image digest weekly.
+npm packages, action SHAs, and the pinned Docker base-image digest quarterly.
 
 ## Documentation delivery
 

@@ -74,7 +74,7 @@ export interface NextMealRunV1 {
   readonly appliedTemporalRules: readonly NextMealAppliedTemporalRuleV1[];
 }
 
-export interface NextMealIntentionV1 {
+interface NextMealIntentionV1 {
   readonly format: 'nutrixx.next-meal-intention';
   readonly schemaVersion: 1;
   readonly intentionId: string;

@@ -57,10 +57,6 @@ export const OutcomeObservationRecordV1Schema = createCanonicalRecordV1Schema(
 );
 
 export type OutcomeObservationV1 = z.infer<typeof OutcomeObservationV1Schema>;
-export type OutcomeObservationRecordV1 = z.infer<
-  typeof OutcomeObservationRecordV1Schema
->;
-
 export type SaveOutcomeObservationV1 =
   | Omit<z.infer<typeof WeightObservationV1Schema>, 'recordedAt'>
   | Omit<z.infer<typeof LabObservationV1Schema>, 'recordedAt'>;

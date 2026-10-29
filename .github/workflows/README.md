@@ -5,12 +5,17 @@ manual verification, and pushes to `main`.
 
 ## Current workflows
 
-`ci.yml` provides two ordered gates:
+`ci.yml` provides four coordinated gates:
 
-1. `Quality gate` restores the lockfile and runs documentation, formatting,
-   lint, tests, contract bundling, type checks, and production builds.
-2. `Container smoke test` builds both runtime images, waits for health, probes
+1. `Security gates` scans full Git history for secrets and applies the
+   risk-based dependency vulnerability policy.
+2. `Quality gate` restores the lockfile and runs documentation, formatting,
+   dead-code, duplication, lint, tests, contract bundling, type checks, and
+   production builds.
+3. `Container smoke test` builds both runtime images, waits for health, probes
    API/Web endpoints, prints failure diagnostics, and always cleans up.
+4. `PostgreSQL persistence contract` verifies the shared repository contract
+   after both security and quality succeed.
 
 `docs.yml` builds the VitePress site for documentation pull requests and
 deploys it to the protected `github-pages` environment after documentation

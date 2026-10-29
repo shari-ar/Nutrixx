@@ -26,7 +26,7 @@
     "@nutrixx/consumption": "0.1.0",
     "@nutrixx/persistence": "0.1.0",
     "@nutrixx/user-context": "0.1.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@nutrixx/config": "0.1.0",

@@ -5,7 +5,7 @@
 | Status        | Current implementation inventory                    |
 | Audience      | Engineering, architecture, security, and operations |
 | Owner         | Nutrixx Engineering                                 |
-| Last reviewed | 2026-09-30                                          |
+| Last reviewed | 2026-10-30                                          |
 
 This catalog lists only technologies that Nutrixx selects and invokes directly
 in committed application code, configuration, automation, or documentation.
@@ -22,8 +22,8 @@ truth; the lockfile remains the reproducible-installation source of truth.
 | Technology   | Current version             | Direct use                                      | Evidence                                         |
 | ------------ | --------------------------- | ----------------------------------------------- | ------------------------------------------------ |
 | TypeScript   | API/Schema 6.0.3; Web 5.6.3 | Application language and static type checking   | API, Web, and Canonical Schema package manifests |
-| NestJS       | 12.0.4                      | API application framework                       | `apps/api/package.json`                          |
-| Next.js      | 16.3.5                      | Web application framework                       | `apps/web/package.json`                          |
+| NestJS       | 12.3.2                      | API application framework                       | `apps/api/package.json`                          |
+| Next.js      | 16.4.3                      | Web application framework                       | `apps/web/package.json`                          |
 | React        | 19.2.6                      | Web component runtime                           | `apps/web/package.json`                          |
 | HeroUI       | 3.2.5                       | Web design system and component styling         | `apps/web/package.json`                          |
 | Tailwind CSS | 4.1.11                      | Utility-first styling and CSS build integration | `apps/web/package.json`                          |
@@ -37,7 +37,7 @@ truth; the lockfile remains the reproducible-installation source of truth.
 | --------------- | --------------- | ------------------------------------------------ | ------------------------------------------------- |
 | OpenAPI         | 3.1.0           | Design-first HTTP contract                       | `packages/contracts/openapi/nutrixx.openapi.yaml` |
 | JSON Schema     | Draft 2020-12   | Portable canonical-record schema                 | `packages/canonical-schema`                       |
-| Zod             | 4.6.5           | Canonical and environment runtime validation     | Canonical Schema and Config package manifests     |
+| Zod             | 4.6.7           | Canonical and environment runtime validation     | Canonical Schema and Config package manifests     |
 | Redocly CLI     | 2.53.3          | OpenAPI linting and contract bundling            | `package.json`                                    |
 | Rspack          | 2.2.6           | Production API bundling                          | `apps/api/rspack.config.mjs`                      |
 | Vitest          | 4.1.11          | Unit, integration, and end-to-end test execution | API, Web, and Canonical Schema package manifests  |
@@ -47,6 +47,9 @@ truth; the lockfile remains the reproducible-installation source of truth.
 | ESLint          | 9.39.5          | Web linting                                      | `apps/web/package.json`                           |
 | Prettier        | 3.5.3           | Repository-wide deterministic formatting         | `package.json`                                    |
 | Husky           | 9.1.7           | Git hook installation and pre-commit enforcement | `package.json`, `.husky/pre-commit`               |
+| Knip            | 6.44.0          | Dead files, exports, and dependencies gate       | `package.json`, `knip.jsonc`                      |
+| jscpd           | 5.4.2           | Repository duplication ceiling                   | `package.json`, `.jscpd.json`                     |
+| Gitleaks        | 8.30.1          | Full-history secret scanning                     | `.github/workflows/ci.yml`                        |
 
 ## Runtime and delivery
 
@@ -97,6 +100,9 @@ the parent technology.
 | PostCSS               | 8.5.28          | [npm package](https://www.npmjs.com/package/postcss)                             |
 | next-themes           | 0.4.6           | [npm package](https://www.npmjs.com/package/next-themes)                         |
 | clsx                  | 2.1.1           | [npm package](https://www.npmjs.com/package/clsx)                                |
+| Knip                  | 6.44.0          | [npm package](https://www.npmjs.com/package/knip)                                |
+| jscpd                 | 5.4.2           | [npm package](https://www.npmjs.com/package/jscpd)                               |
+| Gitleaks              | 8.30.1          | [GitHub releases](https://github.com/gitleaks/gitleaks/releases)                 |
 
 ## Maintenance rule
 

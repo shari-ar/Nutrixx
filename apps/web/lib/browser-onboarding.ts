@@ -41,7 +41,7 @@ export interface BrowserOnboardingDependencies {
   readonly timeZone: () => string;
 }
 
-export class OnboardingStorageError extends Error {
+class OnboardingStorageError extends Error {
   public constructor(
     public readonly code: 'locator-unavailable' | 'database-unavailable',
     message: string,
@@ -184,13 +184,5 @@ export class BrowserOnboardingStore {
       });
       return result.profile;
     });
-  }
-}
-
-export function clearOnboardingLocator(): void {
-  try {
-    localStorage.removeItem(ONBOARDING_LOCATOR_STORAGE_KEY);
-  } catch {
-    // Canonical database deletion remains authoritative.
   }
 }

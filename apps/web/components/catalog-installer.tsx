@@ -15,7 +15,7 @@ export type CatalogStore = Pick<
   'activeCatalogRelease' | 'installCatalog'
 >;
 
-export interface CatalogInstallerState {
+interface CatalogInstallerState {
   readonly release: string | null;
   readonly target: ActiveFoodCatalog;
   readonly installing: boolean;

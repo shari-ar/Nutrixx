@@ -1,7 +1,5 @@
 import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from '@nutrixx/config/application';
 
-export type SiteConfig = typeof siteConfig;
-
 export const siteConfig = {
   name: PRODUCT_NAME,
   description: PRODUCT_DESCRIPTION,

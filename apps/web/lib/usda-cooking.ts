@@ -134,7 +134,7 @@ export function usdaYieldFactor(food: UsdaCookingFood, rowId: string) {
   };
 }
 
-export function cookingMethods(description: string): readonly string[] {
+function cookingMethods(description: string): readonly string[] {
   const value = description.toLocaleUpperCase('en-US');
   return [
     /(?:BAK|ROASTED)/.test(value) && !/BAKED IN WATER/.test(value)
@@ -233,14 +233,3 @@ export function estimateUsdaFinalWeight(
   }
   return String(Number(grams.toFixed(6)));
 }
-
-export const USDA_COOKING_SOURCES = {
-  retention:
-    'https://www.ars.usda.gov/ARSUserFiles/80400535/Data/retn/retn06.txt',
-  yield:
-    'https://www.ars.usda.gov/ARSUserFiles/80400535/Data/retn/USDA_CookingYields_MeatPoultry02.xlsx',
-  retentionSha256: tables.retentionSha256,
-  yieldSha256: tables.yieldSha256,
-  handbook: handbook.sourceUrl,
-  handbookSha256: handbook.sourceSha256,
-} as const;

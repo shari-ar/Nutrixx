@@ -23,7 +23,7 @@ export interface EncryptedLocalFileV1 {
   readonly ciphertext: string;
 }
 
-export class LocalFileCryptoError extends Error {
+class LocalFileCryptoError extends Error {
   constructor(
     readonly code:
       | 'passphrase-required'

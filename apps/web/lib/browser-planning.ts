@@ -8,10 +8,7 @@ import type { SaveMealInput } from './browser-stage-two';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
 
-export type {
-  NextMealIntentionV1,
-  NextMealRunV1,
-} from './browser-planning-core';
+export type { NextMealRunV1 } from './browser-planning-core';
 export type {
   NextMealDisplayRunV1,
   NextMealDisplaySnapshotV1,

@@ -44,11 +44,7 @@ export {
   REFERENCE_CACHE_DATABASE_NAME,
 };
 
-export type RetentionStatus =
-  | 'persistent'
-  | 'best-effort'
-  | 'unavailable'
-  | 'unknown';
+type RetentionStatus = 'persistent' | 'best-effort' | 'unavailable' | 'unknown';
 
 export interface BrowserStorageSnapshot {
   readonly authorityMode: 'Local';

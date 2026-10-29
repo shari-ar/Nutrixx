@@ -29,6 +29,10 @@
     "docs:check": "node scripts/check-readmes.mjs && node scripts/check-doc-language.mjs && node scripts/check-mermaid.mjs && node scripts/check-agent-curation-assets.mjs",
     "config:check": "node scripts/check-config-consistency.mjs",
     "production:boundary:check": "node scripts/check-production-boundaries.mjs",
+    "quality:dead-code": "knip",
+    "quality:duplication": "jscpd apps packages scripts .devcontainer --config .jscpd.json",
+    "quality:code": "npm run quality:dead-code && npm run quality:duplication",
+    "security:vulnerabilities": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=critical",
     "quality:data": "node scripts/run-workspace-group.mjs dataQuality build && node --max-old-space-size=4096 scripts/data-quality-radar.mjs",
     "reference:stage": "node scripts/run-workspace-group.mjs dataQuality build && node --max-old-space-size=4096 scripts/stage-reference-data.mjs",
     "reference:candidate": "node scripts/run-workspace-group.mjs referenceCandidate build && node --max-old-space-size=4096 scripts/build-reference-candidate.mjs",
@@ -48,11 +52,13 @@
     "test:contract:postgres": "node scripts/run-workspace-group.mjs persistenceContract build && npm run test:contract --workspace=@nutrixx/persistence-postgresql",
     "build:packages": "node scripts/run-workspace-group.mjs allPackages build",
     "build": "npm run contract:build && npm run build:packages && npm run build --workspace=@nutrixx/api && npm run build --workspace=@nutrixx/web",
-    "check": "npm run docs:check && npm run config:check && npm run format:check && npm run docs:build && npm run lint && npm run test && npm run build && npm run production:boundary:check"
+    "check": "npm run docs:check && npm run config:check && npm run format:check && npm run quality:code && npm run docs:build && npm run lint && npm run test && npm run build && npm run production:boundary:check"
   },
   "devDependencies": {
     "@redocly/cli": "2.53.3",
     "husky": "9.1.7",
+    "jscpd": "5.4.2",
+    "knip": "6.44.0",
     "mermaid": "11.17.2",
     "prettier": "3.5.3",
     "vitepress": "1.6.4",

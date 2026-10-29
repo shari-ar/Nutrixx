@@ -4,15 +4,16 @@
 | ------------- | ----------------------------------------- |
 | Purpose       | Fail-closed commit and push quality gates |
 | Owner         | Nutrixx Engineering                       |
-| Last reviewed | 2026-09-27                                |
+| Last reviewed | 2026-10-30                                |
 
 `pre-commit` formats every supported staged file with the repository-locked
 Prettier version and restages the result safely. Filenames are passed as a
 null-delimited stream, so spaces and Unicode paths remain safe.
 
 `pre-push` runs the repository's complete `npm run check` quality gate. A push
-is blocked unless documentation policy, formatting, documentation build,
-linting, tests, contract build, API build, and Web build all succeed.
+is blocked unless documentation policy, formatting, dead-code detection,
+duplication limits, documentation build, linting, tests, contract build, API
+build, and Web build all succeed.
 
 Execution order:
 

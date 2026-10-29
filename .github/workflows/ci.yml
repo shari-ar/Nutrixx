@@ -16,6 +16,37 @@ permissions:
   contents: read
 
 jobs:
+  security:
+    name: Security gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out full repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: false
+          GITLEAKS_VERSION: 8.30.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm run security:vulnerabilities
+
   quality:
     name: Quality gate
     runs-on: ubuntu-latest
@@ -58,7 +89,7 @@ jobs:
 
   containers:
     name: Container smoke test
-    needs: quality
+    needs: [quality, security]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -113,7 +144,7 @@ jobs:
 
   persistence-contract:
     name: PostgreSQL persistence contract
-    needs: quality
+    needs: [quality, security]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:

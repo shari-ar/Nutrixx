@@ -8,10 +8,24 @@ import { rspack } from '@rspack/core';
  * @returns {import('@rspack/core').Configuration}
  */
 export default function createProductionConfig(defaults) {
+  const inheritedExternals = Array.isArray(defaults.externals)
+    ? defaults.externals
+    : defaults.externals
+      ? [defaults.externals]
+      : [];
   return {
     ...defaults,
     mode: 'production',
     target: 'node24',
+    externals: [
+      ...inheritedExternals,
+      {
+        '@nestjs/microservices/microservices-module.js':
+          'commonjs @nestjs/microservices/microservices-module.js',
+        '@nestjs/websockets/socket-module.js':
+          'commonjs @nestjs/websockets/socket-module.js',
+      },
+    ],
     devtool: 'hidden-source-map',
     optimization: {
       ...defaults.optimization,

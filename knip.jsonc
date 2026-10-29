@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        ".devcontainer/prepare-local-catalog.mjs",
+        ".devcontainer/serve-data-quality-radar.mjs",
+        ".devcontainer/start-data-quality-radar.mjs",
+        ".devcontainer/wait-for-services.mjs",
+        "docs/.vitepress/config.mts",
+        "docs/.vitepress/theme/index.ts",
+        "scripts/build-multisource-food-catalog.mjs",
+        "scripts/stage-4-browser-runner.mjs",
+      ],
+    },
+    "apps/api": {
+      "entry": ["src/main.ts", "src/main.dev.ts"],
+      "ignoreDependencies": ["@types/express"],
+    },
+    "apps/web": {
+      "entry": [
+        "lib/next-meal-full-catalog.acceptance.ts",
+        "vitest.config.acceptance.ts",
+      ],
+    },
+    "packages/persistence": {
+      "entry": ["src/index.ts", "src/contract-suite.ts"],
+    },
+  },
+}

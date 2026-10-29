@@ -1,0 +1,17 @@
+{
+  "threshold": 0.7,
+  "minLines": 10,
+  "minTokens": 70,
+  "failOnEmpty": true,
+  "reporters": ["console", "threshold"],
+  "ignore": [
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/*.d.ts",
+    "**/*.d.mts",
+    "**/*.json",
+    "**/dist/**",
+    "**/.next/**",
+    "**/node_modules/**"
+  ]
+}
