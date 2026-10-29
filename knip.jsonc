@@ -19,8 +19,13 @@
     },
     "apps/web": {
       "entry": [
+        "app/acceptance/catalog/route.dev.ts",
+        "app/acceptance/page.dev.tsx",
+        "components/stage-4-acceptance-workspace.tsx",
+        "lib/next-meal-acceptance-client.dev.ts",
         "lib/next-meal-full-catalog.acceptance.ts",
         "vitest.config.acceptance.ts",
+        "workers/next-meal-acceptance.worker.dev.ts",
       ],
     },
     "packages/persistence": {
