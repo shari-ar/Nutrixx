@@ -40,7 +40,7 @@
   },
   "overrideCommand": false,
   "shutdownAction": "stopCompose",
-  "postStartCommand": "node .devcontainer/wait-for-api.mjs",
+  "postStartCommand": "node .devcontainer/wait-for-services.mjs",
   "waitFor": "postStartCommand",
   "remoteUser": "root",
   "updateRemoteUserUID": false

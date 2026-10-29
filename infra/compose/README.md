@@ -37,6 +37,12 @@ fingerprint built from the lockfile, manifests, package manager, runtime, and
 platform, then synchronizes stale volumes from the already-built development
 image. It does not run `npm install` or access the network.
 
+After dependency synchronization, the one-shot `dev-workspace` service runs the
+root `build:packages` contract. API, Web, and Radar depend on its successful
+completion, so a clean clone cannot start an application against missing
+workspace `dist/` exports. The same package-build contract is reused by the
+root build and production Web image.
+
 API, Web, and the VS Code development session run as root only in the local
 development override so Windows bind-mounted source and generated outputs stay
 writable. Only `DAC_OVERRIDE` and `FOWNER` are restored after capability
@@ -53,9 +59,9 @@ ignored storage and both services receive the same token-file path. The
 production Compose file does not expose this operator tool.
 
 Every successful Agent batch updates only the workspace-local catalog draft.
-The Radar publishes that draft only when an operator selects `Release current
-catalog` on port `3002` and confirms the action. Publication uses a local
-fine-grained `NUTRIXX_GITHUB_TOKEN` with repository Contents write access; the
-token stays on the Radar server path and is never sent to the browser. The
-publisher verifies the artifact and receipt, uploads both to a draft GitHub
-Release, and publishes the Release only after both uploads succeed.
+When an operator confirms release preparation on port `3002`, the server uses a
+local fine-grained `NUTRIXX_GITHUB_TOKEN`; the token is never sent to the
+browser. The publisher verifies the artifact and receipt, uploads both to a
+draft GitHub Release, and opens a pull request containing only the active
+catalog pointer. GitHub Actions publishes and merges them only after the catalog
+and required repository checks succeed.

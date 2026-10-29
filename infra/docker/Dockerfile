@@ -69,15 +69,7 @@ FROM source AS web-build
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ENV CI=true \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-RUN npm run build --workspace=@nutrixx/canonical-schema \
-    && npm run build --workspace=@nutrixx/persistence \
-    && npm run build --workspace=@nutrixx/persistence-indexeddb \
-    && npm run build --workspace=@nutrixx/food-knowledge \
-    && npm run build --workspace=@nutrixx/recipe-knowledge \
-    && npm run build --workspace=@nutrixx/consumption \
-    && npm run build --workspace=@nutrixx/user-context \
-    && npm run build --workspace=@nutrixx/nutrition-engine \
-    && npm run build --workspace=@nutrixx/optimizer-engine \
+RUN npm run build:packages \
     && npm run build --workspace=@nutrixx/web
 
 FROM ${NODE_IMAGE} AS web

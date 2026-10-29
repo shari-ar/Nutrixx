@@ -9,7 +9,7 @@ stack instead of maintaining a second container definition.
 | ------------------------------ | -------------------------------------------------------------- |
 | `devcontainer.json`            | VS Code, Codespaces, ports, workspace, and lifecycle settings  |
 | `compose.devcontainer.yaml`    | Reuses the images built by initialization without rebuilding   |
-| `wait-for-api.mjs`             | Bounded readiness check after the container starts             |
+| `wait-for-services.mjs`        | Bounded readiness checks for API, Web, and Radar               |
 | `prepare-local-catalog.mjs`    | Retrieves and verifies the current offline catalog release     |
 | `start-data-quality-radar.mjs` | Builds the local radar report and starts its preview server    |
 | `serve-data-quality-radar.mjs` | Serves the generated local radar, work queue, and JSON reports |
@@ -33,8 +33,12 @@ targets from the Compose files. Docker reuses its cache when dependency inputs
 are unchanged; a changed lockfile or workspace manifest invalidates the
 dependency layer and runs the locked `npm ci` automatically. The one-shot
 `dev-dependencies` service then synchronizes those exact dependencies into the
-named volumes used by API and Web. No lifecycle hook performs an unlocked
-install. The initialization command evaluates those same Compose files through
+named volumes used by API and Web. The one-shot `dev-workspace` service builds
+every shared workspace package from the clean checkout before API, Web, or
+Radar can start. This build barrier guarantees that package exports backed by
+`dist/` exist in fresh Codespaces as well as local Dev Containers. No lifecycle
+hook performs an unlocked install. The initialization command evaluates those
+same Compose files through
 Buildx Bake and grants read access only to the repository's shared Dockerfile.
 This narrow entitlement supports recent Buildx filesystem isolation without
 granting access to any path outside the build input. The Dev Container also
@@ -78,17 +82,20 @@ outstanding Agent packets remain valid against the session's immutable base.
 DevContainer startup uses that verified draft directly and avoids replacing or
 downloading the published artifact while the session is open.
 Port `3000` polls, verifies, and activates the current draft automatically and
-displays `Using Local Draft` while that exact revision is active. The queue exposes
-one confirmed `Release current catalog` action; it is enabled only when a local
-GitHub token is configured and publishes the exact tested artifact and receipt
-through the Radar server.
+displays `Using Local Draft` while that exact revision is active. The queue
+exposes one confirmed catalog-release action. It is enabled only when a local
+GitHub token is configured and prepares a draft GitHub Release plus a reviewable
+catalog pointer pull request. GitHub Actions verifies the exact artifact and
+receipt, publishes the Release, and merges the pointer only after all required
+checks pass.
 
 ## GitHub Codespaces
 
 The repository's default Codespaces configuration is this same Dev Container.
 It builds and runs the canonical development Compose stack, forwards the Web
 application on port `3000`, forwards the API on port `3001`, and opens the data
-quality radar on port `3002`. All three ports remain private unless the
+quality radar on port `3002`. Startup waits until all three services answer
+their readiness checks. All three ports remain private unless the
 codespace owner explicitly changes their visibility.
 
 Create a codespace from the default branch at
