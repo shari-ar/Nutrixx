@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ACTIVE_FOOD_CATALOG } from '@/config/active-food-catalog';
 
-import { CatalogInstaller } from './catalog-installer';
+import { DevelopmentCatalogInstaller as CatalogInstaller } from './catalog-installer.dev';
 
 const draftLoader = vi.hoisted(() => vi.fn());
 

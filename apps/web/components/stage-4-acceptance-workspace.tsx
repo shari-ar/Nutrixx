@@ -6,8 +6,8 @@ import { BrowserNutritionStateStore } from '@/lib/browser-nutrition-state';
 import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
 import { BrowserPlanningStore } from '@/lib/browser-planning';
 import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
+import { measureNextMealAcceptanceInWorker } from '@/lib/next-meal-acceptance-client.dev';
 import { STAGE_4_CATALOG_SHA256 } from '@/lib/next-meal-acceptance-fixture';
-import { prepareNextMealInWorker } from '@/lib/next-meal-preparation-client';
 
 async function measure(): Promise<object> {
   let lastTick = performance.now();
@@ -33,7 +33,7 @@ async function measure(): Promise<object> {
   }, 50);
   try {
     const start = performance.now();
-    const prepared = await prepareNextMealInWorker({ kind: 'ACCEPTANCE' });
+    const prepared = await measureNextMealAcceptanceInWorker();
     if (prepared.status === 'FAILED' && prepared.reasonCode === 'http-403')
       throw new TypeError('HTTP 403 stopped the local acceptance run.');
     if (prepared.status !== 'BENCHMARK')

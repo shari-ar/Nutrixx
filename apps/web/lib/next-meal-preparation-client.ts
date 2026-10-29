@@ -8,8 +8,7 @@ export type NextMealPreparationRequestV1 =
       readonly profile: StartingProfileV1;
       readonly inventory: readonly DeclaredInventoryItemV1[] | null;
     }
-  | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 }
-  | { readonly kind: 'ACCEPTANCE' };
+  | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 };
 
 export type NextMealPreparationResultV1 =
   | {
@@ -24,20 +23,6 @@ export type NextMealPreparationResultV1 =
   | {
       readonly status: 'SNAPSHOT';
       readonly snapshot: NextMealDisplaySnapshotV1;
-    }
-  | {
-      readonly status: 'BENCHMARK';
-      readonly measurement: {
-        readonly catalogEntries: number;
-        readonly comparable: number;
-        readonly comparisonNutrients: number;
-        readonly artifactSha256: string;
-        readonly loadMs: number;
-        readonly mapMs: number;
-        readonly inputMs: number;
-        readonly workerSamplesMs: readonly number[];
-        readonly workerP95Ms: number;
-      };
     }
   | { readonly status: 'FAILED'; readonly reasonCode: string };
 

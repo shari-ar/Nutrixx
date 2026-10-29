@@ -7,7 +7,12 @@ import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
 
-const publicPaths = new Set(['/', '/start', '/settings', '/acceptance']);
+const publicPaths = new Set([
+  '/',
+  '/start',
+  '/settings',
+  ...(process.env.NODE_ENV === 'development' ? ['/acceptance'] : []),
+]);
 
 export function ApplicationShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

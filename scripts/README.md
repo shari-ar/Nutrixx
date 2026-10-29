@@ -9,6 +9,7 @@ Small, cross-platform automation used by contributors and CI.
 | `check-doc-language.mjs`                | Enforces international scope and affirmative language across technical documentation                                                                      |
 | `check-readmes.mjs`                     | Enforces README presence in project-owned directories                                                                                                     |
 | `check-agent-curation-assets.mjs`       | Verifies the agent prompt checksum and browser-only upload workflow against the local routes                                                              |
+| `check-production-boundaries.mjs`       | Fails CI when production Web or API artifacts contain development routes, local-draft behavior, or operator endpoints                                     |
 | `local-catalog-draft.mjs`               | Owns the identity-bearing local curation session, immutable base pointer, mutable draft revisions, and browser preview descriptor                         |
 | `create-agent-curation-packet.mjs`      | Resolves supplied food names against the active work queue and emits the two-file agent research packet                                                   |
 | `create-agent-curation-packet.test.mjs` | Covers exact alias resolution, task construction, and ambiguous-name rejection                                                                            |

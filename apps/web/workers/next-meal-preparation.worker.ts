@@ -1,9 +1,5 @@
 import { verifyCanonicalRecordV1 } from '@nutrixx/canonical-schema';
-import {
-  rankNextMealCandidatesV1,
-  reviewNextMealRankingV1,
-  nextMealIsCurrentV1,
-} from '@nutrixx/optimizer-engine';
+import { nextMealIsCurrentV1 } from '@nutrixx/optimizer-engine';
 import {
   IndexedDbCanonicalRecordRepository,
   sha256Canonical,
@@ -13,48 +9,16 @@ import { BrowserNutritionStateStore } from '../lib/browser-nutrition-state';
 import { BrowserPlanningStore } from '../lib/browser-planning-core';
 import { BrowserStageTwoStore } from '../lib/browser-stage-two';
 import {
-  STAGE_4_ACCEPTANCE_INSTANT,
-  STAGE_4_CATALOG_SHA256,
-  stage4NutritionFixture,
-} from '../lib/next-meal-acceptance-fixture';
-import { buildNextMealCatalogSnapshot } from '../lib/next-meal-catalog';
-import {
   projectPlanningSnapshot,
   readPlanningView,
   savePlanningView,
 } from '../lib/next-meal-display-cache';
-import { buildNextMealInputV1 } from '../lib/next-meal-input';
 import { LOCAL_USER_DATABASE_NAME } from '../lib/storage-constants';
 
 import type {
   NextMealPreparationRequestV1,
   NextMealPreparationResultV1,
 } from '../lib/next-meal-preparation-client';
-import type { FoodCatalogPayloadV1 } from '@nutrixx/food-knowledge';
-
-async function acceptanceCatalog(): Promise<{
-  releaseId: string;
-  payload: FoodCatalogPayloadV1;
-  artifactSha256: string;
-}> {
-  const response = await fetch('/acceptance/catalog', { cache: 'no-store' });
-  if (!response.ok) throw new TypeError(`Catalog HTTP ${response.status}.`);
-  const compressed = await response.arrayBuffer();
-  const digest = await crypto.subtle.digest('SHA-256', compressed);
-  const artifactSha256 = Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
-  if (artifactSha256 !== STAGE_4_CATALOG_SHA256)
-    throw new TypeError('The pinned acceptance catalog digest changed.');
-  const decompressed = new Blob([compressed])
-    .stream()
-    .pipeThrough(new DecompressionStream('gzip'));
-  const release = (await new Response(decompressed).json()) as {
-    releaseId: string;
-    payload: FoodCatalogPayloadV1;
-  };
-  return { ...release, artifactSha256 };
-}
 
 async function prepare(
   request: NextMealPreparationRequestV1,
@@ -91,139 +55,80 @@ async function prepare(
     };
   }
 
-  if (request.kind === 'LOCAL_LOAD') {
-    const onboarding = { load: async () => request.profile };
-    const foods = new BrowserStageTwoStore({
-      indexedDB,
-      keyRange: IDBKeyRange,
-      createId: () => crypto.randomUUID(),
-      now: () => new Date().toISOString(),
-      timeZone: () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      onboarding,
-    });
-    const planning = new BrowserPlanningStore(
-      undefined,
-      onboarding,
-      {
-        load: async () => {
-          throw new TypeError('Unused nutrition read.');
-        },
+  const onboarding = { load: async () => request.profile };
+  const foods = new BrowserStageTwoStore({
+    indexedDB,
+    keyRange: IDBKeyRange,
+    createId: () => crypto.randomUUID(),
+    now: () => new Date().toISOString(),
+    timeZone: () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    onboarding,
+  });
+  const planning = new BrowserPlanningStore(
+    undefined,
+    onboarding,
+    {
+      load: async () => {
+        throw new TypeError('Unused nutrition read.');
       },
-      foods,
-    );
-    const repository = await IndexedDbCanonicalRecordRepository.create({
-      databaseName: LOCAL_USER_DATABASE_NAME,
-      indexedDB,
-      keyRange: IDBKeyRange,
-      verifyRecord: (record) =>
-        verifyCanonicalRecordV1(record, sha256Canonical),
-    });
-    try {
-      const sequence = await repository.latestTransactionSequence();
-      const activeReleaseId = await foods.activeCatalogRelease();
-      const cached = await readPlanningView(
-        indexedDB,
-        request.profile.ownerSubjectId,
-        sequence,
-        activeReleaseId,
-      );
-      if (
-        cached !== null &&
-        sequence === (await repository.latestTransactionSequence()) &&
-        activeReleaseId === (await foods.activeCatalogRelease())
-      ) {
-        const run = cached.run;
-        return {
-          status: 'SNAPSHOT',
-          snapshot: {
-            ...cached,
-            fresh:
-              cached.fresh &&
-              run !== null &&
-              nextMealIsCurrentV1(
-                run.input.candidates.requestedAt,
-                run.validUntil,
-                new Date().toISOString(),
-              ),
-          },
-        };
-      }
-      const before = await repository.latestTransactionSequence();
-      const full = await planning.load();
-      const after = await repository.latestTransactionSequence();
-      if (before === after) {
-        try {
-          await savePlanningView(indexedDB, {
-            owner: request.profile.ownerSubjectId,
-            sequence: after,
-            activeReleaseId: await foods.activeCatalogRelease(),
-            snapshot: projectPlanningSnapshot(full),
-          });
-        } catch {
-          // A disposable view can always be rebuilt from the canonical run.
-        }
-      }
-      return { status: 'SNAPSHOT', snapshot: projectPlanningSnapshot(full) };
-    } finally {
-      await repository.close();
-    }
-  }
-
-  let start = performance.now();
-  const release = await acceptanceCatalog();
-  const loadMs = Math.round(performance.now() - start);
-  start = performance.now();
-  const catalog = buildNextMealCatalogSnapshot({
-    activeReleaseId: release.releaseId,
-    catalog: release.payload,
-    customFoods: [],
-    recipes: [],
-  });
-  const mapMs = Math.round(performance.now() - start);
-  start = performance.now();
-  const input = buildNextMealInputV1({
-    catalog,
-    nutrition: stage4NutritionFixture(),
-    foodRestrictions: [],
-    inventory: null,
-    now: STAGE_4_ACCEPTANCE_INSTANT,
-    trackingStartedAt: '2026-10-10T00:00:00.000Z',
-  });
-  if (input.status !== 'READY')
-    throw new TypeError(`Input needs ${input.reasonCodes.join(', ')}.`);
-  const inputMs = Math.round(performance.now() - start);
-  const workerSamplesMs: number[] = [];
-  let comparable = 0;
-  for (let index = 0; index < 5; index += 1) {
-    start = performance.now();
-    const review = reviewNextMealRankingV1(
-      input.request,
-      rankNextMealCandidatesV1(input.request),
-    );
-    workerSamplesMs.push(Math.round(performance.now() - start));
-    if (
-      review.status !== 'APPROVED' ||
-      review.ranking.total !== catalog.entries.length ||
-      review.ranking.processed !== review.ranking.total
-    )
-      throw new TypeError('The full-catalog review was incomplete.');
-    comparable = review.ranking.counts.COMPARABLE;
-  }
-  const sorted = [...workerSamplesMs].sort((a, b) => a - b);
-  return {
-    status: 'BENCHMARK',
-    measurement: {
-      catalogEntries: catalog.entries.length,
-      comparable,
-      comparisonNutrients: input.request.temporalRules.length,
-      artifactSha256: release.artifactSha256,
-      loadMs,
-      mapMs,
-      inputMs,
-      workerSamplesMs,
-      workerP95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1]!,
     },
-  };
+    foods,
+  );
+  const repository = await IndexedDbCanonicalRecordRepository.create({
+    databaseName: LOCAL_USER_DATABASE_NAME,
+    indexedDB,
+    keyRange: IDBKeyRange,
+    verifyRecord: (record) => verifyCanonicalRecordV1(record, sha256Canonical),
+  });
+  try {
+    const sequence = await repository.latestTransactionSequence();
+    const activeReleaseId = await foods.activeCatalogRelease();
+    const cached = await readPlanningView(
+      indexedDB,
+      request.profile.ownerSubjectId,
+      sequence,
+      activeReleaseId,
+    );
+    if (
+      cached !== null &&
+      sequence === (await repository.latestTransactionSequence()) &&
+      activeReleaseId === (await foods.activeCatalogRelease())
+    ) {
+      const run = cached.run;
+      return {
+        status: 'SNAPSHOT',
+        snapshot: {
+          ...cached,
+          fresh:
+            cached.fresh &&
+            run !== null &&
+            nextMealIsCurrentV1(
+              run.input.candidates.requestedAt,
+              run.validUntil,
+              new Date().toISOString(),
+            ),
+        },
+      };
+    }
+    const before = await repository.latestTransactionSequence();
+    const full = await planning.load();
+    const after = await repository.latestTransactionSequence();
+    if (before === after) {
+      try {
+        await savePlanningView(indexedDB, {
+          owner: request.profile.ownerSubjectId,
+          sequence: after,
+          activeReleaseId: await foods.activeCatalogRelease(),
+          snapshot: projectPlanningSnapshot(full),
+        });
+      } catch {
+        // A disposable view can always be rebuilt from the canonical run.
+      }
+    }
+    return { status: 'SNAPSHOT', snapshot: projectPlanningSnapshot(full) };
+  } finally {
+    await repository.close();
+  }
 }
 
 const scope = globalThis as unknown as {

@@ -84,5 +84,7 @@ See the
 [Free next-meal contract](../../../docs/engines/next-meal-contract.md).
 `next-meal-acceptance-fixture.ts` pins the adult request and catalog digest
 shared by the isolated full-catalog Node audit and development-browser
-measurement. `next-meal-full-catalog.acceptance.ts` writes a private result to
+measurement. `next-meal-acceptance-client.dev.ts` is the development-only
+browser boundary for that measurement and is absent from production builds.
+`next-meal-full-catalog.acceptance.ts` writes a private result to
 `.temp/stage-4-acceptance/` when `npm run acceptance:stage4` runs.

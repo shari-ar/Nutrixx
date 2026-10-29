@@ -17,6 +17,7 @@ process.env.NEXT_IGNORE_INCORRECT_LOCKFILE ??= '1';
 loadEnvConfig(workspaceRoot, process.env.NODE_ENV === 'development');
 
 const environment = parseWebEnvironment(process.env);
+const developmentBuild = process.env.NODE_ENV === 'development';
 
 const securityHeaders = [
   {
@@ -46,9 +47,10 @@ const securityHeaders = [
 const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: environment.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_STAGE4_ACCEPTANCE_ENABLED:
-      process.env.NODE_ENV === 'development' ? 'true' : 'false',
   },
+  pageExtensions: developmentBuild
+    ? ['dev.ts', 'dev.tsx', 'ts', 'tsx']
+    : ['ts', 'tsx'],
   output: 'standalone',
   outputFileTracingRoot: workspaceRoot,
   poweredByHeader: false,

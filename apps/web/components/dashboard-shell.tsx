@@ -1,10 +1,11 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { CatalogInstaller } from '@/components/catalog-installer';
+import { CatalogInstaller as PublishedCatalogInstaller } from '@/components/catalog-installer';
 import { DashboardCard } from '@/components/dashboard-card';
 import { NutritionDashboardSummary } from '@/components/nutrition-dashboard-summary';
 import { PlanningDashboardSummary } from '@/components/planning-dashboard-summary';
@@ -19,6 +20,17 @@ const goalLabels = {
   lose: 'Lose weight',
   maintain: 'Maintain weight',
 } as const;
+
+const DashboardCatalogInstaller =
+  process.env.NODE_ENV === 'development'
+    ? dynamic(
+        () =>
+          import('@/components/catalog-installer.dev').then(
+            (module) => module.DevelopmentCatalogInstaller,
+          ),
+        { ssr: false },
+      )
+    : PublishedCatalogInstaller;
 
 export function DashboardShell({ store }: { store?: OnboardingReader }) {
   const router = useRouter();
@@ -130,7 +142,7 @@ export function DashboardShell({ store }: { store?: OnboardingReader }) {
         </dl>
       </header>
 
-      <CatalogInstaller />
+      <DashboardCatalogInstaller />
 
       <section
         aria-label="Daily overview"

@@ -6,9 +6,12 @@ Production source code for the NestJS service.
 
 | File                             | Responsibility                                                   |
 | -------------------------------- | ---------------------------------------------------------------- |
-| `main.ts`                        | Environment loading, application creation, and listening         |
+| `main.ts`                        | Production entrypoint                                            |
+| `main.dev.ts`                    | Development entrypoint with operator capabilities                |
+| `bootstrap.ts`                   | Shared environment loading, application creation, and listening  |
 | `app.config.ts`                  | Global prefix, CORS, validation, and cross-cutting setup         |
-| `app.module.ts`                  | Root dependency graph                                            |
+| `app.module.ts`                  | Production dependency graph                                      |
+| `app.dev.module.ts`              | Development-only operator dependency graph                       |
 | `app.controller.ts`              | Initial public HTTP routes                                       |
 | `app.service.ts`                 | Initial application responses                                    |
 | `agent-curation.controller.ts`   | Token-protected local batch submission and persistent run status |
@@ -23,3 +26,5 @@ Production source code for the NestJS service.
 - Validate external input at boundaries and return contract-shaped responses.
 - Avoid hidden global state, direct environment reads, and cross-domain imports.
 - Keep unit tests deterministic and colocated with source.
+- Import operator controllers and services only through `app.dev.module.ts`.
+- Keep production-bundle exclusions enforced by the repository boundary gate.

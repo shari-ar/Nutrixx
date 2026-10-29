@@ -7,17 +7,40 @@ import {
   type ActiveFoodCatalog,
 } from '@/config/active-food-catalog';
 import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
-import {
-  loadLocalFoodCatalogDraft,
-  type LocalFoodCatalogDraft,
-} from '@/lib/local-catalog-draft';
 
-type CatalogStore = Pick<
+import type { ReactNode } from 'react';
+
+export type CatalogStore = Pick<
   BrowserStageTwoStore,
   'activeCatalogRelease' | 'installCatalog'
 >;
 
-export function CatalogInstaller({ store }: { store?: CatalogStore }) {
+export interface CatalogInstallerState {
+  readonly release: string | null;
+  readonly target: ActiveFoodCatalog;
+  readonly installing: boolean;
+  readonly error: string | null;
+}
+
+export interface CatalogInstallerPresentation {
+  readonly status?: (state: CatalogInstallerState) => ReactNode;
+  readonly pendingTitle?: (state: CatalogInstallerState) => ReactNode;
+  readonly pendingDescription?: (state: CatalogInstallerState) => ReactNode;
+  readonly buttonLabel?: (state: CatalogInstallerState) => ReactNode;
+  readonly disableButton?: (state: CatalogInstallerState) => boolean;
+}
+
+export function CatalogInstaller({
+  store,
+  target = ACTIVE_FOOD_CATALOG,
+  automaticInstallKey = null,
+  presentation,
+}: {
+  store?: CatalogStore;
+  target?: ActiveFoodCatalog;
+  automaticInstallKey?: string | null;
+  presentation?: CatalogInstallerPresentation;
+}) {
   const runtime = useMemo<CatalogStore>(
     () =>
       store ?? {
@@ -29,11 +52,6 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
     [store],
   );
   const [release, setRelease] = useState<string | null>(null);
-  const [catalog, setCatalog] =
-    useState<ActiveFoodCatalog>(ACTIVE_FOOD_CATALOG);
-  const [localDraft, setLocalDraft] = useState<LocalFoodCatalogDraft | null>(
-    null,
-  );
   const [catalogStatusReady, setCatalogStatusReady] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,27 +63,11 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
 
   useEffect(() => {
     let active = true;
-    const applyDraft = (draft: LocalFoodCatalogDraft | null) => {
-      if (!active) return;
-      const target = draft?.catalog ?? ACTIVE_FOOD_CATALOG;
-      setCatalog((current) =>
-        current.releaseId === target.releaseId &&
-        current.artifactSha256 === target.artifactSha256
-          ? current
-          : target,
-      );
-      setLocalDraft((current) =>
-        current?.sessionId === draft?.sessionId &&
-        current?.draftRevision === draft?.draftRevision
-          ? current
-          : draft,
-      );
-    };
-    Promise.all([runtime.activeCatalogRelease(), loadLocalFoodCatalogDraft()])
-      .then(([installedRelease, draft]) => {
+    runtime
+      .activeCatalogRelease()
+      .then((installedRelease) => {
         if (!active) return;
         setRelease(installedRelease);
-        applyDraft(draft);
         setCatalogStatusReady(true);
       })
       .catch(() => {
@@ -74,14 +76,8 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
           setError('Catalog status is unavailable.');
         }
       });
-    const draftPoll = window.setInterval(() => {
-      loadLocalFoodCatalogDraft()
-        .then(applyDraft)
-        .catch(() => undefined);
-    }, 3_000);
     return () => {
       active = false;
-      window.clearInterval(draftPoll);
     };
   }, [runtime]);
 
@@ -145,13 +141,13 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
     });
   }
 
-  async function installBundledCatalog(target = catalog) {
+  async function installBundledCatalog(selectedCatalog = target) {
     setInstalling(true);
     setError(null);
     setStatus(null);
     setDownloadProgress(null);
     try {
-      const response = await fetch(`/catalog/${target.artifactName}`, {
+      const response = await fetch(`/catalog/${selectedCatalog.artifactName}`, {
         cache: 'no-store',
       });
       if (!response.ok) {
@@ -159,7 +155,7 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
           `Catalog download failed with HTTP ${response.status}.`,
         );
       }
-      const artifact = await downloadCatalog(response, target);
+      const artifact = await downloadCatalog(response, selectedCatalog);
       setDownloadProgress(100);
       setInstallationPhase(
         'Verifying, decompressing, and indexing locally… This can take a moment.',
@@ -167,7 +163,7 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => resolve()),
       );
-      await installArtifact(artifact, target);
+      await installArtifact(artifact, selectedCatalog);
     } catch {
       setError(
         'The offline catalog could not be installed. Check your connection and available browser storage, then retry.',
@@ -178,22 +174,29 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
     }
   }
 
-  const synchronizeLocalDraft = useEffectEvent((target: ActiveFoodCatalog) => {
-    installBundledCatalog(target).catch(() => undefined);
+  const synchronizeTarget = useEffectEvent((selected: ActiveFoodCatalog) => {
+    installBundledCatalog(selected).catch(() => undefined);
   });
-  const automaticDraftAttempt = useRef<string | null>(null);
+  const automaticAttempt = useRef<string | null>(null);
   useEffect(() => {
     if (
       !catalogStatusReady ||
-      localDraft === null ||
+      automaticInstallKey === null ||
       installing ||
-      release === localDraft.catalog.releaseId ||
-      automaticDraftAttempt.current === localDraft.catalog.releaseId
+      release === target.releaseId ||
+      automaticAttempt.current === automaticInstallKey
     )
       return;
-    automaticDraftAttempt.current = localDraft.catalog.releaseId;
-    synchronizeLocalDraft(localDraft.catalog);
-  }, [catalogStatusReady, installing, localDraft, release]);
+    automaticAttempt.current = automaticInstallKey;
+    synchronizeTarget(target);
+  }, [automaticInstallKey, catalogStatusReady, installing, release, target]);
+
+  const viewState: CatalogInstallerState = {
+    release,
+    target,
+    installing,
+    error,
+  };
 
   return (
     <section
@@ -213,67 +216,42 @@ export function CatalogInstaller({ store }: { store?: CatalogStore }) {
         Active release: {release ?? 'No catalog installed'}
       </p>
 
-      {localDraft ? (
-        <div
-          className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent"
-          role="status"
-        >
-          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-accent" />
-          {release === catalog.releaseId
-            ? 'Using Local Draft'
-            : installing
-              ? 'Syncing Local Draft'
-              : error
-                ? 'Local Draft sync failed'
-                : 'Local Draft detected'}
-          <span className="font-normal text-muted">
-            Revision {localDraft.draftRevision}
-          </span>
-        </div>
-      ) : null}
+      {presentation?.status?.(viewState)}
 
-      {release !== catalog.releaseId ? (
+      {release !== target.releaseId ? (
         <div className="mt-5 rounded-2xl bg-background/60 p-4">
           <p className="font-semibold">
-            {localDraft
-              ? 'Synchronizing the local draft'
-              : release === null
+            {presentation?.pendingTitle?.(viewState) ??
+              (release === null
                 ? 'Install the offline food catalog'
-                : 'Update the offline food catalog'}
+                : 'Update the offline food catalog')}
           </p>
           <p className="mt-1 text-sm leading-6 text-muted">
-            {localDraft ? (
-              <>
-                The development workbench produced revision{' '}
-                {localDraft.draftRevision}. Nutrixx is verifying and activating
-                it in this browser automatically.
-              </>
-            ) : (
+            {presentation?.pendingDescription?.(viewState) ?? (
               <>
                 This download is about{' '}
-                {Math.ceil(catalog.compressedByteLength / 1_000_000)} MB.
-                Nutrixx checks its pinned SHA-256 digest and release integrity
-                before storing it in this browser.
+                {Math.ceil(target.compressedByteLength / 1_000_000)} MB. Nutrixx
+                checks its pinned SHA-256 digest and release integrity before
+                storing it in this browser.
               </>
             )}
           </p>
           <button
             className="mt-4 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-60"
-            disabled={installing || (localDraft !== null && error === null)}
+            disabled={
+              installing || (presentation?.disableButton?.(viewState) ?? false)
+            }
             onClick={() => {
               installBundledCatalog().catch(() => undefined);
             }}
             type="button"
           >
-            {localDraft
-              ? error
-                ? 'Retry local draft sync'
-                : 'Synchronizing local draft…'
-              : installing
+            {presentation?.buttonLabel?.(viewState) ??
+              (installing
                 ? 'Installing locally…'
                 : release === null
                   ? 'Install offline catalog'
-                  : 'Update offline catalog'}
+                  : 'Update offline catalog')}
           </button>
           {installationPhase ? (
             <div className="mt-4 text-sm" role="status">
