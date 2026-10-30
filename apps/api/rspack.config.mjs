@@ -20,10 +20,8 @@ export default function createProductionConfig(defaults) {
     externals: [
       ...inheritedExternals,
       {
-        '@nestjs/microservices/microservices-module.js':
-          'commonjs @nestjs/microservices/microservices-module.js',
-        '@nestjs/websockets/socket-module.js':
-          'commonjs @nestjs/websockets/socket-module.js',
+        '@nestjs/core': 'module @nestjs/core',
+        '@nestjs/platform-express': 'module @nestjs/platform-express',
       },
     ],
     devtool: 'hidden-source-map',
