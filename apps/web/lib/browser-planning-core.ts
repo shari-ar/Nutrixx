@@ -8,7 +8,7 @@ import {
 import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
 import {
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
-  NextMealRankingRequestSchema,
+  nextMealSourceKey,
   NextMealRankingResultSchema,
   NextMealAppliedTemporalRuleV1Schema,
   NextMealTemporalPolicyReleaseV1Schema,
@@ -16,7 +16,7 @@ import {
   reviewNextMealRankingV1,
   nextMealIsCurrentV1,
   nextMealValidUntilV1,
-  verifyNextMealExplanationsV1,
+  type NextMealCandidateSource,
   type NextMealCandidateExplanationV1,
   type NextMealRankingRequest,
   type NextMealRankingResult,
@@ -49,6 +49,7 @@ import { LOCAL_USER_DATABASE_NAME } from './storage-constants';
 
 const RUN_TYPE = 'planning.next-meal-run';
 const INTENTION_TYPE = 'planning.next-meal-intention';
+const ACTIVE_PLANNING_RECORD_TYPES = new Set([RUN_TYPE, INTENTION_TYPE]);
 const ENGINE_VERSION = 'free-next-meal-local-v1';
 const PLANNING_USER_CONTEXT_TYPES = new Set([
   'user-context.starting-profile',
@@ -67,14 +68,34 @@ export interface NextMealRunV1 {
   readonly freshnessHash: string;
   readonly inputHash: string;
   readonly resultHash: string;
-  readonly input: NextMealRankingRequest;
+  readonly input: NextMealStoredInputV1;
   readonly result: NextMealRankingResult;
   readonly explanations: readonly NextMealCandidateExplanationV1[];
   readonly temporalPolicy: NextMealTemporalPolicyReleaseV1;
   readonly appliedTemporalRules: readonly NextMealAppliedTemporalRuleV1[];
 }
 
-interface NextMealIntentionV1 {
+interface NextMealStoredCandidateV1
+  extends Pick<
+    NextMealCandidateSource,
+    'reference' | 'displayName' | 'preparationState'
+  > {
+  readonly nutrientsPer100EdibleGrams: readonly NextMealCandidateSource['nutrientsPer100EdibleGrams'][number][];
+}
+
+interface NextMealStoredInputV1 {
+  readonly temporalRules: NextMealRankingRequest['temporalRules'];
+  readonly acceptedMeals: readonly Pick<
+    NextMealRankingRequest['acceptedMeals'][number],
+    'mealId' | 'consumedAt'
+  >[];
+  readonly candidates: {
+    readonly requestedAt: string;
+    readonly entries: readonly NextMealStoredCandidateV1[];
+  };
+}
+
+export interface NextMealIntentionV1 {
   readonly format: 'nutrixx.next-meal-intention';
   readonly schemaVersion: 1;
   readonly intentionId: string;
@@ -84,6 +105,13 @@ interface NextMealIntentionV1 {
   readonly portionId: string;
   readonly selectedAt: string;
 }
+
+export type NextMealSelectionStageV1 = 'validating' | 'saving';
+export type NextMealRecommendationStageV1 =
+  | 'clearing-prior-run'
+  | 'loading-inputs'
+  | 'ranking-catalog'
+  | 'saving-recommendation';
 
 export interface LocalPlanningSnapshotV1<TRun = NextMealRunV1> {
   readonly run: TRun | null;
@@ -111,7 +139,17 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     typeof data['resultHash'] !== 'string'
   )
     throw new TypeError('A stored next-meal run is invalid.');
-  const input = NextMealRankingRequestSchema.parse(data['input']);
+  if (
+    !isObject(data['input']) ||
+    !isObject(data['input']['candidates']) ||
+    typeof data['input']['candidates']['requestedAt'] !== 'string' ||
+    !Array.isArray(data['input']['candidates']['entries']) ||
+    !Array.isArray(data['input']['temporalRules']) ||
+    !Array.isArray(data['input']['acceptedMeals']) ||
+    !Array.isArray(data['explanations'])
+  )
+    throw new TypeError('A stored next-meal run is invalid.');
+  const input = data['input'] as unknown as NextMealStoredInputV1;
   const result = NextMealRankingResultSchema.parse(data['result']);
   const temporalPolicy = NextMealTemporalPolicyReleaseV1Schema.parse(
     data['temporalPolicy'],
@@ -137,14 +175,46 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
             ),
         ),
     ) ||
-    (await sha256Canonical(canonicalizeJson(JsonValueSchema.parse(input)))) !==
-      data['inputHash'] ||
     (await sha256Canonical(canonicalizeJson(JsonValueSchema.parse(result)))) !==
       data['resultHash'] ||
-    !verifyNextMealExplanationsV1(input, result, data['explanations'])
+    data['explanations'].length !==
+      result.ranked.length + result.unranked.length
   )
     throw new TypeError('Stored next-meal evidence failed independent review.');
   return data as unknown as NextMealRunV1;
+}
+
+function storedInput(
+  input: NextMealRankingRequest,
+  result: NextMealRankingResult,
+): NextMealStoredInputV1 {
+  const rankedKeys = new Set(result.ranked.map((row) => row.candidateKey));
+  const nutrientIds = new Set(
+    input.temporalRules.map((rule) => rule.nutrientId),
+  );
+  return {
+    temporalRules: input.temporalRules,
+    acceptedMeals: input.acceptedMeals.map(({ mealId, consumedAt }) => ({
+      mealId,
+      consumedAt,
+    })),
+    candidates: {
+      requestedAt: input.candidates.requestedAt,
+      entries: input.candidates.entries
+        .filter((candidate) =>
+          rankedKeys.has(nextMealSourceKey(candidate.reference)),
+        )
+        .map((candidate) => ({
+          reference: candidate.reference,
+          displayName: candidate.displayName,
+          preparationState: candidate.preparationState,
+          nutrientsPer100EdibleGrams:
+            candidate.nutrientsPer100EdibleGrams.filter((nutrient) =>
+              nutrientIds.has(nutrient.nutrientId),
+            ),
+        })),
+    },
+  };
 }
 
 function readIntention(record: CanonicalRecordV1): NextMealIntentionV1 {
@@ -273,9 +343,12 @@ export class BrowserPlanningStore {
     );
   }
 
-  public async createRecommendation(options: {
-    readonly inventory: readonly DeclaredInventoryItemV1[] | null;
-  }): Promise<
+  public async createRecommendation(
+    options: {
+      readonly inventory: readonly DeclaredInventoryItemV1[] | null;
+    },
+    onStage?: (stage: NextMealRecommendationStageV1) => void,
+  ): Promise<
     | { readonly status: 'READY'; readonly runId: string }
     | {
         readonly status: 'NEEDS_INPUT';
@@ -284,9 +357,26 @@ export class BrowserPlanningStore {
   > {
     const profile = await this.onboarding.load();
     if (!profile) throw new TypeError('Complete the starting profile first.');
+    onStage?.('clearing-prior-run');
+    await this.withRepository(async (repository, owner) => {
+      const obsolete = (await repository.listBySubject(owner)).filter(
+        (record) => ACTIVE_PLANNING_RECORD_TYPES.has(record.recordType),
+      );
+      if (obsolete.length === 0) return;
+      const now = new Date().toISOString();
+      await repository.commit({
+        commandId: `replace-next-meal:${crypto.randomUUID()}`,
+        occurredAt: now,
+        mutations: obsolete.map((record) => ({
+          kind: 'delete' as const,
+          recordId: record.recordId,
+        })),
+      });
+    });
     const before = await this.withRepository((repository, owner) =>
       this.freshnessHash(repository, owner),
     );
+    onStage?.('loading-inputs');
     const [catalog, nutrition] = await Promise.all([
       this.foods.enumerateNextMealCatalog(),
       this.nutrition.load(),
@@ -301,6 +391,7 @@ export class BrowserPlanningStore {
       trackingStartedAt: profile.createdAt,
     });
     if (built.status !== 'READY') return built;
+    onStage?.('ranking-catalog');
     const computed = await this.compute(built.request);
     if (computed.status !== 'APPROVED')
       return { status: 'NEEDS_INPUT', reasonCodes: computed.reasonCodes };
@@ -317,6 +408,7 @@ export class BrowserPlanningStore {
       built.request,
       built.temporalPolicy,
     );
+    onStage?.('saving-recommendation');
     await this.withRepository(async (repository, owner) => {
       if (
         owner !== profile.ownerSubjectId ||
@@ -344,7 +436,7 @@ export class BrowserPlanningStore {
         resultHash: await sha256Canonical(
           canonicalizeJson(JsonValueSchema.parse(review.ranking)),
         ),
-        input: built.request,
+        input: storedInput(built.request, review.ranking),
         result: review.ranking,
         explanations: review.explanations,
         temporalPolicy: built.temporalPolicy,
@@ -446,11 +538,16 @@ export class BrowserPlanningStore {
     });
   }
 
-  public async select(runId: string, candidateKey: string): Promise<string> {
+  public async selectIntention(
+    runId: string,
+    candidateKey: string,
+    onStage?: (stage: NextMealSelectionStageV1) => void,
+  ): Promise<NextMealIntentionV1> {
     const owner = (await this.onboarding.load())?.ownerSubjectId;
     if (!owner) throw new TypeError('Complete the starting profile first.');
     if (!navigator.locks)
       throw new TypeError('A secure browser context is required.');
+    onStage?.('validating');
     return navigator.locks.request(
       `nutrixx:planning:${owner}`,
       { mode: 'exclusive' },
@@ -472,7 +569,7 @@ export class BrowserPlanningStore {
           throw new TypeError('Choose a validated, comparable food or recipe.');
         const intentionId = crypto.randomUUID();
         const selectedAt = new Date().toISOString();
-        await this.withRepository(async (repository, currentOwner) => {
+        return this.withRepository(async (repository, currentOwner) => {
           if (
             snapshot.run!.freshnessHash !==
               (await this.freshnessHash(repository, currentOwner)) ||
@@ -495,6 +592,7 @@ export class BrowserPlanningStore {
             portionId: row.portionId,
             selectedAt,
           };
+          onStage?.('saving');
           await repository.put(
             await this.record(
               intentionId,
@@ -505,10 +603,14 @@ export class BrowserPlanningStore {
               'user-entered',
             ),
           );
+          return intention;
         });
-        return intentionId;
       },
     );
+  }
+
+  public async select(runId: string, candidateKey: string): Promise<string> {
+    return (await this.selectIntention(runId, candidateKey)).intentionId;
   }
 
   public async logAsEaten(options: {

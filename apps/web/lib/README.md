@@ -71,12 +71,13 @@ selection, data and time freshness, independent review, persistence, and the
 explicit actual-consumption handoff to the meal ledger. The core runs inside
 the worker for creation and loading. A run expires after 15 minutes or an
 earlier applicable temporal boundary. `next-meal-preparation-client.ts` carries
-only compact outcomes across the UI boundary during creation. The worker is
-reused between requests and released after two idle minutes. The disposable
-`next-meal-display-cache.ts` stores a digest-checked UI projection that omits
-unranked candidate composition. A canonical transaction, active catalog
-release, policy release, or expiry invalidates its fast-load path; canonical
-data remains the authority and rebuilds a missing or invalid projection.
+only compact outcomes across the UI boundary. Each serialized operation owns a
+disposable worker that terminates as soon as its result arrives, releasing the
+mapped catalog immediately. The disposable `next-meal-display-cache.ts` stores
+a digest-checked UI projection that omits unranked candidate composition. A
+canonical transaction, active catalog release, policy release, or expiry
+invalidates its fast-load path; canonical data remains the authority and
+rebuilds a missing or invalid projection.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

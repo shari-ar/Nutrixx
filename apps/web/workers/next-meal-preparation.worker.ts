@@ -16,12 +16,15 @@ import {
 import { LOCAL_USER_DATABASE_NAME } from '../lib/storage-constants';
 
 import type {
+  NextMealPreparationMessageV1,
+  NextMealPreparationProgressV1,
   NextMealPreparationRequestV1,
   NextMealPreparationResultV1,
 } from '../lib/next-meal-preparation-client';
 
 async function prepare(
   request: NextMealPreparationRequestV1,
+  report: (progress: NextMealPreparationProgressV1) => void,
 ): Promise<NextMealPreparationResultV1> {
   if (request.kind === 'LOCAL_RECOMMENDATION') {
     const onboarding = { load: async () => request.profile };
@@ -49,9 +52,34 @@ async function prepare(
     );
     return {
       status: 'RECOMMENDATION',
-      result: await planning.createRecommendation({
-        inventory: request.inventory,
-      }),
+      result: await planning.createRecommendation(
+        { inventory: request.inventory },
+        (stage) => {
+          const updates: Record<typeof stage, NextMealPreparationProgressV1> = {
+            'clearing-prior-run': {
+              status: 'PROGRESS',
+              stage: 'clearing-prior-run',
+              message: 'Replacing the previous recommendation…',
+            },
+            'loading-inputs': {
+              status: 'PROGRESS',
+              stage: 'loading-planning-inputs',
+              message: 'Loading your recorded meals and local catalog…',
+            },
+            'ranking-catalog': {
+              status: 'PROGRESS',
+              stage: 'ranking-catalog',
+              message: 'Ranking the local catalog for your next meal…',
+            },
+            'saving-recommendation': {
+              status: 'PROGRESS',
+              stage: 'saving-recommendation',
+              message: 'Saving the compact recommendation locally…',
+            },
+          };
+          report(updates[stage]);
+        },
+      ),
     };
   }
 
@@ -74,6 +102,82 @@ async function prepare(
     },
     foods,
   );
+  if (request.kind === 'LOCAL_SELECT') {
+    const beforeRepository = await IndexedDbCanonicalRecordRepository.create({
+      databaseName: LOCAL_USER_DATABASE_NAME,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      verifyRecord: (record) =>
+        verifyCanonicalRecordV1(record, sha256Canonical),
+    });
+    let beforeSequence: number;
+    let activeReleaseId: string | null;
+    let cached: Awaited<ReturnType<typeof readPlanningView>>;
+    try {
+      beforeSequence = await beforeRepository.latestTransactionSequence();
+      activeReleaseId = await foods.activeCatalogRelease();
+      cached = await readPlanningView(
+        indexedDB,
+        request.profile.ownerSubjectId,
+        beforeSequence,
+        activeReleaseId,
+      );
+    } finally {
+      await beforeRepository.close();
+    }
+    const intention = await planning.selectIntention(
+      request.runId,
+      request.candidateKey,
+      (stage) =>
+        report(
+          stage === 'validating'
+            ? {
+                status: 'PROGRESS',
+                stage: 'validating-selection',
+                message: 'Validating the current recommendation…',
+              }
+            : {
+                status: 'PROGRESS',
+                stage: 'saving-selection',
+                message: 'Saving your selection locally…',
+              },
+        ),
+    );
+    report({
+      status: 'PROGRESS',
+      stage: 'preparing-meal-form',
+      message: 'Preparing the meal recording form…',
+    });
+    const afterRepository = await IndexedDbCanonicalRecordRepository.create({
+      databaseName: LOCAL_USER_DATABASE_NAME,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      verifyRecord: (record) =>
+        verifyCanonicalRecordV1(record, sha256Canonical),
+    });
+    try {
+      const afterSequence = await afterRepository.latestTransactionSequence();
+      const currentReleaseId = await foods.activeCatalogRelease();
+      if (
+        cached?.run?.runId === request.runId &&
+        currentReleaseId === activeReleaseId
+      ) {
+        await savePlanningView(indexedDB, {
+          owner: request.profile.ownerSubjectId,
+          sequence: afterSequence,
+          activeReleaseId: currentReleaseId,
+          snapshot: {
+            ...cached,
+            intention,
+            loggedMealId: null,
+          },
+        });
+      }
+    } finally {
+      await afterRepository.close();
+    }
+    return { status: 'SELECTION', intention };
+  }
   const repository = await IndexedDbCanonicalRecordRepository.create({
     databaseName: LOCAL_USER_DATABASE_NAME,
     indexedDB,
@@ -94,13 +198,24 @@ async function prepare(
       sequence === (await repository.latestTransactionSequence()) &&
       activeReleaseId === (await foods.activeCatalogRelease())
     ) {
-      const run = cached.run;
+      const projected = projectPlanningSnapshot(cached);
+      const run = projected.run;
+      try {
+        await savePlanningView(indexedDB, {
+          owner: request.profile.ownerSubjectId,
+          sequence,
+          activeReleaseId,
+          snapshot: projected,
+        });
+      } catch {
+        // A disposable view can always be rebuilt from the canonical run.
+      }
       return {
         status: 'SNAPSHOT',
         snapshot: {
-          ...cached,
+          ...projected,
           fresh:
-            cached.fresh &&
+            projected.fresh &&
             run !== null &&
             nextMealIsCurrentV1(
               run.input.candidates.requestedAt,
@@ -133,11 +248,11 @@ async function prepare(
 
 const scope = globalThis as unknown as {
   onmessage: (event: MessageEvent<NextMealPreparationRequestV1>) => void;
-  postMessage: (result: NextMealPreparationResultV1) => void;
+  postMessage: (result: NextMealPreparationMessageV1) => void;
 };
 
 scope.onmessage = (event) => {
-  void prepare(event.data).then(
+  void prepare(event.data, (progress) => scope.postMessage(progress)).then(
     (result) => scope.postMessage(result),
     (error: unknown) =>
       scope.postMessage({

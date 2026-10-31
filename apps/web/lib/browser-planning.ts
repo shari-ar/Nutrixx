@@ -2,8 +2,12 @@ import { BrowserNutritionStateStore } from './browser-nutrition-state';
 import { BrowserOnboardingStore } from './browser-onboarding';
 import { BrowserPlanningStore as InProcessPlanningStore } from './browser-planning-core';
 import { BrowserStageTwoStore } from './browser-stage-two';
-import { prepareNextMealInWorker } from './next-meal-preparation-client';
+import {
+  prepareNextMealInWorker,
+  type NextMealPreparationProgressV1,
+} from './next-meal-preparation-client';
 
+import type { NextMealIntentionV1 } from './browser-planning-core';
 import type { SaveMealInput } from './browser-stage-two';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
@@ -41,19 +45,25 @@ export class BrowserPlanningStore {
     );
   }
 
-  public async createRecommendation(options: {
-    readonly inventory: readonly DeclaredInventoryItemV1[] | null;
-  }): Promise<
+  public async createRecommendation(
+    options: {
+      readonly inventory: readonly DeclaredInventoryItemV1[] | null;
+    },
+    onProgress?: (progress: NextMealPreparationProgressV1) => void,
+  ): Promise<
     Awaited<ReturnType<InProcessPlanningStore['createRecommendation']>>
   > {
     if (!this.runOffThread) return this.core.createRecommendation(options);
     const profile = await this.browserOnboarding.load();
     if (!profile) throw new TypeError('Complete the starting profile first.');
-    const completed = await prepareNextMealInWorker({
-      kind: 'LOCAL_RECOMMENDATION',
-      profile,
-      inventory: options.inventory,
-    });
+    const completed = await prepareNextMealInWorker(
+      {
+        kind: 'LOCAL_RECOMMENDATION',
+        profile,
+        inventory: options.inventory,
+      },
+      onProgress,
+    );
     if (completed.status !== 'RECOMMENDATION')
       throw new TypeError('Local recommendation could not complete.');
     return completed.result;
@@ -77,8 +87,31 @@ export class BrowserPlanningStore {
     return loaded.snapshot;
   }
 
-  public select(runId: string, candidateKey: string): Promise<string> {
-    return this.core.select(runId, candidateKey);
+  public async selectForDisplay(
+    runId: string,
+    candidateKey: string,
+    onProgress?: (progress: NextMealPreparationProgressV1) => void,
+  ): Promise<NextMealIntentionV1> {
+    if (!this.runOffThread)
+      return this.core.selectIntention(runId, candidateKey);
+    const profile = await this.browserOnboarding.load();
+    if (!profile) throw new TypeError('Complete the starting profile first.');
+    const completed = await prepareNextMealInWorker(
+      {
+        kind: 'LOCAL_SELECT',
+        profile,
+        runId,
+        candidateKey,
+      },
+      onProgress,
+    );
+    if (completed.status !== 'SELECTION')
+      throw new TypeError('The selected recommendation could not be saved.');
+    return completed.intention;
+  }
+
+  public async select(runId: string, candidateKey: string): Promise<string> {
+    return (await this.selectForDisplay(runId, candidateKey)).intentionId;
   }
 
   public logAsEaten(options: {

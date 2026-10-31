@@ -3,21 +3,49 @@ import {
   reviewNextMealRankingV1,
   type NextMealCandidateSource,
 } from '@nutrixx/optimizer-engine';
+import {
+  CANONICAL_RECORD_STORE,
+  openIndexedDb,
+} from '@nutrixx/persistence-indexeddb';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BrowserOnboardingStore } from './browser-onboarding';
 import { BrowserOutcomeFeedbackStore } from './browser-outcome-feedback';
 import { BrowserPlanningStore } from './browser-planning';
+import { LOCAL_USER_DATABASE_NAME } from './storage-constants';
 
 import type { BrowserNutritionSnapshotV1 } from './browser-nutrition-state';
 import type { BrowserStageTwoStore } from './browser-stage-two';
 import type {
+  NextMealPreparationMessageV1,
   NextMealPreparationRequestV1,
-  NextMealPreparationResultV1,
 } from './next-meal-preparation-client';
 
 const NOW = '2026-10-12T12:00:00.000Z';
+
+async function planningRecordTypes(): Promise<string[]> {
+  const database = await openIndexedDb(indexedDB, LOCAL_USER_DATABASE_NAME);
+  try {
+    const transaction = database.transaction(
+      CANONICAL_RECORD_STORE,
+      'readonly',
+    );
+    const request = transaction.objectStore(CANONICAL_RECORD_STORE).getAll();
+    const records = await new Promise<{ recordType: string }[]>(
+      (resolve, reject) => {
+        request.onsuccess = () =>
+          resolve(request.result as { recordType: string }[]);
+        request.onerror = () => reject(request.error);
+      },
+    );
+    return records
+      .map((record) => record.recordType)
+      .filter((recordType) => recordType.startsWith('planning.'));
+  } finally {
+    database.close();
+  }
+}
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -68,13 +96,35 @@ describe('browser next-meal planning', () => {
         workersCreated += 1;
       }
       public onmessage:
-        | ((event: MessageEvent<NextMealPreparationResultV1>) => void)
+        | ((event: MessageEvent<NextMealPreparationMessageV1>) => void)
         | null = null;
       public onerror: ((event: ErrorEvent) => void) | null = null;
 
       public postMessage(request: NextMealPreparationRequestV1): void {
         posted.push(request.kind);
-        const response: NextMealPreparationResultV1 =
+        if (request.kind === 'LOCAL_RECOMMENDATION') {
+          queueMicrotask(() =>
+            this.onmessage?.({
+              data: {
+                status: 'PROGRESS',
+                stage: 'ranking-catalog',
+                message: 'Ranking the local catalog for your next meal…',
+              },
+            } as MessageEvent<NextMealPreparationMessageV1>),
+          );
+        }
+        if (request.kind === 'LOCAL_SELECT') {
+          queueMicrotask(() =>
+            this.onmessage?.({
+              data: {
+                status: 'PROGRESS',
+                stage: 'validating-selection',
+                message: 'Validating the current recommendation…',
+              },
+            } as MessageEvent<NextMealPreparationMessageV1>),
+          );
+        }
+        const response: NextMealPreparationMessageV1 =
           request.kind === 'LOCAL_LOAD'
             ? {
                 status: 'SNAPSHOT',
@@ -85,14 +135,28 @@ describe('browser next-meal planning', () => {
                   loggedMealId: null,
                 },
               }
-            : {
-                status: 'RECOMMENDATION',
-                result: { status: 'READY', runId: 'worker-run' },
-              };
+            : request.kind === 'LOCAL_SELECT'
+              ? {
+                  status: 'SELECTION',
+                  intention: {
+                    format: 'nutrixx.next-meal-intention',
+                    schemaVersion: 1,
+                    intentionId: 'worker-intention',
+                    ownerSubjectId: request.profile.ownerSubjectId,
+                    runId: request.runId,
+                    candidateKey: request.candidateKey,
+                    portionId: 'portion-100g',
+                    selectedAt: NOW,
+                  },
+                }
+              : {
+                  status: 'RECOMMENDATION',
+                  result: { status: 'READY', runId: 'worker-run' },
+                };
         queueMicrotask(() =>
           this.onmessage?.({
             data: response,
-          } as MessageEvent<NextMealPreparationResultV1>),
+          } as MessageEvent<NextMealPreparationMessageV1>),
         );
       }
 
@@ -100,18 +164,36 @@ describe('browser next-meal planning', () => {
     }
     vi.stubGlobal('Worker', WorkerStub);
     const planning = new BrowserPlanningStore(undefined, onboarding);
-    expect(await planning.createRecommendation({ inventory: null })).toEqual({
-      status: 'READY',
-      runId: 'worker-run',
-    });
+    const recommendationProgress: string[] = [];
+    expect(
+      await planning.createRecommendation({ inventory: null }, (update) =>
+        recommendationProgress.push(update.stage),
+      ),
+    ).toEqual({ status: 'READY', runId: 'worker-run' });
+    expect(recommendationProgress).toEqual(['ranking-catalog']);
     expect(await planning.load()).toEqual({
       run: null,
       fresh: false,
       intention: null,
       loggedMealId: null,
     });
-    expect(posted).toEqual(['LOCAL_RECOMMENDATION', 'LOCAL_LOAD']);
-    expect(workersCreated).toBe(1);
+    const progress: string[] = [];
+    expect(
+      (
+        await planning.selectForDisplay(
+          'worker-run',
+          'food:fixture',
+          (update) => progress.push(update.stage),
+        )
+      ).intentionId,
+    ).toBe('worker-intention');
+    expect(progress).toEqual(['validating-selection']);
+    expect(posted).toEqual([
+      'LOCAL_RECOMMENDATION',
+      'LOCAL_LOAD',
+      'LOCAL_SELECT',
+    ]);
+    expect(workersCreated).toBe(3);
   });
 
   it('starts without a recommendation and requests a nutrition market', async () => {
@@ -338,6 +420,7 @@ describe('browser next-meal planning', () => {
     expect(refreshed.status).toBe('READY');
     if (refreshed.status !== 'READY') return;
     expect(refreshed.runId).not.toBe(created.runId);
+    expect(await planningRecordTypes()).toEqual(['planning.next-meal-run']);
     const replay = await planning.load();
     expect(replay.fresh).toBe(true);
     expect(replay.run?.result).toEqual(ranked.run?.result);

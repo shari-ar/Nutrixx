@@ -62,6 +62,7 @@ export function PlanningWorkspace() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [planningProgress, setPlanningProgress] = useState<string | null>(null);
   const [inputLink, setInputLink] = useState<'nutrition' | 'dashboard' | null>(
     null,
   );
@@ -121,15 +122,19 @@ export function PlanningWorkspace() {
     };
   }, [planning]);
 
-  async function perform(action: () => Promise<void>): Promise<void> {
+  async function perform(
+    action: () => Promise<void>,
+    refreshSnapshot = true,
+  ): Promise<void> {
     setBusy(true);
     setError(null);
     setNotice(null);
     setInputLink(null);
     try {
       await action();
-      setSnapshot(await planning.load());
+      if (refreshSnapshot) setSnapshot(await planning.load());
     } catch (failure) {
+      setPlanningProgress(null);
       setError(
         failure instanceof Error
           ? failure.message
@@ -229,10 +234,12 @@ export function PlanningWorkspace() {
           disabled={busy || (inventoryOnly && inventory.length === 0)}
           type="button"
           onClick={() => {
+            setPlanningProgress('Starting the local ranking worker…');
             perform(async () => {
-              const result = await planning.createRecommendation({
-                inventory: inventoryOnly ? inventory : null,
-              });
+              const result = await planning.createRecommendation(
+                { inventory: inventoryOnly ? inventory : null },
+                (progress) => setPlanningProgress(progress.message),
+              );
               if (result.status !== 'READY') {
                 setNotice(inputGuidance(result.reasonCodes));
                 setInputLink(
@@ -247,6 +254,11 @@ export function PlanningWorkspace() {
                       : null,
                 );
               }
+              setPlanningProgress(
+                result.status === 'READY'
+                  ? 'Ranking ready. Review the ordered foods below.'
+                  : 'More information is needed before ranking can continue.',
+              );
               setVisible(PAGE_SIZE);
               setVisibleUnranked(PAGE_SIZE);
             }).catch(() => setError('Local planning is unavailable.'));
@@ -278,6 +290,14 @@ export function PlanningWorkspace() {
               Open {inputLink === 'nutrition' ? 'Nutrition' : 'Dashboard'}
             </Link>
           ) : null}
+        </p>
+      ) : null}
+      {planningProgress ? (
+        <p
+          className="rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm"
+          role="status"
+        >
+          {planningProgress}
         </p>
       ) : null}
 
@@ -329,10 +349,25 @@ export function PlanningWorkspace() {
                         snapshot.loggedMealId !== null
                       }
                       onClick={() => {
+                        setPlanningProgress(
+                          'Starting the local selection worker…',
+                        );
                         perform(async () => {
-                          await planning.select(run.runId, row.candidateKey);
+                          const intention = await planning.selectForDisplay(
+                            run.runId,
+                            row.candidateKey,
+                            (progress) => setPlanningProgress(progress.message),
+                          );
+                          setSnapshot((current) =>
+                            current?.run?.runId === run.runId
+                              ? { ...current, intention }
+                              : current,
+                          );
                           setActualGrams(row.edibleGrams);
-                        }).catch(() =>
+                          setPlanningProgress(
+                            'Selection saved. Confirm what you actually ate below.',
+                          );
+                        }, false).catch(() =>
                           setError('The selected food could not be saved.'),
                         );
                       }}

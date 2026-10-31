@@ -1,3 +1,4 @@
+import type { NextMealIntentionV1 } from './browser-planning-core';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
 import type { StartingProfileV1 } from '@nutrixx/user-context';
@@ -8,7 +9,26 @@ export type NextMealPreparationRequestV1 =
       readonly profile: StartingProfileV1;
       readonly inventory: readonly DeclaredInventoryItemV1[] | null;
     }
-  | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 };
+  | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 }
+  | {
+      readonly kind: 'LOCAL_SELECT';
+      readonly profile: StartingProfileV1;
+      readonly runId: string;
+      readonly candidateKey: string;
+    };
+
+export interface NextMealPreparationProgressV1 {
+  readonly status: 'PROGRESS';
+  readonly stage:
+    | 'clearing-prior-run'
+    | 'loading-planning-inputs'
+    | 'ranking-catalog'
+    | 'saving-recommendation'
+    | 'validating-selection'
+    | 'saving-selection'
+    | 'preparing-meal-form';
+  readonly message: string;
+}
 
 export type NextMealPreparationResultV1 =
   | {
@@ -24,35 +44,36 @@ export type NextMealPreparationResultV1 =
       readonly status: 'SNAPSHOT';
       readonly snapshot: NextMealDisplaySnapshotV1;
     }
+  | {
+      readonly status: 'SELECTION';
+      readonly intention: NextMealIntentionV1;
+    }
   | { readonly status: 'FAILED'; readonly reasonCode: string };
 
-let sharedWorker: Worker | null = null;
-let pending = Promise.resolve();
-let idleTimer: ReturnType<typeof setTimeout> | null = null;
+export type NextMealPreparationMessageV1 =
+  | NextMealPreparationProgressV1
+  | NextMealPreparationResultV1;
 
-/** Keeps the mapped catalog alive across requests in the same page. */
+let pending = Promise.resolve();
+
+/** Runs one bounded operation per worker so large catalog graphs are released immediately. */
 export function prepareNextMealInWorker(
   request: NextMealPreparationRequestV1,
+  onProgress?: (progress: NextMealPreparationProgressV1) => void,
 ): Promise<NextMealPreparationResultV1> {
   const result = pending.then(
     () =>
       new Promise<NextMealPreparationResultV1>((resolve, reject) => {
-        if (idleTimer !== null) clearTimeout(idleTimer);
-        idleTimer = null;
-        const worker =
-          sharedWorker ??
-          new Worker(
-            new URL(
-              '../workers/next-meal-preparation.worker.ts',
-              import.meta.url,
-            ),
-            { type: 'module' },
-          );
-        sharedWorker = worker;
+        const worker = new Worker(
+          new URL(
+            '../workers/next-meal-preparation.worker.ts',
+            import.meta.url,
+          ),
+          { type: 'module' },
+        );
         const fail = (message: string) => {
           clearTimeout(timer);
           worker.terminate();
-          if (sharedWorker === worker) sharedWorker = null;
           reject(new TypeError(message));
         };
         const timer = setTimeout(
@@ -60,22 +81,14 @@ export function prepareNextMealInWorker(
           90_000,
         );
         worker.onmessage = (
-          event: MessageEvent<NextMealPreparationResultV1>,
+          event: MessageEvent<NextMealPreparationMessageV1>,
         ) => {
-          clearTimeout(timer);
-          if (event.data.status === 'FAILED') {
-            worker.terminate();
-            if (sharedWorker === worker) sharedWorker = null;
-            resolve(event.data);
+          if (event.data.status === 'PROGRESS') {
+            onProgress?.(event.data);
             return;
           }
-          idleTimer = setTimeout(() => {
-            if (sharedWorker === worker) {
-              worker.terminate();
-              sharedWorker = null;
-            }
-            idleTimer = null;
-          }, 120_000);
+          clearTimeout(timer);
+          worker.terminate();
           resolve(event.data);
         };
         worker.onerror = () =>

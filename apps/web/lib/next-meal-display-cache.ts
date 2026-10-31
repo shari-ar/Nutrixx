@@ -3,7 +3,6 @@ import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
 import {
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   nextMealSourceKey,
-  type NextMealCandidateSource,
 } from '@nutrixx/optimizer-engine';
 import { sha256Canonical } from '@nutrixx/persistence-indexeddb';
 
@@ -19,15 +18,7 @@ export { PLANNING_VIEW_DATABASE_NAME } from './storage-constants';
 
 const STORE = 'views';
 
-export interface NextMealDisplayRunV1 extends Omit<NextMealRunV1, 'input'> {
-  readonly input: {
-    readonly temporalRules: NextMealRunV1['input']['temporalRules'];
-    readonly candidates: {
-      readonly requestedAt: string;
-      readonly entries: readonly NextMealCandidateSource[];
-    };
-  };
-}
+export type NextMealDisplayRunV1 = NextMealRunV1;
 
 export type NextMealDisplaySnapshotV1 =
   LocalPlanningSnapshotV1<NextMealDisplayRunV1>;
@@ -55,20 +46,34 @@ function currentPlanningViewPolicyKey(): string {
 export function projectPlanningSnapshot(
   snapshot: LocalPlanningSnapshotV1,
 ): NextMealDisplaySnapshotV1 {
-  if (!snapshot.run) return { ...snapshot, run: null };
-  const run = snapshot.run;
-  const rankedKeys = new Set(run.result.ranked.map((row) => row.candidateKey));
+  if (!snapshot.run) return snapshot;
+  const rankedKeys = new Set(
+    snapshot.run.result.ranked.map((row) => row.candidateKey),
+  );
+  const nutrientIds = new Set(
+    snapshot.run.input.temporalRules.map((rule) => rule.nutrientId),
+  );
   return {
     ...snapshot,
     run: {
-      ...run,
+      ...snapshot.run,
       input: {
-        temporalRules: run.input.temporalRules,
+        ...snapshot.run.input,
         candidates: {
-          requestedAt: run.input.candidates.requestedAt,
-          entries: run.input.candidates.entries.filter((entry) =>
-            rankedKeys.has(nextMealSourceKey(entry.reference)),
-          ),
+          requestedAt: snapshot.run.input.candidates.requestedAt,
+          entries: snapshot.run.input.candidates.entries
+            .filter((candidate) =>
+              rankedKeys.has(nextMealSourceKey(candidate.reference)),
+            )
+            .map((candidate) => ({
+              reference: candidate.reference,
+              displayName: candidate.displayName,
+              preparationState: candidate.preparationState,
+              nutrientsPer100EdibleGrams:
+                candidate.nutrientsPer100EdibleGrams.filter((nutrient) =>
+                  nutrientIds.has(nutrient.nutrientId),
+                ),
+            })),
         },
       },
     },

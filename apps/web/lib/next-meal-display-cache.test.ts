@@ -11,7 +11,7 @@ import {
 import type { LocalPlanningSnapshotV1 } from './browser-planning-core';
 
 describe('disposable next-meal display view', () => {
-  it('keeps only ranked candidate composition and invalidates by revision and release', async () => {
+  it('stores the compact active snapshot and invalidates by revision and release', async () => {
     const factory = new IDBFactory();
     const snapshot = {
       run: {
@@ -29,14 +29,9 @@ describe('disposable next-meal display view', () => {
                   foodId: 'food-1',
                   foodRevision: 1,
                 },
-              },
-              {
-                reference: {
-                  kind: 'food',
-                  catalogReleaseId: 'release-1',
-                  foodId: 'food-2',
-                  foodRevision: 1,
-                },
+                displayName: 'Food 1',
+                preparationState: 'raw',
+                nutrientsPer100EdibleGrams: [],
               },
             ],
           },
