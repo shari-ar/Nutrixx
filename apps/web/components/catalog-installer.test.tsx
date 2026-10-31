@@ -98,4 +98,42 @@ describe('catalog installer local draft status', () => {
       screen.queryByRole('button', { name: 'Use local draft' }),
     ).not.toBeInTheDocument();
   });
+
+  it('reports success when the catalog committed before a trailing error', async () => {
+    const activeCatalogRelease = vi
+      .fn()
+      .mockResolvedValueOnce(ACTIVE_FOOD_CATALOG.releaseId)
+      .mockResolvedValue(draftReleaseId);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(new Uint8Array([1, 2, 3]), {
+          headers: { 'content-length': '3' },
+        }),
+      ),
+    );
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
+
+    render(
+      <CatalogInstaller
+        store={{
+          activeCatalogRelease,
+          installCatalog: vi
+            .fn()
+            .mockRejectedValue(new Error('Trailing IndexedDB error')),
+        }}
+      />,
+    );
+
+    expect(await screen.findByText('Using Local Draft')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `Catalog ${draftReleaseId} is verified and active offline.`,
+      ),
+    ).toBeInTheDocument();
+  });
 });

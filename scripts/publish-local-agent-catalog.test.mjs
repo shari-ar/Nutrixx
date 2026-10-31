@@ -9,6 +9,10 @@ import {
   CatalogPublicationError,
   publishLocalAgentCatalog,
 } from './publish-local-agent-catalog.mjs';
+import {
+  readLocalCatalogPublicationV1,
+  reconcilePublishedLocalCatalogV1,
+} from './local-catalog-draft.mjs';
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -179,6 +183,10 @@ test('prepares immutable assets and a release PR without activating main', async
     assert.equal(result.publicationState, 'awaiting-ci');
     assert.equal(result.pullRequestNumber, 19);
     assert.equal(publication.releaseId, setup.releaseId);
+    assert.deepEqual(
+      await readLocalCatalogPublicationV1({ rootPath: setup.root }),
+      publication,
+    );
     assert.equal(publication.state, 'awaiting-validation');
     assert.equal(
       JSON.parse(
@@ -206,6 +214,37 @@ test('prepares immutable assets and a release PR without activating main', async
     assert.equal(
       pending.artifactUrl,
       `https://github.com/shari-ar/Nutrixx/releases/download/${setup.releaseId}/${setup.artifactName}`,
+    );
+  } finally {
+    await rm(setup.root, { recursive: true, force: true });
+  }
+});
+
+test('reconciles a published local draft and clears its transient session', async () => {
+  const setup = await fixture();
+  try {
+    const session = JSON.parse(
+      await readFile(
+        path.join(setup.sessionDirectory, 'session.v1.json'),
+        'utf8',
+      ),
+    );
+    await writeFile(
+      setup.descriptorPath,
+      `${JSON.stringify({
+        ...session.draftCatalog,
+        artifactUrl: 'https://github.test/download/catalog.json.gz',
+        receiptUrl: 'https://github.test/download/catalog.receipt.json',
+      })}\n`,
+    );
+
+    assert.equal(
+      await reconcilePublishedLocalCatalogV1({ rootPath: setup.root }),
+      true,
+    );
+    await assert.rejects(
+      readFile(path.join(setup.sessionDirectory, 'session.v1.json'), 'utf8'),
+      { code: 'ENOENT' },
     );
   } finally {
     await rm(setup.root, { recursive: true, force: true });

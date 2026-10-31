@@ -266,6 +266,43 @@ export async function clearLocalCatalogCurationSessionV1({ rootPath }) {
   ]);
 }
 
+export async function readLocalCatalogPublicationV1({ rootPath }) {
+  const value = await readJsonIfPresent(
+    localCatalogDraftPaths(rootPath).publication,
+  );
+  if (value === null) return null;
+  if (
+    value.format !== 'nutrixx.local-catalog-publication' ||
+    value.schemaVersion !== 1 ||
+    typeof value.releaseId !== 'string' ||
+    !Number.isSafeInteger(value.pullRequestNumber) ||
+    typeof value.pullRequestUrl !== 'string' ||
+    !value.pullRequestUrl.startsWith('https://')
+  )
+    throw new TypeError('The local catalog publication status is invalid.');
+  return value;
+}
+
 export async function writeLocalCatalogPublicationV1({ rootPath, value }) {
   await atomicJson(localCatalogDraftPaths(rootPath).publication, value);
+}
+
+export async function reconcilePublishedLocalCatalogV1({ rootPath }) {
+  const paths = localCatalogDraftPaths(rootPath);
+  const sessionValue = await readJsonIfPresent(paths.session);
+  if (sessionValue === null) return false;
+  const session = validateSession(sessionValue);
+  if (session.draftCatalog === null) return false;
+  const active = validateCatalogDescriptorV1(
+    JSON.parse(await readFile(paths.activeDescriptor, 'utf8')),
+  );
+  if (
+    active.releaseId !== session.draftCatalog.releaseId ||
+    active.artifactSha256 !== session.draftCatalog.artifactSha256 ||
+    !active.artifactUrl?.startsWith('https://') ||
+    !active.receiptUrl?.startsWith('https://')
+  )
+    return false;
+  await clearLocalCatalogCurationSessionV1({ rootPath });
+  return true;
 }

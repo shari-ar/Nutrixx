@@ -164,7 +164,18 @@ export function CatalogInstaller({
         requestAnimationFrame(() => resolve()),
       );
       await installArtifact(artifact, selectedCatalog);
-    } catch {
+    } catch (cause) {
+      const installedRelease = await runtime
+        .activeCatalogRelease()
+        .catch(() => null);
+      if (installedRelease === selectedCatalog.releaseId) {
+        setRelease(installedRelease);
+        setStatus(
+          `Catalog ${installedRelease} is verified and active offline.`,
+        );
+        return;
+      }
+      console.error('Offline catalog installation failed.', cause);
       setError(
         'The offline catalog could not be installed. Check your connection and available browser storage, then retry.',
       );
