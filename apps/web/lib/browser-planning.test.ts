@@ -196,6 +196,70 @@ describe('browser next-meal planning', () => {
     expect(workersCreated).toBe(3);
   });
 
+  it('terminates a superseded recommendation worker before starting its replacement', async () => {
+    const onboarding = new BrowserOnboardingStore({
+      storage: localStorage,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: () => crypto.randomUUID(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+    });
+    await onboarding.save({
+      ageYears: 30,
+      heightCentimeters: '170',
+      weightKilograms: '70',
+      physiologicalReference: 'female',
+      primaryGoal: 'maintain',
+      foodRestrictions: [],
+    });
+    let releaseFirstStart: (() => void) | undefined;
+    const firstStarted = new Promise<void>((resolve) => {
+      releaseFirstStart = resolve;
+    });
+    const terminated: number[] = [];
+    let workersCreated = 0;
+    class WorkerStub {
+      private readonly id = ++workersCreated;
+      public onmessage:
+        | ((event: MessageEvent<NextMealPreparationMessageV1>) => void)
+        | null = null;
+      public onerror: ((event: ErrorEvent) => void) | null = null;
+
+      public postMessage(request: NextMealPreparationRequestV1): void {
+        if (this.id === 1) {
+          releaseFirstStart?.();
+          return;
+        }
+        queueMicrotask(() =>
+          this.onmessage?.({
+            data: {
+              status: 'RECOMMENDATION',
+              result: { status: 'READY', runId: 'replacement-run' },
+            },
+          } as MessageEvent<NextMealPreparationMessageV1>),
+        );
+        expect(request.kind).toBe('LOCAL_RECOMMENDATION');
+      }
+
+      public terminate(): void {
+        terminated.push(this.id);
+      }
+    }
+    vi.stubGlobal('Worker', WorkerStub);
+    const planning = new BrowserPlanningStore(undefined, onboarding);
+    const superseded = planning.createRecommendation({ inventory: null });
+    await firstStarted;
+    const replacement = planning.createRecommendation({ inventory: null });
+    await expect(superseded).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(replacement).resolves.toEqual({
+      status: 'READY',
+      runId: 'replacement-run',
+    });
+    expect(workersCreated).toBe(2);
+    expect(terminated).toEqual([1, 2]);
+  });
+
   it('starts without a recommendation and requests a nutrition market', async () => {
     const onboarding = new BrowserOnboardingStore({
       storage: localStorage,

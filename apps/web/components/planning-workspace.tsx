@@ -135,6 +135,7 @@ export function PlanningWorkspace() {
       if (refreshSnapshot) setSnapshot(await planning.load());
     } catch (failure) {
       setPlanningProgress(null);
+      if (failure instanceof Error && failure.name === 'AbortError') return;
       setError(
         failure instanceof Error
           ? failure.message

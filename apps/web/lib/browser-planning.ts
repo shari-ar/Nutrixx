@@ -22,6 +22,7 @@ export type LocalPlanningSnapshotV1 = NextMealDisplaySnapshotV1;
 /** The UI only receives a compact outcome; the worker owns the full run. */
 export class BrowserPlanningStore {
   private readonly core: InProcessPlanningStore;
+  private recommendationController: AbortController | null = null;
   public constructor(
     compute?: ConstructorParameters<typeof InProcessPlanningStore>[0],
     private readonly browserOnboarding: Pick<
@@ -54,19 +55,28 @@ export class BrowserPlanningStore {
     Awaited<ReturnType<InProcessPlanningStore['createRecommendation']>>
   > {
     if (!this.runOffThread) return this.core.createRecommendation(options);
-    const profile = await this.browserOnboarding.load();
-    if (!profile) throw new TypeError('Complete the starting profile first.');
-    const completed = await prepareNextMealInWorker(
-      {
-        kind: 'LOCAL_RECOMMENDATION',
-        profile,
-        inventory: options.inventory,
-      },
-      onProgress,
-    );
-    if (completed.status !== 'RECOMMENDATION')
-      throw new TypeError('Local recommendation could not complete.');
-    return completed.result;
+    this.recommendationController?.abort();
+    const controller = new AbortController();
+    this.recommendationController = controller;
+    try {
+      const profile = await this.browserOnboarding.load();
+      if (!profile) throw new TypeError('Complete the starting profile first.');
+      const completed = await prepareNextMealInWorker(
+        {
+          kind: 'LOCAL_RECOMMENDATION',
+          profile,
+          inventory: options.inventory,
+        },
+        onProgress,
+        controller.signal,
+      );
+      if (completed.status !== 'RECOMMENDATION')
+        throw new TypeError('Local recommendation could not complete.');
+      return completed.result;
+    } finally {
+      if (this.recommendationController === controller)
+        this.recommendationController = null;
+    }
   }
 
   public async load(): Promise<NextMealDisplaySnapshotV1> {

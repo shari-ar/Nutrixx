@@ -56,46 +56,58 @@ export type NextMealPreparationMessageV1 =
 
 let pending = Promise.resolve();
 
+function cancellationError(): Error {
+  const error = new Error('The previous local planning request was replaced.');
+  error.name = 'AbortError';
+  return error;
+}
+
 /** Runs one bounded operation per worker so large catalog graphs are released immediately. */
 export function prepareNextMealInWorker(
   request: NextMealPreparationRequestV1,
   onProgress?: (progress: NextMealPreparationProgressV1) => void,
+  signal?: AbortSignal,
 ): Promise<NextMealPreparationResultV1> {
-  const result = pending.then(
-    () =>
-      new Promise<NextMealPreparationResultV1>((resolve, reject) => {
-        const worker = new Worker(
-          new URL(
-            '../workers/next-meal-preparation.worker.ts',
-            import.meta.url,
-          ),
-          { type: 'module' },
-        );
-        const fail = (message: string) => {
-          clearTimeout(timer);
-          worker.terminate();
-          reject(new TypeError(message));
-        };
-        const timer = setTimeout(
-          () => fail('Local preparation exceeded its 90-second limit.'),
-          90_000,
-        );
-        worker.onmessage = (
-          event: MessageEvent<NextMealPreparationMessageV1>,
-        ) => {
-          if (event.data.status === 'PROGRESS') {
-            onProgress?.(event.data);
-            return;
-          }
-          clearTimeout(timer);
-          worker.terminate();
-          resolve(event.data);
-        };
-        worker.onerror = () =>
-          fail('The local preparation worker could not complete.');
-        worker.postMessage(request);
-      }),
-  );
+  const result = pending.then(() => {
+    if (signal?.aborted) throw cancellationError();
+    return new Promise<NextMealPreparationResultV1>((resolve, reject) => {
+      const worker = new Worker(
+        new URL('../workers/next-meal-preparation.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+      let settled = false;
+      const finish = (completion: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        signal?.removeEventListener('abort', abort);
+        worker.terminate();
+        completion();
+      };
+      const fail = (message: string) =>
+        finish(() => reject(new TypeError(message)));
+      const abort = () => finish(() => reject(cancellationError()));
+      const timer = setTimeout(
+        () => fail('Local preparation exceeded its 90-second limit.'),
+        90_000,
+      );
+      signal?.addEventListener('abort', abort, { once: true });
+      worker.onmessage = (
+        event: MessageEvent<NextMealPreparationMessageV1>,
+      ) => {
+        if (settled) return;
+        const message = event.data;
+        if (message.status === 'PROGRESS') {
+          onProgress?.(message);
+          return;
+        }
+        finish(() => resolve(message));
+      };
+      worker.onerror = () =>
+        fail('The local preparation worker could not complete.');
+      worker.postMessage(request);
+    });
+  });
   pending = result.then(
     () => undefined,
     () => undefined,

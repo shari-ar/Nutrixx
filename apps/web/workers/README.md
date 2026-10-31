@@ -10,5 +10,7 @@ measurement and is absent from production builds.
 The caller serializes planning operations and gives each operation a disposable
 worker. It terminates the worker immediately after a result, an error, or the
 watchdog limit so large catalog graphs cannot remain attached to the UI. A
-saved-run load first compacts and refreshes its disposable display view, then
-falls back to canonical validation when the view is unavailable or invalid.
+newer recommendation also aborts the active recommendation worker before its
+replacement starts. A saved-run load first compacts and refreshes its
+disposable display view, then falls back to canonical validation when the view
+is unavailable or invalid.
