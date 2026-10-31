@@ -34,7 +34,12 @@ function urlFor(name) {
 }
 
 async function download(url, destination) {
-  const response = await fetch(url, { redirect: 'error' });
+  const source = new URL(url);
+  if (source.protocol !== 'https:')
+    throw new TypeError('Catalog downloads require HTTPS.');
+  const response = await fetch(source, { redirect: 'follow' });
+  if (new URL(response.url).protocol !== 'https:')
+    throw new TypeError('Catalog download redirects must preserve HTTPS.');
   if (!response.ok || response.body === null) {
     throw new Error(`Catalog download failed with HTTP ${response.status}.`);
   }
