@@ -260,6 +260,80 @@ describe('browser next-meal planning', () => {
     expect(terminated).toEqual([1, 2]);
   });
 
+  it('reuses a conservative device chunk profile on the next recommendation', async () => {
+    const onboarding = new BrowserOnboardingStore({
+      storage: localStorage,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: () => crypto.randomUUID(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+    });
+    await onboarding.save({
+      ageYears: 30,
+      heightCentimeters: '170',
+      weightKilograms: '70',
+      physiologicalReference: 'female',
+      primaryGoal: 'maintain',
+      foodRestrictions: [],
+    });
+    const requests: NextMealPreparationRequestV1[] = [];
+    class WorkerStub {
+      public onmessage:
+        | ((event: MessageEvent<NextMealPreparationMessageV1>) => void)
+        | null = null;
+      public onerror: ((event: ErrorEvent) => void) | null = null;
+
+      public postMessage(request: NextMealPreparationRequestV1): void {
+        requests.push(request);
+        queueMicrotask(() => {
+          this.onmessage?.({
+            data: {
+              status: 'PROGRESS',
+              stage: 'classifying-catalog',
+              message: 'Classifying catalog entries…',
+              processed: 256,
+              total: 1_000,
+              recommendedChunkSize: 512,
+            },
+          } as MessageEvent<NextMealPreparationMessageV1>);
+          this.onmessage?.({
+            data: {
+              status: 'PROGRESS',
+              stage: 'scoring-catalog',
+              message: 'Scoring comparable foods…',
+              processed: 64,
+              total: 1_000,
+              recommendedChunkSize: 128,
+            },
+          } as MessageEvent<NextMealPreparationMessageV1>);
+          this.onmessage?.({
+            data: {
+              status: 'RECOMMENDATION',
+              result: { status: 'READY', runId: 'worker-run' },
+            },
+          } as MessageEvent<NextMealPreparationMessageV1>);
+        });
+      }
+
+      public terminate(): void {}
+    }
+    vi.stubGlobal('Worker', WorkerStub);
+    const planning = new BrowserPlanningStore(undefined, onboarding);
+
+    await planning.createRecommendation({ inventory: null });
+    await planning.createRecommendation({ inventory: null });
+
+    expect(requests[0]).toMatchObject({
+      kind: 'LOCAL_RECOMMENDATION',
+    });
+    expect(requests[0]).not.toHaveProperty('rankingChunkHints');
+    expect(requests[1]).toMatchObject({
+      kind: 'LOCAL_RECOMMENDATION',
+      rankingChunkHints: { classifying: 256, scoring: 64 },
+    });
+  });
+
   it('starts without a recommendation and requests a nutrition market', async () => {
     const onboarding = new BrowserOnboardingStore({
       storage: localStorage,

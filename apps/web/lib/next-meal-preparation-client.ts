@@ -1,4 +1,7 @@
-import type { NextMealIntentionV1 } from './browser-planning-core';
+import type {
+  NextMealIntentionV1,
+  NextMealRankingChunkHintsV1,
+} from './browser-planning-core';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
 import type { StartingProfileV1 } from '@nutrixx/user-context';
@@ -8,6 +11,7 @@ export type NextMealPreparationRequestV1 =
       readonly kind: 'LOCAL_RECOMMENDATION';
       readonly profile: StartingProfileV1;
       readonly inventory: readonly DeclaredInventoryItemV1[] | null;
+      readonly rankingChunkHints?: NextMealRankingChunkHintsV1;
     }
   | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 }
   | {
@@ -23,11 +27,16 @@ export interface NextMealPreparationProgressV1 {
     | 'clearing-prior-run'
     | 'loading-planning-inputs'
     | 'ranking-catalog'
+    | 'classifying-catalog'
+    | 'scoring-catalog'
     | 'saving-recommendation'
     | 'validating-selection'
     | 'saving-selection'
     | 'preparing-meal-form';
   readonly message: string;
+  readonly processed?: number;
+  readonly total?: number;
+  readonly recommendedChunkSize?: number;
 }
 
 export type NextMealPreparationResultV1 =
@@ -55,6 +64,91 @@ export type NextMealPreparationMessageV1 =
   | NextMealPreparationResultV1;
 
 let pending = Promise.resolve();
+const CHUNK_PROFILE_KEY = 'nutrixx:next-meal-chunk-profile:v1';
+const MINIMUM_CHUNK_SIZE = 4;
+const MAXIMUM_CHUNK_SIZE = 2_048;
+
+interface StoredChunkProfileV1 {
+  readonly schemaVersion: 1;
+  readonly classifying?: number;
+  readonly scoring?: number;
+}
+
+function validChunkSize(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isSafeInteger(value) &&
+    value >= MINIMUM_CHUNK_SIZE &&
+    value <= MAXIMUM_CHUNK_SIZE
+  );
+}
+
+function browserStorage(): Storage | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredChunkProfile(storage: Storage): StoredChunkProfileV1 | null {
+  try {
+    const raw = storage.getItem(CHUNK_PROFILE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (parsed['schemaVersion'] !== 1) return null;
+    const classifying = parsed['classifying'];
+    const scoring = parsed['scoring'];
+    if (
+      (classifying !== undefined && !validChunkSize(classifying)) ||
+      (scoring !== undefined && !validChunkSize(scoring))
+    )
+      return null;
+    return {
+      schemaVersion: 1,
+      ...(classifying === undefined ? {} : { classifying }),
+      ...(scoring === undefined ? {} : { scoring }),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function initialChunkHints(): NextMealRankingChunkHintsV1 | undefined {
+  const storage = browserStorage();
+  if (!storage) return undefined;
+  const profile = readStoredChunkProfile(storage);
+  if (!profile) return undefined;
+  const conservative = (size: number) =>
+    Math.max(MINIMUM_CHUNK_SIZE, Math.floor(size / 2));
+  return {
+    ...(profile.classifying === undefined
+      ? {}
+      : { classifying: conservative(profile.classifying) }),
+    ...(profile.scoring === undefined
+      ? {}
+      : { scoring: conservative(profile.scoring) }),
+  };
+}
+
+function retainChunkRecommendation(
+  stage: 'classifying-catalog' | 'scoring-catalog',
+  size: number,
+): void {
+  if (!validChunkSize(size)) return;
+  const storage = browserStorage();
+  if (!storage) return;
+  const current = readStoredChunkProfile(storage) ?? { schemaVersion: 1 };
+  const phase = stage === 'classifying-catalog' ? 'classifying' : 'scoring';
+  try {
+    storage.setItem(
+      CHUNK_PROFILE_KEY,
+      JSON.stringify({ ...current, [phase]: size }),
+    );
+  } catch {
+    // Performance hints are disposable; planning continues without persistence.
+  }
+}
 
 function cancellationError(): Error {
   const error = new Error('The previous local planning request was replaced.');
@@ -98,6 +192,17 @@ export function prepareNextMealInWorker(
         if (settled) return;
         const message = event.data;
         if (message.status === 'PROGRESS') {
+          if (
+            (message.stage === 'classifying-catalog' ||
+              message.stage === 'scoring-catalog') &&
+            message.processed !== undefined &&
+            message.processed > 0 &&
+            message.recommendedChunkSize !== undefined
+          )
+            retainChunkRecommendation(
+              message.stage,
+              message.recommendedChunkSize,
+            );
           onProgress?.(message);
           return;
         }
@@ -105,7 +210,15 @@ export function prepareNextMealInWorker(
       };
       worker.onerror = () =>
         fail('The local preparation worker could not complete.');
-      worker.postMessage(request);
+      const hints =
+        request.kind === 'LOCAL_RECOMMENDATION'
+          ? initialChunkHints()
+          : undefined;
+      worker.postMessage(
+        request.kind === 'LOCAL_RECOMMENDATION' && hints
+          ? { ...request, rankingChunkHints: hints }
+          : request,
+      );
     });
   });
   pending = result.then(

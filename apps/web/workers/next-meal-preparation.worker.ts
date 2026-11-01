@@ -53,31 +53,54 @@ async function prepare(
     return {
       status: 'RECOMMENDATION',
       result: await planning.createRecommendation(
-        { inventory: request.inventory },
-        (stage) => {
-          const updates: Record<typeof stage, NextMealPreparationProgressV1> = {
-            'clearing-prior-run': {
+        {
+          inventory: request.inventory,
+          ...(request.rankingChunkHints
+            ? { rankingChunkHints: request.rankingChunkHints }
+            : {}),
+        },
+        (stage, detail) => {
+          if (stage === 'classifying-catalog' || stage === 'scoring-catalog') {
+            const processed = detail?.processed ?? 0;
+            const total = detail?.total ?? 0;
+            const percent =
+              total === 0 ? 100 : Math.floor((processed / total) * 100);
+            report({
+              status: 'PROGRESS',
+              stage,
+              processed,
+              total,
+              ...(detail
+                ? { recommendedChunkSize: detail.recommendedChunkSize }
+                : {}),
+              message: `${stage === 'classifying-catalog' ? 'Classifying catalog entries' : 'Scoring comparable foods'}… ${processed.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} (${percent}%).`,
+            });
+            return;
+          }
+          if (stage === 'clearing-prior-run')
+            report({
               status: 'PROGRESS',
               stage: 'clearing-prior-run',
               message: 'Replacing the previous recommendation…',
-            },
-            'loading-inputs': {
+            });
+          else if (stage === 'loading-inputs')
+            report({
               status: 'PROGRESS',
               stage: 'loading-planning-inputs',
               message: 'Loading your recorded meals and local catalog…',
-            },
-            'ranking-catalog': {
+            });
+          else if (stage === 'ranking-catalog')
+            report({
               status: 'PROGRESS',
               stage: 'ranking-catalog',
               message: 'Ranking the local catalog for your next meal…',
-            },
-            'saving-recommendation': {
+            });
+          else
+            report({
               status: 'PROGRESS',
               stage: 'saving-recommendation',
               message: 'Saving the compact recommendation locally…',
-            },
-          };
-          report(updates[stage]);
+            });
         },
       ),
     };

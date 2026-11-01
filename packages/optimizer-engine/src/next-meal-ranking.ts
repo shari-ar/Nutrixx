@@ -11,8 +11,10 @@ import {
 
 import {
   NextMealCandidateRequestSchema,
-  classifyNextMealCatalog,
+  classifyValidatedNextMealCatalog,
+  createValidatedNextMealCatalogClassifier,
   nextMealSourceKey,
+  type NextMealCandidateCensus,
   type NextMealCandidateClassification,
   type NextMealCandidateDecision,
   type NextMealCandidateSource,
@@ -389,9 +391,20 @@ function compareKeys(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
-export function rankNextMealCandidatesV1(raw: unknown): NextMealRankingResult {
-  const request = NextMealRankingRequestSchema.parse(raw);
-  const census = classifyNextMealCatalog(request.candidates);
+interface RankingAccumulator {
+  readonly census: NextMealCandidateCensus;
+  readonly rules: readonly Rule[];
+  readonly histories: ReadonlyMap<string, Fraction>;
+  readonly unavailableRules: readonly string[];
+  readonly entries: ReadonlyMap<string, NextMealCandidateSource>;
+  readonly scored: ScoredPortion[];
+  readonly unranked: NextMealCandidateDecision[];
+}
+
+function createRankingAccumulator(
+  request: NextMealRankingRequest,
+  census: NextMealCandidateCensus,
+): RankingAccumulator {
   const rules = [...request.temporalRules].sort((left, right) =>
     left.ruleId < right.ruleId ? -1 : left.ruleId > right.ruleId ? 1 : 0,
   );
@@ -408,49 +421,63 @@ export function rankNextMealCandidatesV1(raw: unknown): NextMealRankingResult {
       entry,
     ]),
   );
-  const scored: ScoredPortion[] = [];
-  const unranked: NextMealCandidateDecision[] = [];
-  for (const decision of census.decisions) {
-    if (decision.classification !== 'COMPARABLE') {
-      unranked.push(decision);
-    } else if (unavailableRules.length > 0) {
-      unranked.push({
-        ...decision,
-        classification: 'EVIDENCE_LIMITED',
-        reasonCodes: unavailableRules.map(
-          (ruleId) => `history-evidence-unresolved:${ruleId}`,
-        ),
-      });
-    } else {
-      scored.push(
-        scoreCandidate(
-          entries.get(decision.candidateKey)!,
-          decision,
-          rules,
-          histories,
-        ),
-      );
-    }
+  return {
+    census,
+    rules,
+    histories,
+    unavailableRules,
+    entries,
+    scored: [],
+    unranked: [],
+  };
+}
+
+function processDecision(
+  accumulator: RankingAccumulator,
+  decision: NextMealCandidateDecision,
+): void {
+  if (decision.classification !== 'COMPARABLE') {
+    accumulator.unranked.push(decision);
+  } else if (accumulator.unavailableRules.length > 0) {
+    accumulator.unranked.push({
+      ...decision,
+      classification: 'EVIDENCE_LIMITED',
+      reasonCodes: accumulator.unavailableRules.map(
+        (ruleId) => `history-evidence-unresolved:${ruleId}`,
+      ),
+    });
+  } else {
+    accumulator.scored.push(
+      scoreCandidate(
+        accumulator.entries.get(decision.candidateKey)!,
+        decision,
+        accumulator.rules,
+        accumulator.histories,
+      ),
+    );
   }
-  scored.sort(compareScored);
-  unranked.sort(
+}
+
+function finishRanking(accumulator: RankingAccumulator): NextMealRankingResult {
+  accumulator.scored.sort(compareScored);
+  accumulator.unranked.sort(
     (left, right) =>
       UNRANKED_ORDER.indexOf(left.classification) -
         UNRANKED_ORDER.indexOf(right.classification) ||
       compareKeys(left.reasonCodes.join(','), right.reasonCodes.join(',')) ||
       compareKeys(left.candidateKey, right.candidateKey),
   );
-  const counts = { ...census.counts };
-  counts.COMPARABLE = scored.length;
-  counts.EVIDENCE_LIMITED = unranked.filter(
+  const counts = { ...accumulator.census.counts };
+  counts.COMPARABLE = accumulator.scored.length;
+  counts.EVIDENCE_LIMITED = accumulator.unranked.filter(
     (decision) => decision.classification === 'EVIDENCE_LIMITED',
   ).length;
   return {
     policyVersion: NEXT_MEAL_RANKING_POLICY_VERSION_V1,
-    total: census.total,
-    processed: census.processed,
+    total: accumulator.census.total,
+    processed: accumulator.census.processed,
     counts,
-    ranked: scored.map((entry, index) => ({
+    ranked: accumulator.scored.map((entry, index) => ({
       candidateKey: entry.candidateKey,
       classification: 'COMPARABLE',
       rank: index + 1,
@@ -460,6 +487,186 @@ export function rankNextMealCandidatesV1(raw: unknown): NextMealRankingResult {
       maximumDistance: ratio(entry.maximumDistance),
       ruleScores: entry.ruleScores,
     })),
-    unranked,
+    unranked: accumulator.unranked,
   };
+}
+
+export function rankNextMealCandidatesV1(raw: unknown): NextMealRankingResult {
+  const request = NextMealRankingRequestSchema.parse(raw);
+  const census = classifyValidatedNextMealCatalog(request.candidates);
+  const accumulator = createRankingAccumulator(request, census);
+  for (const decision of census.decisions)
+    processDecision(accumulator, decision);
+  return finishRanking(accumulator);
+}
+
+export interface NextMealRankingChunkProgressV1 {
+  readonly phase: 'classifying' | 'scoring';
+  readonly processed: number;
+  readonly total: number;
+  readonly chunkSize: number;
+  readonly recommendedChunkSize: number;
+}
+
+export interface NextMealRankingChunkOptionsV1 {
+  /** Initial size when adaptation is enabled; fixed size otherwise. */
+  readonly chunkSize?: number;
+  readonly initialChunkSizes?: {
+    readonly classifying?: number;
+    readonly scoring?: number;
+  };
+  readonly adaptiveChunkSize?: boolean;
+  readonly minimumChunkSize?: number;
+  readonly maximumChunkSize?: number;
+  readonly targetChunkDurationMs?: number;
+  readonly onProgress?: (progress: NextMealRankingChunkProgressV1) => void;
+  readonly yieldControl?: () => Promise<void>;
+  readonly now?: () => number;
+}
+
+interface ChunkSizer {
+  readonly size: number;
+  observe(processed: number, elapsedMs: number): void;
+}
+
+function positiveInteger(value: number, name: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0)
+    throw new TypeError(`${name} must be a positive integer.`);
+  return value;
+}
+
+function createChunkSizer(
+  options: NextMealRankingChunkOptionsV1,
+  phase: NextMealRankingChunkProgressV1['phase'],
+): ChunkSizer {
+  const adaptive = options.adaptiveChunkSize ?? true;
+  const requested = positiveInteger(
+    options.initialChunkSizes?.[phase] ?? options.chunkSize ?? 8,
+    'The initial ranking chunk size',
+  );
+  const minimum = positiveInteger(
+    options.minimumChunkSize ?? 4,
+    'The minimum ranking chunk size',
+  );
+  const maximum = positiveInteger(
+    options.maximumChunkSize ?? 2_048,
+    'The maximum ranking chunk size',
+  );
+  if (minimum > maximum)
+    throw new TypeError(
+      'The minimum ranking chunk size cannot exceed the maximum.',
+    );
+  const targetMs = options.targetChunkDurationMs ?? 8;
+  if (!Number.isFinite(targetMs) || targetMs <= 0)
+    throw new TypeError(
+      'The target ranking chunk duration must be a positive number.',
+    );
+  let size = adaptive
+    ? Math.min(maximum, Math.max(minimum, requested))
+    : requested;
+  return {
+    get size() {
+      return size;
+    },
+    observe(processed, elapsedMs) {
+      if (!adaptive || processed === 0) return;
+      const proposed =
+        elapsedMs <= 0
+          ? size * 2
+          : Math.round((processed * targetMs) / elapsedMs);
+      const gradual = Math.min(
+        size * 2,
+        Math.max(Math.ceil(size / 2), proposed),
+      );
+      size = Math.min(maximum, Math.max(minimum, gradual));
+    },
+  };
+}
+
+function emptyCounts(): Record<NextMealCandidateClassification, number> {
+  return {
+    COMPARABLE: 0,
+    EVIDENCE_LIMITED: 0,
+    UNAVAILABLE: 0,
+    EXCLUDED: 0,
+    REQUIRES_PREPARATION: 0,
+  };
+}
+
+export async function rankNextMealCandidatesChunkedV1(
+  raw: unknown,
+  options: NextMealRankingChunkOptionsV1 = {},
+): Promise<NextMealRankingResult> {
+  const request = NextMealRankingRequestSchema.parse(raw);
+  const yieldControl = options.yieldControl ?? (() => Promise.resolve());
+  const now = options.now ?? (() => globalThis.performance.now());
+  const total = request.candidates.manifest.entryKeys.length;
+  const classifyKey = createValidatedNextMealCatalogClassifier(
+    request.candidates,
+  );
+  const decisions: NextMealCandidateDecision[] = [];
+  const counts = emptyCounts();
+  const classificationChunks = createChunkSizer(options, 'classifying');
+  options.onProgress?.({
+    phase: 'classifying',
+    processed: 0,
+    total,
+    chunkSize: classificationChunks.size,
+    recommendedChunkSize: classificationChunks.size,
+  });
+  for (let start = 0; start < total; ) {
+    const plannedChunkSize = classificationChunks.size;
+    const end = Math.min(start + plannedChunkSize, total);
+    const startedAt = now();
+    for (let index = start; index < end; index++) {
+      const decision = classifyKey(
+        request.candidates.manifest.entryKeys[index]!,
+      );
+      decisions.push(decision);
+      counts[decision.classification]++;
+    }
+    classificationChunks.observe(end - start, now() - startedAt);
+    options.onProgress?.({
+      phase: 'classifying',
+      processed: end,
+      total,
+      chunkSize: end - start,
+      recommendedChunkSize: classificationChunks.size,
+    });
+    start = end;
+    if (end < total) await yieldControl();
+  }
+  const census: NextMealCandidateCensus = {
+    total,
+    processed: decisions.length,
+    counts,
+    decisions,
+  };
+  const accumulator = createRankingAccumulator(request, census);
+  const scoringChunks = createChunkSizer(options, 'scoring');
+  options.onProgress?.({
+    phase: 'scoring',
+    processed: 0,
+    total,
+    chunkSize: scoringChunks.size,
+    recommendedChunkSize: scoringChunks.size,
+  });
+  for (let start = 0; start < total; ) {
+    const plannedChunkSize = scoringChunks.size;
+    const end = Math.min(start + plannedChunkSize, total);
+    const startedAt = now();
+    for (let index = start; index < end; index++)
+      processDecision(accumulator, decisions[index]!);
+    scoringChunks.observe(end - start, now() - startedAt);
+    options.onProgress?.({
+      phase: 'scoring',
+      processed: end,
+      total,
+      chunkSize: end - start,
+      recommendedChunkSize: scoringChunks.size,
+    });
+    start = end;
+    if (end < total) await yieldControl();
+  }
+  return finishRanking(accumulator);
 }

@@ -4,7 +4,11 @@ import {
   nextMealSourceKey,
   type NextMealCandidateSource,
 } from './next-meal-candidates.js';
-import { rankNextMealCandidatesV1 } from './next-meal-ranking.js';
+import {
+  rankNextMealCandidatesChunkedV1,
+  rankNextMealCandidatesV1,
+  type NextMealRankingChunkProgressV1,
+} from './next-meal-ranking.js';
 
 const id = (number: number): string =>
   `00000000-0000-4000-8000-${number.toString(16).padStart(12, '0')}`;
@@ -113,6 +117,105 @@ function priorMeal(number: number, amount: string, consumedAt: string) {
 }
 
 describe('next-meal ranking', () => {
+  it('chunks classification and scoring without changing the exact ranking', async () => {
+    const input = request([food(2, '5'), food(1, '20')]);
+    const progress: NextMealRankingChunkProgressV1[] = [];
+    let yields = 0;
+    const chunked = await rankNextMealCandidatesChunkedV1(input, {
+      chunkSize: 1,
+      adaptiveChunkSize: false,
+      onProgress: (update) => progress.push(update),
+      yieldControl: async () => {
+        yields++;
+      },
+    });
+
+    expect(chunked).toEqual(rankNextMealCandidatesV1(input));
+    expect(progress).toEqual([
+      {
+        phase: 'classifying',
+        processed: 0,
+        total: 2,
+        chunkSize: 1,
+        recommendedChunkSize: 1,
+      },
+      {
+        phase: 'classifying',
+        processed: 1,
+        total: 2,
+        chunkSize: 1,
+        recommendedChunkSize: 1,
+      },
+      {
+        phase: 'classifying',
+        processed: 2,
+        total: 2,
+        chunkSize: 1,
+        recommendedChunkSize: 1,
+      },
+      {
+        phase: 'scoring',
+        processed: 0,
+        total: 2,
+        chunkSize: 1,
+        recommendedChunkSize: 1,
+      },
+      {
+        phase: 'scoring',
+        processed: 1,
+        total: 2,
+        chunkSize: 1,
+        recommendedChunkSize: 1,
+      },
+      {
+        phase: 'scoring',
+        processed: 2,
+        total: 2,
+        chunkSize: 1,
+        recommendedChunkSize: 1,
+      },
+    ]);
+    expect(yields).toBe(2);
+  });
+
+  it('benchmarks actual work and expands chunks on a faster device', async () => {
+    const input = request(
+      Array.from({ length: 8 }, (_, index) => food(index + 1, '10')),
+    );
+    const progress: NextMealRankingChunkProgressV1[] = [];
+    let tick = 0;
+    const chunked = await rankNextMealCandidatesChunkedV1(input, {
+      chunkSize: 2,
+      minimumChunkSize: 1,
+      maximumChunkSize: 8,
+      targetChunkDurationMs: 8,
+      now: () => tick++,
+      onProgress: (update) => progress.push(update),
+    });
+
+    expect(chunked).toEqual(rankNextMealCandidatesV1(input));
+    expect(
+      progress
+        .filter((update) => update.phase === 'classifying')
+        .map(({ processed, chunkSize }) => ({ processed, chunkSize })),
+    ).toEqual([
+      { processed: 0, chunkSize: 2 },
+      { processed: 2, chunkSize: 2 },
+      { processed: 6, chunkSize: 4 },
+      { processed: 8, chunkSize: 2 },
+    ]);
+    expect(
+      progress
+        .filter((update) => update.phase === 'scoring')
+        .map(({ processed, chunkSize }) => ({ processed, chunkSize })),
+    ).toEqual([
+      { processed: 0, chunkSize: 2 },
+      { processed: 2, chunkSize: 2 },
+      { processed: 6, chunkSize: 4 },
+      { processed: 8, chunkSize: 2 },
+    ]);
+  });
+
   it('changes the first choice when actual recorded intake changes', () => {
     const high = food(1, '20');
     const low = food(2, '5');

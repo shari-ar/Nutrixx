@@ -81,6 +81,11 @@ that omits unranked candidate composition. A canonical transaction, active
 catalog release, policy release, or expiry invalidates its fast-load path;
 canonical data remains the authority and rebuilds a missing or invalid
 projection.
+The client retains only bounded, non-sensitive classification and scoring
+chunk recommendations in origin-local storage. A first run starts at eight
+entries; later runs start at half the last measured recommendation and continue
+adapting inside the worker, avoiding both a blind cold start and stale trust in
+an earlier device-load measurement.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

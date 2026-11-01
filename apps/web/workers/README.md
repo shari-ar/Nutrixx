@@ -14,3 +14,8 @@ newer recommendation also aborts the active recommendation worker before its
 replacement starts. A saved-run load first compacts and refreshes its
 disposable display view, then falls back to canonical validation when the view
 is unavailable or invalid.
+Catalog classification and scoring begin with a conservative eight-entry cold
+start, time their real work independently, and adapt subsequent chunk sizes to
+the current device. A later run starts at half its locally retained phase hint
+and benchmarks again. The worker yields between chunks and reports actual
+processed and total entry counts without changing ranking quality.

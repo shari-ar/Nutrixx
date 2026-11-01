@@ -15,9 +15,12 @@ export {
 export {
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   NextMealRankingRequestSchema,
+  rankNextMealCandidatesChunkedV1,
   rankNextMealCandidatesV1,
   type ExactRatio,
   type NextMealRankedCandidate,
+  type NextMealRankingChunkOptionsV1,
+  type NextMealRankingChunkProgressV1,
   type NextMealRankingRequest,
   type NextMealRankingResult,
   type NextMealRuleScore,

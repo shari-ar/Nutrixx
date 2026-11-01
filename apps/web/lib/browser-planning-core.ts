@@ -12,13 +12,14 @@ import {
   NextMealRankingResultSchema,
   NextMealAppliedTemporalRuleV1Schema,
   NextMealTemporalPolicyReleaseV1Schema,
-  rankNextMealCandidatesV1,
+  rankNextMealCandidatesChunkedV1,
   reviewNextMealRankingV1,
   nextMealIsCurrentV1,
   nextMealValidUntilV1,
   type NextMealCandidateSource,
   type NextMealCandidateExplanationV1,
   type NextMealRankingRequest,
+  type NextMealRankingChunkProgressV1,
   type NextMealRankingResult,
   type NextMealAppliedTemporalRuleV1,
   type NextMealRankingReviewV1,
@@ -111,7 +112,20 @@ export type NextMealRecommendationStageV1 =
   | 'clearing-prior-run'
   | 'loading-inputs'
   | 'ranking-catalog'
+  | 'classifying-catalog'
+  | 'scoring-catalog'
   | 'saving-recommendation';
+
+export interface NextMealRecommendationStageDetailV1 {
+  readonly processed: number;
+  readonly total: number;
+  readonly recommendedChunkSize: number;
+}
+
+export interface NextMealRankingChunkHintsV1 {
+  readonly classifying?: number;
+  readonly scoring?: number;
+}
 
 export interface LocalPlanningSnapshotV1<TRun = NextMealRunV1> {
   readonly run: TRun | null;
@@ -238,8 +252,22 @@ export class BrowserPlanningStore {
   public constructor(
     private readonly compute: (
       request: NextMealRankingRequest,
-    ) => Promise<NextMealRankingReviewV1> = async (request) =>
-      reviewNextMealRankingV1(request, rankNextMealCandidatesV1(request)),
+      onProgress?: (progress: NextMealRankingChunkProgressV1) => void,
+      initialChunkSizes?: NextMealRankingChunkHintsV1,
+    ) => Promise<NextMealRankingReviewV1> = async (
+      request,
+      onProgress,
+      initialChunkSizes,
+    ) =>
+      reviewNextMealRankingV1(
+        request,
+        await rankNextMealCandidatesChunkedV1(request, {
+          ...(onProgress ? { onProgress } : {}),
+          ...(initialChunkSizes ? { initialChunkSizes } : {}),
+          yieldControl: () =>
+            new Promise<void>((resolve) => setTimeout(resolve, 0)),
+        }),
+      ),
     private readonly onboarding: Pick<
       BrowserOnboardingStore,
       'load'
@@ -346,8 +374,12 @@ export class BrowserPlanningStore {
   public async createRecommendation(
     options: {
       readonly inventory: readonly DeclaredInventoryItemV1[] | null;
+      readonly rankingChunkHints?: NextMealRankingChunkHintsV1;
     },
-    onStage?: (stage: NextMealRecommendationStageV1) => void,
+    onStage?: (
+      stage: NextMealRecommendationStageV1,
+      detail?: NextMealRecommendationStageDetailV1,
+    ) => void,
   ): Promise<
     | { readonly status: 'READY'; readonly runId: string }
     | {
@@ -392,7 +424,21 @@ export class BrowserPlanningStore {
     });
     if (built.status !== 'READY') return built;
     onStage?.('ranking-catalog');
-    const computed = await this.compute(built.request);
+    const computed = await this.compute(
+      built.request,
+      (progress) =>
+        onStage?.(
+          progress.phase === 'classifying'
+            ? 'classifying-catalog'
+            : 'scoring-catalog',
+          {
+            processed: progress.processed,
+            total: progress.total,
+            recommendedChunkSize: progress.recommendedChunkSize,
+          },
+        ),
+      options.rankingChunkHints,
+    );
     if (computed.status !== 'APPROVED')
       return { status: 'NEEDS_INPUT', reasonCodes: computed.reasonCodes };
     const review = reviewNextMealRankingV1(built.request, computed.ranking);

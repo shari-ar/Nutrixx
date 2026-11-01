@@ -17,3 +17,10 @@ normative behavior.
 - Keep hard constraints distinct from weighted objectives.
 - Preserve input, policy, engine, and solver versions for reproducible runs.
 - Return explicit feasibility and search-limit diagnostics.
+- Process full-catalog classification and scoring in deterministic chunks while
+  preserving byte-for-byte-equivalent ranking results and reporting real
+  processed-entry progress.
+- Benchmark real classification and scoring work independently, then adapt
+  chunk sizes within bounded limits to the current device while targeting
+  short worker tasks. Callers may seed separate phase hints; the engine still
+  measures every run and treats each hint as a starting point only.

@@ -237,6 +237,16 @@ export interface NextMealCandidateCensus {
   readonly decisions: readonly NextMealCandidateDecision[];
 }
 
+function emptyCounts(): Record<NextMealCandidateClassification, number> {
+  return {
+    COMPARABLE: 0,
+    EVIDENCE_LIMITED: 0,
+    UNAVAILABLE: 0,
+    EXCLUDED: 0,
+    REQUIRES_PREPARATION: 0,
+  };
+}
+
 interface Fraction {
   readonly numerator: bigint;
   readonly denominator: bigint;
@@ -484,6 +494,12 @@ function classify(
 
 export function classifyNextMealCatalog(raw: unknown): NextMealCandidateCensus {
   const request = NextMealCandidateRequestSchema.parse(raw);
+  return classifyValidatedNextMealCatalog(request);
+}
+
+export function createValidatedNextMealCatalogClassifier(
+  request: NextMealCandidateRequest,
+): (key: string) => NextMealCandidateDecision {
   const stock = new Map<string, string>(
     request.inventory.mode === 'AVAILABLE_ONLY'
       ? request.inventory.entries
@@ -504,16 +520,15 @@ export function classifyNextMealCatalog(raw: unknown): NextMealCandidateCensus {
   const byKey = new Map(
     request.entries.map((entry) => [nextMealSourceKey(entry.reference), entry]),
   );
-  const decisions = request.manifest.entryKeys.map((key) =>
-    classify(byKey.get(key)!, request, stock),
-  );
-  const counts: Record<NextMealCandidateClassification, number> = {
-    COMPARABLE: 0,
-    EVIDENCE_LIMITED: 0,
-    UNAVAILABLE: 0,
-    EXCLUDED: 0,
-    REQUIRES_PREPARATION: 0,
-  };
+  return (key) => classify(byKey.get(key)!, request, stock);
+}
+
+export function classifyValidatedNextMealCatalog(
+  request: NextMealCandidateRequest,
+): NextMealCandidateCensus {
+  const classifyKey = createValidatedNextMealCatalogClassifier(request);
+  const decisions = request.manifest.entryKeys.map(classifyKey);
+  const counts = emptyCounts();
   for (const decision of decisions) counts[decision.classification]++;
   return {
     total: decisions.length,
