@@ -9,18 +9,19 @@ import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
 import {
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   nextMealSourceKey,
-  NextMealRankingResultSchema,
+  NextMealCompactRankingResultV1Schema,
   NextMealAppliedTemporalRuleV1Schema,
   NextMealTemporalPolicyReleaseV1Schema,
+  compactNextMealRankingResultV1,
   rankNextMealCandidatesChunkedV1,
   reviewNextMealRankingV1,
   nextMealIsCurrentV1,
   nextMealValidUntilV1,
   type NextMealCandidateSource,
   type NextMealCandidateExplanationV1,
+  type NextMealCompactRankingResultV1,
   type NextMealRankingRequest,
   type NextMealRankingChunkProgressV1,
-  type NextMealRankingResult,
   type NextMealAppliedTemporalRuleV1,
   type NextMealRankingReviewV1,
   type NextMealTemporalPolicyReleaseV1,
@@ -70,7 +71,7 @@ export interface NextMealRunV1 {
   readonly inputHash: string;
   readonly resultHash: string;
   readonly input: NextMealStoredInputV1;
-  readonly result: NextMealRankingResult;
+  readonly result: NextMealCompactRankingResultV1;
   readonly explanations: readonly NextMealCandidateExplanationV1[];
   readonly temporalPolicy: NextMealTemporalPolicyReleaseV1;
   readonly appliedTemporalRules: readonly NextMealAppliedTemporalRuleV1[];
@@ -164,7 +165,7 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
   )
     throw new TypeError('A stored next-meal run is invalid.');
   const input = data['input'] as unknown as NextMealStoredInputV1;
-  const result = NextMealRankingResultSchema.parse(data['result']);
+  const result = NextMealCompactRankingResultV1Schema.parse(data['result']);
   const temporalPolicy = NextMealTemporalPolicyReleaseV1Schema.parse(
     data['temporalPolicy'],
   );
@@ -172,6 +173,30 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     NextMealAppliedTemporalRuleV1Schema.array().parse(
       data['appliedTemporalRules'],
     );
+  const explanations = data[
+    'explanations'
+  ] as unknown as NextMealCandidateExplanationV1[];
+  const explanationKeys = new Set(
+    explanations.map((explanation) => explanation.candidateKey),
+  );
+  const rankedExplanations = new Map(
+    explanations
+      .filter((explanation) => explanation.classification === 'COMPARABLE')
+      .map((explanation) => [explanation.candidateKey, explanation]),
+  );
+  const explanationCounts = explanations.reduce(
+    (counts, explanation) => {
+      counts[explanation.classification]++;
+      return counts;
+    },
+    {
+      COMPARABLE: 0,
+      EVIDENCE_LIMITED: 0,
+      UNAVAILABLE: 0,
+      EXCLUDED: 0,
+      REQUIRES_PREPARATION: 0,
+    },
+  );
   if (
     appliedTemporalRules.length !== input.temporalRules.length ||
     data['validUntil'] !== nextMealValidUntilV1(input, temporalPolicy) ||
@@ -191,8 +216,17 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     ) ||
     (await sha256Canonical(canonicalizeJson(JsonValueSchema.parse(result)))) !==
       data['resultHash'] ||
-    data['explanations'].length !==
-      result.ranked.length + result.unranked.length
+    explanations.length !== result.total ||
+    explanationKeys.size !== explanations.length ||
+    Object.entries(result.counts).some(
+      ([classification, count]) =>
+        explanationCounts[classification as keyof typeof explanationCounts] !==
+        count,
+    ) ||
+    result.ranked.some((row) => {
+      const explanation = rankedExplanations.get(row.candidateKey);
+      return explanation?.rank !== row.rank;
+    })
   )
     throw new TypeError('Stored next-meal evidence failed independent review.');
   return data as unknown as NextMealRunV1;
@@ -200,7 +234,7 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
 
 function storedInput(
   input: NextMealRankingRequest,
-  result: NextMealRankingResult,
+  result: NextMealCompactRankingResultV1,
 ): NextMealStoredInputV1 {
   const rankedKeys = new Set(result.ranked.map((row) => row.candidateKey));
   const nutrientIds = new Set(
@@ -448,6 +482,7 @@ export class BrowserPlanningStore {
         JSON.stringify(computed.explanations)
     )
       throw new TypeError('The next-meal result failed independent review.');
+    const compactResult = compactNextMealRankingResultV1(review.ranking);
     const runId = crypto.randomUUID();
     const completedAt = new Date().toISOString();
     const validUntil = nextMealValidUntilV1(
@@ -480,10 +515,10 @@ export class BrowserPlanningStore {
           canonicalizeJson(JsonValueSchema.parse(built.request)),
         ),
         resultHash: await sha256Canonical(
-          canonicalizeJson(JsonValueSchema.parse(review.ranking)),
+          canonicalizeJson(JsonValueSchema.parse(compactResult)),
         ),
-        input: storedInput(built.request, review.ranking),
-        result: review.ranking,
+        input: storedInput(built.request, compactResult),
+        result: compactResult,
         explanations: review.explanations,
         temporalPolicy: built.temporalPolicy,
         appliedTemporalRules: built.appliedTemporalRules,
@@ -550,11 +585,15 @@ export class BrowserPlanningStore {
       const intention = currentIntentions[0] ?? null;
       if (
         intention &&
-        !run.result.ranked.some(
-          (row) =>
-            row.candidateKey === intention.candidateKey &&
-            row.portionId === intention.portionId,
-        )
+        (!run.result.ranked.some(
+          (row) => row.candidateKey === intention.candidateKey,
+        ) ||
+          !run.explanations.some(
+            (explanation) =>
+              explanation.candidateKey === intention.candidateKey &&
+              explanation.classification === 'COMPARABLE' &&
+              explanation.portionId === intention.portionId,
+          ))
       )
         throw new TypeError(
           'The stored selection is absent from the validated ranking.',
@@ -611,8 +650,16 @@ export class BrowserPlanningStore {
         const row = snapshot.run.result.ranked.find(
           (item) => item.candidateKey === candidateKey,
         );
-        if (!row)
+        const evidence = snapshot.run.explanations.find(
+          (item) => item.candidateKey === candidateKey,
+        );
+        if (
+          !row ||
+          evidence?.classification !== 'COMPARABLE' ||
+          !evidence.portionId
+        )
           throw new TypeError('Choose a validated, comparable food or recipe.');
+        const portionId = evidence.portionId;
         const intentionId = crypto.randomUUID();
         const selectedAt = new Date().toISOString();
         return this.withRepository(async (repository, currentOwner) => {
@@ -635,7 +682,7 @@ export class BrowserPlanningStore {
             ownerSubjectId: currentOwner,
             runId,
             candidateKey,
-            portionId: row.portionId,
+            portionId,
             selectedAt,
           };
           onStage?.('saving');
@@ -687,6 +734,9 @@ export class BrowserPlanningStore {
         const row = snapshot.run.result.ranked.find(
           (item) => item.candidateKey === snapshot.intention!.candidateKey,
         );
+        const evidence = snapshot.run.explanations.find(
+          (item) => item.candidateKey === snapshot.intention!.candidateKey,
+        );
         const candidate = snapshot.run.input.candidates.entries.find(
           (item) =>
             (item.reference.kind === 'food'
@@ -696,6 +746,8 @@ export class BrowserPlanningStore {
         );
         if (
           !row ||
+          evidence?.classification !== 'COMPARABLE' ||
+          !evidence.edibleGrams ||
           !candidate ||
           !/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(options.edibleGrams) ||
           !Number.isFinite(Number(options.edibleGrams)) ||
@@ -717,7 +769,7 @@ export class BrowserPlanningStore {
           name: candidate.displayName,
           description: candidate.displayName,
           reference: candidate.reference,
-          defaultGramWeight: row.edibleGrams,
+          defaultGramWeight: evidence.edibleGrams,
           preparationState: candidate.preparationState,
           provenance: 'validated-local-catalog',
           completeness: 'source-backed',

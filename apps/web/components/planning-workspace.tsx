@@ -151,6 +151,9 @@ export function PlanningWorkspace() {
   const explanations = new Map(
     run?.explanations.map((item) => [item.candidateKey, item]) ?? [],
   );
+  const unranked =
+    run?.explanations.filter((item) => item.classification !== 'COMPARABLE') ??
+    [];
   const selected = ranked.find(
     (row) => row.candidateKey === snapshot?.intention?.candidateKey,
   );
@@ -339,7 +342,8 @@ export function PlanningWorkspace() {
                         {explanation?.displayName ?? row.candidateKey}
                       </h3>
                       <p className="mt-1 text-sm text-muted">
-                        Suggested portion: {row.edibleGrams} g edible
+                        Suggested portion: {explanation?.edibleGrams ?? '—'} g
+                        edible
                       </p>
                     </div>
                     <button
@@ -364,7 +368,7 @@ export function PlanningWorkspace() {
                               ? { ...current, intention }
                               : current,
                           );
-                          setActualGrams(row.edibleGrams);
+                          setActualGrams(explanation?.edibleGrams ?? '');
                           setPlanningProgress(
                             'Selection saved. Confirm what you actually ate below.',
                           );
@@ -399,14 +403,13 @@ export function PlanningWorkspace() {
               Show more ranked foods
             </button>
           ) : null}
-          {run.result.unranked.length ? (
+          {unranked.length ? (
             <details className="mt-6">
               <summary className="cursor-pointer font-semibold">
-                Other catalog entries and evidence limits (
-                {run.result.unranked.length})
+                Other catalog entries and evidence limits ({unranked.length})
               </summary>
               <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto text-sm">
-                {run.result.unranked.slice(0, visibleUnranked).map((item) => (
+                {unranked.slice(0, visibleUnranked).map((item) => (
                   <li
                     key={item.candidateKey}
                     className="rounded-lg border border-separator p-3"
@@ -427,7 +430,7 @@ export function PlanningWorkspace() {
                   </li>
                 ))}
               </ul>
-              {visibleUnranked < run.result.unranked.length ? (
+              {visibleUnranked < unranked.length ? (
                 <button
                   className="mt-3 text-sm underline"
                   onClick={() =>
@@ -453,7 +456,7 @@ export function PlanningWorkspace() {
           </h2>
           <p className="mt-2 text-sm text-muted">
             Selected: {explanations.get(selected.candidateKey)?.displayName} ·
-            suggested {selected.edibleGrams} g.
+            suggested {explanations.get(selected.candidateKey)?.edibleGrams} g.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <label className="text-sm">

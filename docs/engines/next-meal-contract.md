@@ -141,9 +141,13 @@ temporal rule, comparison window, reference release, accepted meal IDs, and
 exact recorded, projected, and normalized amounts. Evidence-limited and
 excluded rows retain classification reasons without a numeric suitability
 claim. The browser integration publishes and persists only independently
-approved rankings, the cited temporal-policy snapshot and applied rule spans,
-keeps selection separate, and links actual consumption to the meal ledger. The
-planner shows a run-level summary of the recorded-intake assumption, active
+approved rankings. After approval, its canonical result projection retains only
+the stable candidate key, one-based rank, and exact combined score per ranked
+row. Portion facts, classification reasons, and scientific details remain in
+the separately integrity-protected explanation evidence instead of being
+duplicated in the result. The cited temporal-policy snapshot and applied rule
+spans remain frozen, selection stays separate, and actual consumption links to
+the meal ledger. The planner shows a run-level summary of the recorded-intake assumption, active
 nutrient count, provisional-history count, request time, and expiry. Each ranked
 candidate exposes its relative order and combined target gap, followed by
 per-nutrient recorded and projected amounts, target, normalized gap, weight, applied

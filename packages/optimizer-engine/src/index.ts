@@ -29,10 +29,13 @@ export {
 export {
   NEXT_MEAL_EXPLANATION_VERSION_V1,
   NEXT_MEAL_VALIDATOR_VERSION_V1,
+  NextMealCompactRankingResultV1Schema,
   NextMealRankingResultSchema,
+  compactNextMealRankingResultV1,
   reviewNextMealRankingV1,
   verifyNextMealExplanationsV1,
   type NextMealCandidateExplanationV1,
+  type NextMealCompactRankingResultV1,
   type NextMealRankingReviewV1,
 } from './next-meal-validation.js';
 

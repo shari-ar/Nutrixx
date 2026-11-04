@@ -29,17 +29,18 @@ const ClassificationSchema = z.enum([
   'EXCLUDED',
   'REQUIRES_PREPARATION',
 ]);
+const ClassificationCountsSchema = z.strictObject({
+  COMPARABLE: z.int().nonnegative(),
+  EVIDENCE_LIMITED: z.int().nonnegative(),
+  UNAVAILABLE: z.int().nonnegative(),
+  EXCLUDED: z.int().nonnegative(),
+  REQUIRES_PREPARATION: z.int().nonnegative(),
+});
 export const NextMealRankingResultSchema = z.strictObject({
   policyVersion: z.literal('free-next-meal-weighted-distance-v1'),
   total: z.int().nonnegative(),
   processed: z.int().nonnegative(),
-  counts: z.strictObject({
-    COMPARABLE: z.int().nonnegative(),
-    EVIDENCE_LIMITED: z.int().nonnegative(),
-    UNAVAILABLE: z.int().nonnegative(),
-    EXCLUDED: z.int().nonnegative(),
-    REQUIRES_PREPARATION: z.int().nonnegative(),
-  }),
+  counts: ClassificationCountsSchema,
   ranked: z.array(
     z.strictObject({
       candidateKey: z.string().min(1),
@@ -68,6 +69,67 @@ export const NextMealRankingResultSchema = z.strictObject({
     }),
   ),
 });
+
+export const NextMealCompactRankingResultV1Schema = z
+  .strictObject({
+    policyVersion: z.literal('free-next-meal-weighted-distance-v1'),
+    total: z.int().nonnegative(),
+    processed: z.int().nonnegative(),
+    counts: ClassificationCountsSchema,
+    ranked: z.array(
+      z.strictObject({
+        candidateKey: z.string().min(1),
+        rank: z.int().positive(),
+        score: RatioSchema,
+      }),
+    ),
+  })
+  .superRefine((result, context) => {
+    const counted = Object.values(result.counts).reduce(
+      (total, count) => total + count,
+      0,
+    );
+    if (
+      result.processed !== result.total ||
+      counted !== result.total ||
+      result.ranked.length !== result.counts.COMPARABLE
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Compact ranking coverage is inconsistent.',
+      });
+    const keys = new Set<string>();
+    for (const [index, row] of result.ranked.entries()) {
+      if (row.rank !== index + 1 || keys.has(row.candidateKey))
+        context.addIssue({
+          code: 'custom',
+          path: ['ranked', index],
+          message: 'Compact ranking order and identities must be unique.',
+        });
+      keys.add(row.candidateKey);
+    }
+  });
+
+export type NextMealCompactRankingResultV1 = z.infer<
+  typeof NextMealCompactRankingResultV1Schema
+>;
+
+/** Retains only ordered identity and score after the full result passes review. */
+export function compactNextMealRankingResultV1(
+  result: NextMealRankingResult,
+): NextMealCompactRankingResultV1 {
+  return NextMealCompactRankingResultV1Schema.parse({
+    policyVersion: result.policyVersion,
+    total: result.total,
+    processed: result.processed,
+    counts: result.counts,
+    ranked: result.ranked.map((row) => ({
+      candidateKey: row.candidateKey,
+      rank: row.rank,
+      score: row.weightedDistance,
+    })),
+  });
+}
 
 type Rule = NextMealRankingRequest['temporalRules'][number];
 type CandidateRequest = NextMealRankingRequest['candidates'];

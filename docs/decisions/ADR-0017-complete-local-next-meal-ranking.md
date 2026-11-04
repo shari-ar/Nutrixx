@@ -69,12 +69,13 @@ envelope are measured under [ADR-0019](ADR-0019-free-next-meal-quality-floor.md)
 An independently implemented validator recomputes hard rules, portions, and
 material numeric claims for user-visible results. The application rechecks
 profile, meal, inventory, food/recipe, scientific-rule, and catalog revisions
-before presenting a cached ranking as current. An immutable local run retains
-the input fingerprint, evaluated catalog manifest and coverage, policy and
-source versions, deterministic ordering keys, result hash, and validation
-evidence. The selected recommendation retains enough food and portion facts
-to interpret its history after reference-cache eviction. Export includes the
-accepted local records and their required replay evidence.
+before presenting a cached ranking as current. The full transient review
+verifies deterministic ordering keys before an immutable local run retains the
+input fingerprint, evaluated catalog manifest and coverage, policy and source
+versions, compact ordered identities with exact combined scores, result hash,
+and validation evidence. The selected recommendation retains enough food and
+portion facts to interpret its history after reference-cache eviction. Export
+includes the accepted local records and their required replay evidence.
 
 ## Consequences
 

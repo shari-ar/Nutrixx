@@ -24,3 +24,6 @@ normative behavior.
   chunk sizes within bounded limits to the current device while targeting
   short worker tasks. Callers may seed separate phase hints; the engine still
   measures every run and treats each hint as a starting point only.
+- Project an independently approved ranking to exact `candidateKey`, `rank`, and
+  `score` rows before persistence or UI transfer; detailed computation remains
+  transient review evidence rather than duplicated result state.

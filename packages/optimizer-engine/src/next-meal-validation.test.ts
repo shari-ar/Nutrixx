@@ -6,6 +6,8 @@ import {
 } from './next-meal-candidates.js';
 import { rankNextMealCandidatesV1 } from './next-meal-ranking.js';
 import {
+  NextMealCompactRankingResultV1Schema,
+  compactNextMealRankingResultV1,
   reviewNextMealRankingV1,
   verifyNextMealExplanationsV1,
 } from './next-meal-validation.js';
@@ -113,6 +115,56 @@ function request(entries: NextMealCandidateSource[]) {
 }
 
 describe('independent next-meal review', () => {
+  it('projects an approved full result to identity, rank, and exact score only', () => {
+    const input = request([food(2, '5'), food(1, '20')]);
+    const ranking = rankNextMealCandidatesV1(input);
+    const compact = compactNextMealRankingResultV1(ranking);
+
+    expect(compact.ranked).toHaveLength(2);
+    expect(Object.keys(compact.ranked[0]!).sort()).toEqual([
+      'candidateKey',
+      'rank',
+      'score',
+    ]);
+    expect(compact.ranked[0]).toEqual({
+      candidateKey: ranking.ranked[0]!.candidateKey,
+      rank: 1,
+      score: ranking.ranked[0]!.weightedDistance,
+    });
+    expect(JSON.stringify(compact).length).toBeLessThan(
+      JSON.stringify(ranking).length,
+    );
+  });
+
+  it('rejects compact results with incomplete coverage or unstable order', () => {
+    expect(() =>
+      NextMealCompactRankingResultV1Schema.parse({
+        policyVersion: 'free-next-meal-weighted-distance-v1',
+        total: 2,
+        processed: 1,
+        counts: {
+          COMPARABLE: 2,
+          EVIDENCE_LIMITED: 0,
+          UNAVAILABLE: 0,
+          EXCLUDED: 0,
+          REQUIRES_PREPARATION: 0,
+        },
+        ranked: [
+          {
+            candidateKey: 'food:1:1',
+            rank: 2,
+            score: { numerator: '1', denominator: '2' },
+          },
+          {
+            candidateKey: 'food:1:1',
+            rank: 2,
+            score: { numerator: '1', denominator: '2' },
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
   it('approves a complete ranked catalog and produces traceable facts', () => {
     const input = request([food(2, '5'), food(1, '20')]);
     const ranking = rankNextMealCandidatesV1(input);

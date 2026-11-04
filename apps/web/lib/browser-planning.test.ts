@@ -523,6 +523,12 @@ describe('browser next-meal planning', () => {
     if (created.status !== 'READY') return;
     const ranked = await planning.load();
     expect(ranked.run?.result.ranked).toHaveLength(1);
+    expect(Object.keys(ranked.run!.result.ranked[0]!).sort()).toEqual([
+      'candidateKey',
+      'rank',
+      'score',
+    ]);
+    expect(ranked.run?.result).not.toHaveProperty('unranked');
     expect(ranked.run?.temporalPolicy.releaseId).toBe(
       'free-next-meal-daily-baseline-v1',
     );

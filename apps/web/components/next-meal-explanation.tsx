@@ -1,7 +1,7 @@
 import {
   nextMealSourceKey,
   type NextMealCandidateExplanationV1,
-  type NextMealRankedCandidate,
+  type NextMealCompactRankingResultV1,
 } from '@nutrixx/optimizer-engine';
 import Link from 'next/link';
 
@@ -120,7 +120,7 @@ export function NextMealExplanation({
   explanation,
 }: {
   readonly run: NextMealDisplayRunV1;
-  readonly row: NextMealRankedCandidate;
+  readonly row: NextMealCompactRankingResultV1['ranked'][number];
   readonly explanation: NextMealCandidateExplanationV1;
 }) {
   const candidate = run.input.candidates.entries.find(
@@ -142,9 +142,9 @@ export function NextMealExplanation({
         Rank {row.rank} of {run.result.ranked.length} comparable options ·{' '}
         {comparisons.length} nutrient comparison
         {comparisons.length === 1 ? '' : 's'} · combined target gap{' '}
-        {decimal(row.weightedDistance)}. A smaller gap ranks earlier within this
-        run; ties use the largest single gap, portion size, then stable IDs.
-        This gap is not a health score.
+        {decimal(row.score)}. A smaller gap ranks earlier within this run; ties
+        use the largest single gap, portion size, then stable IDs. This gap is
+        not a health score.
       </p>
       <details className="mt-2">
         <summary className="cursor-pointer font-medium">Why this rank?</summary>

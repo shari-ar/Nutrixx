@@ -10,7 +10,7 @@ import {
 
 import type {
   NextMealCandidateExplanationV1,
-  NextMealRankedCandidate,
+  NextMealCompactRankingResultV1,
 } from '@nutrixx/optimizer-engine';
 
 const ruleId = 'iron-current-day';
@@ -27,8 +27,8 @@ const citation = {
 const row = {
   candidateKey,
   rank: 1,
-  weightedDistance: { numerator: '1', denominator: '2' },
-} as NextMealRankedCandidate;
+  score: { numerator: '1', denominator: '2' },
+} satisfies NextMealCompactRankingResultV1['ranked'][number];
 const explanation = {
   candidateKey,
   classification: 'COMPARABLE',

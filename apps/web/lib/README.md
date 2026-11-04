@@ -69,7 +69,10 @@ published daily-reference horizon until additional sourced rules are released.
 to the browser worker. `browser-planning-core.ts` owns the local recommendation,
 selection, data and time freshness, independent review, persistence, and the
 explicit actual-consumption handoff to the meal ledger. The core runs inside
-the worker for creation and loading. A run expires after 15 minutes or an
+the worker for creation and loading. After independent review, the persisted
+ranking contains only each candidate key, exact score, and rank; actionable
+portion data and scientific details remain in the separately verified evidence.
+A run expires after 15 minutes or an
 earlier applicable temporal boundary. `next-meal-preparation-client.ts` carries
 only compact outcomes across the UI boundary. Each serialized operation owns a
 disposable worker that terminates as soon as its result arrives, releasing the
