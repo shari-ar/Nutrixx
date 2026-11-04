@@ -89,6 +89,9 @@ chunk recommendations in origin-local storage. A first run starts at eight
 entries; later runs start at half the last measured recommendation and continue
 adapting inside the worker, avoiding both a blind cold start and stale trust in
 an earlier device-load measurement.
+The planning view renders ranked and evidence-limited entries in fixed-size
+pages, replacing rather than accumulating DOM rows. Detailed nutrient evidence
+mounts only while the user has its disclosure open.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

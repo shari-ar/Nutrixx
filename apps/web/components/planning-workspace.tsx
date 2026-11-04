@@ -8,6 +8,7 @@ import {
   NextMealExplanation,
   NextMealRunOverview,
 } from '@/components/next-meal-explanation';
+import { PaginationControls } from '@/components/pagination-controls';
 import {
   BrowserPlanningStore,
   type LocalPlanningSnapshotV1,
@@ -57,8 +58,11 @@ export function PlanningWorkspace() {
   );
   const [inventoryOnly, setInventoryOnly] = useState(false);
   const [inventory, setInventory] = useState<DeclaredInventoryItemV1[]>([]);
-  const [visible, setVisible] = useState(PAGE_SIZE);
-  const [visibleUnranked, setVisibleUnranked] = useState(PAGE_SIZE);
+  const [pagination, setPagination] = useState<{
+    readonly runId: string | null;
+    readonly ranked: number;
+    readonly unranked: number;
+  }>({ runId: null, ranked: 0, unranked: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -154,9 +158,40 @@ export function PlanningWorkspace() {
   const unranked =
     run?.explanations.filter((item) => item.classification !== 'COMPARABLE') ??
     [];
+  const rankedPageCount = Math.max(1, Math.ceil(ranked.length / PAGE_SIZE));
+  const unrankedPageCount = Math.max(1, Math.ceil(unranked.length / PAGE_SIZE));
+  const currentPages =
+    pagination.runId === (run?.runId ?? null)
+      ? pagination
+      : { runId: run?.runId ?? null, ranked: 0, unranked: 0 };
+  const activeRankedPage = Math.min(currentPages.ranked, rankedPageCount - 1);
+  const activeUnrankedPage = Math.min(
+    currentPages.unranked,
+    unrankedPageCount - 1,
+  );
+  const rankedPageRows = ranked.slice(
+    activeRankedPage * PAGE_SIZE,
+    (activeRankedPage + 1) * PAGE_SIZE,
+  );
+  const unrankedPageRows = unranked.slice(
+    activeUnrankedPage * PAGE_SIZE,
+    (activeUnrankedPage + 1) * PAGE_SIZE,
+  );
   const selected = ranked.find(
     (row) => row.candidateKey === snapshot?.intention?.candidateKey,
   );
+
+  function changePage(kind: 'ranked' | 'unranked', pageIndex: number): void {
+    setPagination((current) => {
+      const sameRun = current.runId === (run?.runId ?? null);
+      return {
+        runId: run?.runId ?? null,
+        ranked: kind === 'ranked' ? pageIndex : sameRun ? current.ranked : 0,
+        unranked:
+          kind === 'unranked' ? pageIndex : sameRun ? current.unranked : 0,
+      };
+    });
+  }
 
   return (
     <div className="space-y-8">
@@ -263,8 +298,7 @@ export function PlanningWorkspace() {
                   ? 'Ranking ready. Review the ordered foods below.'
                   : 'More information is needed before ranking can continue.',
               );
-              setVisible(PAGE_SIZE);
-              setVisibleUnranked(PAGE_SIZE);
+              setPagination({ runId: null, ranked: 0, unranked: 0 });
             }).catch(() => setError('Local planning is unavailable.'));
           }}
         >
@@ -328,7 +362,7 @@ export function PlanningWorkspace() {
             </p>
           ) : null}
           <ol className="mt-5 space-y-3">
-            {ranked.slice(0, visible).map((row) => {
+            {rankedPageRows.map((row) => {
               const explanation = explanations.get(row.candidateKey);
               return (
                 <li
@@ -394,22 +428,20 @@ export function PlanningWorkspace() {
               );
             })}
           </ol>
-          {visible < ranked.length ? (
-            <button
-              className="mt-4 rounded-xl border border-separator px-4 py-2 text-sm"
-              onClick={() => setVisible((count) => count + PAGE_SIZE)}
-              type="button"
-            >
-              Show more ranked foods
-            </button>
-          ) : null}
+          <PaginationControls
+            label="Ranked foods"
+            onPageChange={(pageIndex) => changePage('ranked', pageIndex)}
+            pageIndex={activeRankedPage}
+            pageSize={PAGE_SIZE}
+            total={ranked.length}
+          />
           {unranked.length ? (
             <details className="mt-6">
               <summary className="cursor-pointer font-semibold">
                 Other catalog entries and evidence limits ({unranked.length})
               </summary>
               <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto text-sm">
-                {unranked.slice(0, visibleUnranked).map((item) => (
+                {unrankedPageRows.map((item) => (
                   <li
                     key={item.candidateKey}
                     className="rounded-lg border border-separator p-3"
@@ -430,17 +462,13 @@ export function PlanningWorkspace() {
                   </li>
                 ))}
               </ul>
-              {visibleUnranked < unranked.length ? (
-                <button
-                  className="mt-3 text-sm underline"
-                  onClick={() =>
-                    setVisibleUnranked((count) => count + PAGE_SIZE)
-                  }
-                  type="button"
-                >
-                  Show more catalog entries
-                </button>
-              ) : null}
+              <PaginationControls
+                label="Other catalog entries"
+                onPageChange={(pageIndex) => changePage('unranked', pageIndex)}
+                pageIndex={activeUnrankedPage}
+                pageSize={PAGE_SIZE}
+                total={unranked.length}
+              />
             </details>
           ) : null}
         </section>

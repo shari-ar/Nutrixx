@@ -113,7 +113,7 @@ function run(provisional = false): NextMealRunV1 {
 }
 
 describe('next-meal explanation', () => {
-  it('shows a concise ranking summary and traceable nutrient, time, and sources', () => {
+  it('shows a concise ranking summary and traceable nutrient, time, and sources', async () => {
     const current = run();
     render(
       <>
@@ -132,10 +132,11 @@ describe('next-meal explanation', () => {
     expect(
       screen.getByText(/Rank 1 of 1 comparable options/),
     ).toHaveTextContent('combined target gap 0.5');
+    expect(screen.queryByText(/Recorded 2 → projected 9 mg/)).toBeNull();
     fireEvent.click(screen.getByText('Why this rank?'));
-    expect(screen.getByText(/Recorded 2 → projected 9 mg/)).toHaveTextContent(
-      'Relative target gap: 50%. Weight in combined gap: 1.',
-    );
+    expect(
+      await screen.findByText(/Recorded 2 → projected 9 mg/),
+    ).toHaveTextContent('Relative target gap: 50%. Weight in combined gap: 1.');
     expect(screen.getByText(/Applied window:/)).toHaveTextContent(
       '2026-10-12 00:00:00.000 UTC',
     );
@@ -150,7 +151,7 @@ describe('next-meal explanation', () => {
     );
   });
 
-  it('labels a provisional span and shows its configured start', () => {
+  it('labels a provisional span and shows its configured start', async () => {
     const current = run(true);
     render(
       <>
@@ -164,7 +165,7 @@ describe('next-meal explanation', () => {
     );
     expect(screen.getByText(/shorter recorded history/)).toBeInTheDocument();
     fireEvent.click(screen.getByText('Why this rank?'));
-    expect(screen.getByText(/Short history:/)).toHaveTextContent(
+    expect(await screen.findByText(/Short history:/)).toHaveTextContent(
       '2026-10-11 00:00:00.000 UTC',
     );
   });

@@ -158,6 +158,9 @@ explanations after expiry. The initial active release uses documented
 nutrition-day references. A tested
 multi-day policy path accepts separately sourced horizons when such a release
 is published. Measured device-envelope sign-off remains a conformance task.
+Large ranked and evidence-limited sets render as bounded pages. Detailed
+nutrient evidence mounts only when its disclosure is open; pagination and lazy
+rendering change presentation cost without changing the complete ranking.
 
 ## Typed outcome
 
