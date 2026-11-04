@@ -522,19 +522,24 @@ describe('browser next-meal planning', () => {
     expect(created.status).toBe('READY');
     if (created.status !== 'READY') return;
     const ranked = await planning.load();
-    expect(ranked.run?.result.ranked).toHaveLength(1);
-    expect(Object.keys(ranked.run!.result.ranked[0]!).sort()).toEqual([
+    expect(ranked.run).not.toBeNull();
+    if (!ranked.run) return;
+    expect(ranked.run.result.ranked).toHaveLength(1);
+    const [first] = ranked.run.result.ranked;
+    expect(first).toBeDefined();
+    if (!first) return;
+    expect(Object.keys(first).sort()).toEqual([
       'candidateKey',
       'rank',
       'score',
     ]);
-    expect(ranked.run?.result).not.toHaveProperty('unranked');
-    expect(ranked.run?.temporalPolicy.releaseId).toBe(
+    expect(ranked.run.result).not.toHaveProperty('unranked');
+    expect(ranked.run.temporalPolicy.releaseId).toBe(
       'free-next-meal-daily-baseline-v1',
     );
-    expect(ranked.run?.appliedTemporalRules).toHaveLength(1);
+    expect(ranked.run.appliedTemporalRules).toHaveLength(1);
     expect(ranked.fresh).toBe(true);
-    expect(ranked.run?.validUntil).toBe('2026-10-12T12:15:00.000Z');
+    expect(ranked.run.validUntil).toBe('2026-10-12T12:15:00.000Z');
     await new BrowserOutcomeFeedbackStore().saveWeight({
       observedOn: '2026-10-12',
       weightKilograms: '69.5',
@@ -555,10 +560,7 @@ describe('browser next-meal planning', () => {
     vi.setSystemTime(new Date('2026-10-12T12:15:00.000Z'));
     expect((await planning.load()).fresh).toBe(false);
     await expect(
-      planning.select(
-        created.runId,
-        ranked.run!.result.ranked[0]!.candidateKey,
-      ),
+      planning.select(created.runId, first.candidateKey),
     ).rejects.toThrow('Refresh it');
     const refreshed = await planning.createRecommendation({ inventory: null });
     expect(refreshed.status).toBe('READY');
