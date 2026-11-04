@@ -4,9 +4,12 @@ import {
   type NextMealCompactRankingResultV1,
 } from '@nutrixx/optimizer-engine';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import type { NextMealDisplayRunV1 } from '@/lib/browser-planning';
+import type {
+  NextMealDisplayExplanationV1,
+  NextMealDisplayRunV1,
+} from '@/lib/browser-planning';
 
 function decimal(ratio: { numerator: string; denominator: string }): string {
   const numerator = BigInt(ratio.numerator);
@@ -119,43 +122,133 @@ export function NextMealExplanation({
   run,
   row,
   explanation,
+  loadExplanation,
 }: {
   readonly run: NextMealDisplayRunV1;
   readonly row: NextMealCompactRankingResultV1['ranked'][number];
-  readonly explanation: NextMealCandidateExplanationV1;
+  readonly explanation: NextMealDisplayExplanationV1;
+  readonly loadExplanation: (
+    signal: AbortSignal,
+  ) => Promise<NextMealCandidateExplanationV1>;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const candidate = expanded
-    ? run.input.candidates.entries.find(
-        (entry) => nextMealSourceKey(entry.reference) === row.candidateKey,
+  const [details, setDetails] = useState<NextMealCandidateExplanationV1 | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const active = useRef(true);
+  const loadingRequest = useRef(false);
+  const explanationController = useRef<AbortController | null>(null);
+  const cancelExplanation = () => {
+    const controller = explanationController.current;
+    if (!controller) return;
+    explanationController.current = null;
+    loadingRequest.current = false;
+    controller.abort();
+    if (active.current) setLoading(false);
+  };
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+      const controller = explanationController.current;
+      explanationController.current = null;
+      loadingRequest.current = false;
+      controller?.abort();
+    };
+  }, []);
+  const requestDetails = async () => {
+    if (details || loadingRequest.current) return;
+    const controller = new AbortController();
+    explanationController.current = controller;
+    loadingRequest.current = true;
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const loaded = await loadExplanation(controller.signal);
+      if (
+        loaded.candidateKey !== explanation.candidateKey ||
+        loaded.classification !== explanation.classification
       )
-    : undefined;
-  const policies = expanded
-    ? new Map(run.temporalPolicy.rules.map((rule) => [rule.ruleId, rule]))
-    : null;
-  const scoredRules = expanded
-    ? new Map(run.input.temporalRules.map((rule) => [rule.ruleId, rule]))
-    : null;
-  const applied = expanded
-    ? new Map(run.appliedTemporalRules.map((rule) => [rule.ruleId, rule]))
-    : null;
-  const comparisons = explanation.comparisons ?? [];
+        throw new TypeError('The saved explanation no longer matches.');
+      if (
+        active.current &&
+        explanationController.current === controller &&
+        !controller.signal.aborted
+      )
+        setDetails(loaded);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      if (active.current)
+        setLoadError('The detailed explanation could not be loaded.');
+    } finally {
+      if (explanationController.current === controller) {
+        explanationController.current = null;
+        loadingRequest.current = false;
+        if (active.current) setLoading(false);
+      }
+    }
+  };
+  const candidate =
+    expanded && details
+      ? run.input.candidates.entries.find(
+          (entry) => nextMealSourceKey(entry.reference) === row.candidateKey,
+        )
+      : undefined;
+  const policies =
+    expanded && details
+      ? new Map(run.temporalPolicy.rules.map((rule) => [rule.ruleId, rule]))
+      : null;
+  const scoredRules =
+    expanded && details
+      ? new Map(run.input.temporalRules.map((rule) => [rule.ruleId, rule]))
+      : null;
+  const applied =
+    expanded && details
+      ? new Map(run.appliedTemporalRules.map((rule) => [rule.ruleId, rule]))
+      : null;
+  const comparisons = details?.comparisons ?? [];
   return (
     <div className="mt-3 text-sm">
       <p className="text-muted">
         Rank {row.rank} of {run.result.ranked.length} comparable options ·{' '}
-        {comparisons.length} nutrient comparison
-        {comparisons.length === 1 ? '' : 's'} · combined target gap{' '}
+        {explanation.comparisonCount} nutrient comparison
+        {explanation.comparisonCount === 1 ? '' : 's'} · combined target gap{' '}
         {decimal(row.score)}. A smaller gap ranks earlier within this run; ties
         use the largest single gap, portion size, then stable IDs. This gap is
         not a health score.
       </p>
       <details
         className="mt-2"
-        onToggle={(event) => setExpanded(event.currentTarget.open)}
+        onToggle={(event) => {
+          const open = event.currentTarget.open;
+          setExpanded(open);
+          if (open) requestDetails().catch(() => undefined);
+          else cancelExplanation();
+        }}
       >
         <summary className="cursor-pointer font-medium">Why this rank?</summary>
-        {expanded ? (
+        {expanded && loading ? (
+          <p className="mt-2 text-muted" role="status">
+            Loading detailed evidence…
+          </p>
+        ) : null}
+        {expanded && loadError ? (
+          <div className="mt-2 text-danger" role="alert">
+            <p>{loadError}</p>
+            <button
+              className="mt-2 rounded-lg border border-separator px-3 py-1 text-sm font-medium"
+              onClick={() => {
+                void requestDetails().catch(() => undefined);
+              }}
+              type="button"
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
+        {expanded && details ? (
           <>
             <p className="mt-2 text-muted">
               Each comparison uses the actual recorded intake in its own window

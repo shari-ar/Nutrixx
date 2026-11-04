@@ -2,6 +2,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
 import {
+  clearMappedCatalog,
   readMappedCatalog,
   saveMappedCatalog,
 } from './next-meal-catalog-cache';
@@ -28,5 +29,7 @@ describe('disposable mapped catalog cache', () => {
     await saveMappedCatalog(factory, 'release-2', [entry('release-2')]);
     expect(await readMappedCatalog(factory, 'release-1')).toBeNull();
     expect(await readMappedCatalog(factory, 'release-2')).toHaveLength(1);
+    await clearMappedCatalog(factory);
+    expect(await readMappedCatalog(factory, 'release-2')).toBeNull();
   });
 });

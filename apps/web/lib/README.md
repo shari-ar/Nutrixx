@@ -26,6 +26,10 @@ revisions. `next-meal-catalog-cache.ts` keeps the verified mapping across page
 visits as disposable IndexedDB data, keyed by release and mapping version. A
 release change or owner change resets the worker mapping; low storage falls
 back to rebuilding it from the authoritative reference release.
+Catalog replacement first releases the mapped-catalog and planning-view
+projections and drops the in-memory mapping. A verified already-active release
+is idempotent. This prevents an update from retaining disposable copies of the
+old catalog while IndexedDB stores the new authority.
 `browser-nutrition-state.ts` connects the meal ledger and starting profile to
 versioned local daily and rolling calculations. The optional US/Canada
 reference-region choice and effective-dated nutrition-day time zone are retained
@@ -80,7 +84,8 @@ mapped catalog immediately. A newer recommendation aborts and terminates its
 still-running predecessor before entering the serialized worker boundary, so a
 superseded result cannot reach the UI or survive the replacement run. The
 disposable `next-meal-display-cache.ts` stores a digest-checked UI projection
-that omits unranked candidate composition. A canonical transaction, active
+that omits unranked candidate composition and full per-candidate comparison
+evidence. A canonical transaction, active
 catalog release, policy release, or expiry invalidates its fast-load path;
 canonical data remains the authority and rebuilds a missing or invalid
 projection.
@@ -90,8 +95,15 @@ entries; later runs start at half the last measured recommendation and continue
 adapting inside the worker, avoiding both a blind cold start and stale trust in
 an earlier device-load measurement.
 The planning view renders ranked and evidence-limited entries in fixed-size
-pages, replacing rather than accumulating DOM rows. Detailed nutrient evidence
-mounts only while the user has its disclosure open.
+pages, replacing rather than accumulating DOM rows. Opening a ranking
+disclosure asks a disposable worker for that candidate's verified evidence;
+the detailed data and DOM remain absent until requested and are reused while
+that mounted row remains open. Leaving its result page aborts and terminates an
+unfinished explanation worker before the row unmounts. Closing the disclosure
+does the same; reopening it starts a fresh bounded request.
+Leaving the Planning workspace also cancels active recommendation, reload, and
+selection workers. The development-only acceptance workspace applies the same
+lifecycle boundary to benchmark workers and superseded measurements.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

@@ -90,6 +90,7 @@ export function PlanningWorkspace() {
       });
     return () => {
       active = false;
+      planning.cancelActiveWorkers();
     };
   }, [planning]);
 
@@ -417,9 +418,16 @@ export function PlanningWorkspace() {
                         : 'Choose this food'}
                     </button>
                   </div>
-                  {explanation?.comparisons?.length ? (
+                  {explanation?.comparisonCount ? (
                     <NextMealExplanation
                       explanation={explanation}
+                      loadExplanation={(signal) =>
+                        planning.loadExplanation(
+                          run.runId,
+                          row.candidateKey,
+                          signal,
+                        )
+                      }
                       row={row}
                       run={run}
                     />

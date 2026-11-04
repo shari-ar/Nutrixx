@@ -125,6 +125,14 @@ async function prepare(
     },
     foods,
   );
+  if (request.kind === 'LOCAL_EXPLANATION')
+    return {
+      status: 'EXPLANATION',
+      explanation: await planning.loadExplanation(
+        request.runId,
+        request.candidateKey,
+      ),
+    };
   if (request.kind === 'LOCAL_SELECT') {
     const beforeRepository = await IndexedDbCanonicalRecordRepository.create({
       databaseName: LOCAL_USER_DATABASE_NAME,

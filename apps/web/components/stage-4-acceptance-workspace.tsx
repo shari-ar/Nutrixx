@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { BrowserNutritionStateStore } from '@/lib/browser-nutrition-state';
 import { BrowserOnboardingStore } from '@/lib/browser-onboarding';
@@ -9,7 +9,7 @@ import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
 import { measureNextMealAcceptanceInWorker } from '@/lib/next-meal-acceptance-client.dev';
 import { STAGE_4_CATALOG_SHA256 } from '@/lib/next-meal-acceptance-fixture';
 
-async function measure(): Promise<object> {
+async function measure(signal: AbortSignal): Promise<object> {
   let lastTick = performance.now();
   let maxMainThreadGapMs = 0;
   let maxGapAtMs = 0;
@@ -33,7 +33,7 @@ async function measure(): Promise<object> {
   }, 50);
   try {
     const start = performance.now();
-    const prepared = await measureNextMealAcceptanceInWorker();
+    const prepared = await measureNextMealAcceptanceInWorker(signal);
     if (prepared.status === 'FAILED' && prepared.reasonCode === 'http-403')
       throw new TypeError('HTTP 403 stopped the local acceptance run.');
     if (prepared.status !== 'BENCHMARK')
@@ -64,7 +64,7 @@ async function measure(): Promise<object> {
   }
 }
 
-async function measureLocalJourney(): Promise<object> {
+async function measureLocalJourney(signal: AbortSignal): Promise<object> {
   const onboarding = new BrowserOnboardingStore();
   await onboarding.save({
     ageYears: 30,
@@ -75,12 +75,17 @@ async function measureLocalJourney(): Promise<object> {
     foodRestrictions: [],
   });
   await new BrowserNutritionStateStore().selectMarket('US');
-  const response = await fetch('/acceptance/catalog', { cache: 'no-store' });
+  const response = await fetch('/acceptance/catalog', {
+    cache: 'no-store',
+    signal,
+  });
   if (!response.ok) throw new TypeError(`Catalog HTTP ${response.status}.`);
   const artifact = new File([await response.arrayBuffer()], 'catalog.json.gz', {
     type: 'application/gzip',
   });
+  signal.throwIfAborted();
   await new BrowserStageTwoStore().installCatalog(artifact);
+  signal.throwIfAborted();
 
   let lastTick = performance.now();
   let phase: 'create' | 'load' = 'create';
@@ -90,10 +95,14 @@ async function measureLocalJourney(): Promise<object> {
     maxGap[phase] = Math.max(maxGap[phase], current - lastTick - 50);
     lastTick = current;
   }, 50);
+  const planning = new BrowserPlanningStore();
   try {
-    const planning = new BrowserPlanningStore();
     let started = performance.now();
-    const created = await planning.createRecommendation({ inventory: null });
+    const created = await planning.createRecommendation(
+      { inventory: null },
+      undefined,
+      signal,
+    );
     const createMs = Math.round(performance.now() - started);
     if (created.status !== 'READY')
       throw new TypeError(
@@ -101,7 +110,7 @@ async function measureLocalJourney(): Promise<object> {
       );
     phase = 'load';
     started = performance.now();
-    const snapshot = await planning.load();
+    const snapshot = await planning.load(signal);
     const loadMs = Math.round(performance.now() - started);
     if (!snapshot.fresh || snapshot.run?.runId !== created.runId)
       throw new TypeError('The saved local recommendation did not reload.');
@@ -121,6 +130,7 @@ async function measureLocalJourney(): Promise<object> {
     };
   } finally {
     window.clearInterval(interval);
+    planning.cancelActiveWorkers();
   }
 }
 
@@ -128,17 +138,32 @@ export function Stage4AcceptanceWorkspace() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const activeController = useRef<AbortController | null>(null);
 
   const start = useCallback(() => {
+    activeController.current?.abort();
+    const controller = new AbortController();
+    activeController.current = controller;
     setRunning(true);
     setError(null);
     const local = new URLSearchParams(window.location.search).has('run-local');
-    (local ? measureLocalJourney() : measure()).then(
+    (local
+      ? measureLocalJourney(controller.signal)
+      : measure(controller.signal)
+    ).then(
       (report) => {
+        if (activeController.current !== controller) return;
+        activeController.current = null;
         setResult(JSON.stringify(report, null, 2));
         setRunning(false);
       },
       (reason: unknown) => {
+        if (activeController.current !== controller) return;
+        activeController.current = null;
+        if (reason instanceof Error && reason.name === 'AbortError') {
+          setRunning(false);
+          return;
+        }
         setError(
           reason instanceof Error ? reason.message : 'Measurement failed.',
         );
@@ -146,6 +171,14 @@ export function Stage4AcceptanceWorkspace() {
       },
     );
   }, []);
+
+  useEffect(
+    () => () => {
+      activeController.current?.abort();
+      activeController.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

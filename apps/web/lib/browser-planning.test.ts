@@ -135,24 +135,35 @@ describe('browser next-meal planning', () => {
                   loggedMealId: null,
                 },
               }
-            : request.kind === 'LOCAL_SELECT'
+            : request.kind === 'LOCAL_EXPLANATION'
               ? {
-                  status: 'SELECTION',
-                  intention: {
-                    format: 'nutrixx.next-meal-intention',
-                    schemaVersion: 1,
-                    intentionId: 'worker-intention',
-                    ownerSubjectId: request.profile.ownerSubjectId,
-                    runId: request.runId,
+                  status: 'EXPLANATION',
+                  explanation: {
                     candidateKey: request.candidateKey,
-                    portionId: 'portion-100g',
-                    selectedAt: NOW,
+                    classification: 'COMPARABLE',
+                    displayName: 'Fixture food',
+                    reasonCodes: ['validated-comparable'],
+                    comparisons: [],
                   },
                 }
-              : {
-                  status: 'RECOMMENDATION',
-                  result: { status: 'READY', runId: 'worker-run' },
-                };
+              : request.kind === 'LOCAL_SELECT'
+                ? {
+                    status: 'SELECTION',
+                    intention: {
+                      format: 'nutrixx.next-meal-intention',
+                      schemaVersion: 1,
+                      intentionId: 'worker-intention',
+                      ownerSubjectId: request.profile.ownerSubjectId,
+                      runId: request.runId,
+                      candidateKey: request.candidateKey,
+                      portionId: 'portion-100g',
+                      selectedAt: NOW,
+                    },
+                  }
+                : {
+                    status: 'RECOMMENDATION',
+                    result: { status: 'READY', runId: 'worker-run' },
+                  };
         queueMicrotask(() =>
           this.onmessage?.({
             data: response,
@@ -177,6 +188,12 @@ describe('browser next-meal planning', () => {
       intention: null,
       loggedMealId: null,
     });
+    expect(
+      await planning.loadExplanation('worker-run', 'food:fixture'),
+    ).toMatchObject({
+      candidateKey: 'food:fixture',
+      displayName: 'Fixture food',
+    });
     const progress: string[] = [];
     expect(
       (
@@ -191,9 +208,10 @@ describe('browser next-meal planning', () => {
     expect(posted).toEqual([
       'LOCAL_RECOMMENDATION',
       'LOCAL_LOAD',
+      'LOCAL_EXPLANATION',
       'LOCAL_SELECT',
     ]);
-    expect(workersCreated).toBe(3);
+    expect(workersCreated).toBe(4);
   });
 
   it('terminates a superseded recommendation worker before starting its replacement', async () => {
@@ -258,6 +276,52 @@ describe('browser next-meal planning', () => {
     });
     expect(workersCreated).toBe(2);
     expect(terminated).toEqual([1, 2]);
+  });
+
+  it('terminates every active planning worker when its workspace unmounts', async () => {
+    const onboarding = new BrowserOnboardingStore({
+      storage: localStorage,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: () => crypto.randomUUID(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+    });
+    await onboarding.save({
+      ageYears: 30,
+      heightCentimeters: '170',
+      weightKilograms: '70',
+      physiologicalReference: 'female',
+      primaryGoal: 'maintain',
+      foodRestrictions: [],
+    });
+    let releaseStart: (() => void) | undefined;
+    const started = new Promise<void>((resolve) => {
+      releaseStart = resolve;
+    });
+    let terminated = 0;
+    class WorkerStub {
+      public onmessage:
+        | ((event: MessageEvent<NextMealPreparationMessageV1>) => void)
+        | null = null;
+      public onerror: ((event: ErrorEvent) => void) | null = null;
+
+      public postMessage(request: NextMealPreparationRequestV1): void {
+        expect(request.kind).toBe('LOCAL_LOAD');
+        releaseStart?.();
+      }
+
+      public terminate(): void {
+        terminated += 1;
+      }
+    }
+    vi.stubGlobal('Worker', WorkerStub);
+    const planning = new BrowserPlanningStore(undefined, onboarding);
+    const loading = planning.load();
+    await started;
+    planning.cancelActiveWorkers();
+    await expect(loading).rejects.toMatchObject({ name: 'AbortError' });
+    expect(terminated).toBe(1);
   });
 
   it('reuses a conservative device chunk profile on the next recommendation', async () => {

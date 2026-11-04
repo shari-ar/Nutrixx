@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   PLANNING_VIEW_DATABASE_NAME,
+  clearPlanningViews,
   projectPlanningSnapshot,
   readPlanningView,
   savePlanningView,
@@ -37,6 +38,15 @@ describe('disposable next-meal display view', () => {
           },
         },
         result: { ranked: [{ candidateKey: 'food:release-1:food-1:1' }] },
+        explanations: [
+          {
+            candidateKey: 'food:release-1:food-1:1',
+            classification: 'COMPARABLE',
+            displayName: 'Food 1',
+            reasonCodes: ['validated-comparable'],
+            comparisons: [{ ruleId: 'rule-1' }, { ruleId: 'rule-2' }],
+          },
+        ],
       },
       fresh: true,
       intention: null,
@@ -47,6 +57,17 @@ describe('disposable next-meal display view', () => {
     expect(projected.run?.input.candidates.entries[0]?.reference).toMatchObject(
       { foodId: 'food-1' },
     );
+    expect(projected.run?.explanations[0]).toEqual({
+      candidateKey: 'food:release-1:food-1:1',
+      classification: 'COMPARABLE',
+      displayName: 'Food 1',
+      reasonCodes: ['validated-comparable'],
+      comparisonCount: 2,
+    });
+    expect(
+      projectPlanningSnapshot(projected as unknown as LocalPlanningSnapshotV1)
+        .run?.explanations[0],
+    ).toEqual(projected.run?.explanations[0]);
     await savePlanningView(factory, {
       owner: 'owner-1',
       sequence: 4,
@@ -65,6 +86,17 @@ describe('disposable next-meal display view', () => {
     expect(
       await readPlanningView(factory, 'owner-2', 4, 'release-1'),
     ).toBeNull();
+    await clearPlanningViews(factory);
+    expect(
+      await readPlanningView(factory, 'owner-1', 4, 'release-1'),
+    ).toBeNull();
+
+    await savePlanningView(factory, {
+      owner: 'owner-1',
+      sequence: 4,
+      activeReleaseId: 'release-1',
+      snapshot: projected,
+    });
 
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = factory.open(PLANNING_VIEW_DATABASE_NAME, 1);

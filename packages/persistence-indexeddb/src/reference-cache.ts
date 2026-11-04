@@ -22,6 +22,15 @@ const CACHE_METADATA_STORE = 'cache-metadata';
 const ACTIVE_RELEASE_KEY = 'active-release';
 const SHA256_HEX = /^[a-f0-9]{64}$/;
 
+function isQuotaExceededError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'QuotaExceededError'
+  );
+}
+
 interface ActiveReleaseMetadata {
   readonly key: typeof ACTIVE_RELEASE_KEY;
   readonly releaseId: string | null;
@@ -223,6 +232,54 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
     }
   }
 
+  async #addVerifiedActiveRelease(
+    input: ReferenceReleaseInputV1,
+    releases: IDBObjectStore,
+    metadata: IDBObjectStore,
+  ): Promise<void> {
+    const now = this.#now();
+    await requestResult(
+      releases.add({
+        ...structuredClone(input),
+        cachedAt: now,
+        lastAccessedAt: now,
+      } satisfies CachedReferenceReleaseV1),
+    );
+    await requestResult(
+      metadata.put({
+        key: ACTIVE_RELEASE_KEY,
+        releaseId: input.releaseId,
+      } satisfies ActiveReleaseMetadata),
+    );
+  }
+
+  async #storeVerifiedActiveRelease(
+    input: ReferenceReleaseInputV1,
+  ): Promise<void> {
+    const transaction = this.#database.transaction(
+      [RELEASE_STORE, CACHE_METADATA_STORE],
+      'readwrite',
+      { durability: 'strict' },
+    );
+    const completion = transactionComplete(transaction);
+    try {
+      await this.#addVerifiedActiveRelease(
+        input,
+        transaction.objectStore(RELEASE_STORE),
+        transaction.objectStore(CACHE_METADATA_STORE),
+      );
+      await completion;
+    } catch (error) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already be aborting.
+      }
+      await completion.catch(() => undefined);
+      throw error;
+    }
+  }
+
   public async putRelease(
     input: ReferenceReleaseInputV1,
   ): Promise<ReferenceCacheWriteResult> {
@@ -283,21 +340,12 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
     );
     const completion = transactionComplete(transaction);
     try {
-      const now = this.#now();
       const releases = transaction.objectStore(RELEASE_STORE);
       await requestResult(releases.clear());
-      await requestResult(
-        releases.add({
-          ...structuredClone(input),
-          cachedAt: now,
-          lastAccessedAt: now,
-        } satisfies CachedReferenceReleaseV1),
-      );
-      await requestResult(
-        transaction.objectStore(CACHE_METADATA_STORE).put({
-          key: ACTIVE_RELEASE_KEY,
-          releaseId: input.releaseId,
-        } satisfies ActiveReleaseMetadata),
+      await this.#addVerifiedActiveRelease(
+        input,
+        releases,
+        transaction.objectStore(CACHE_METADATA_STORE),
       );
       await completion;
     } catch (error) {
@@ -307,6 +355,14 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
         // The transaction may already be aborting.
       }
       await completion.catch(() => undefined);
+      if (isQuotaExceededError(error)) {
+        // Reference releases are reproducible and disposable. Evicting the old
+        // authority in a committed transaction avoids requiring space for two
+        // complete catalogs during a constrained-device update.
+        await this.clear();
+        await this.#storeVerifiedActiveRelease(input);
+        return;
+      }
       throw error;
     }
   }

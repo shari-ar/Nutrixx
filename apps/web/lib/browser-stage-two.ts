@@ -38,9 +38,11 @@ import {
   type NextMealCatalogSnapshot,
 } from './next-meal-catalog';
 import {
+  clearMappedCatalog,
   readMappedCatalog,
   saveMappedCatalog,
 } from './next-meal-catalog-cache';
+import { clearPlanningViews } from './next-meal-display-cache';
 import { loadNutritionContextV1 } from './nutrition-context';
 import {
   LOCAL_USER_DATABASE_NAME,
@@ -295,6 +297,22 @@ export class BrowserStageTwoStore {
     file: File,
     expectedReleaseId?: string,
   ): Promise<string> {
+    let replacementPrepared = false;
+    const prepareReplacement = async () => {
+      if (replacementPrepared) return;
+      replacementPrepared = true;
+      BrowserStageTwoStore.planningCatalogs.delete(this.dependencies.indexedDB);
+      await Promise.all([
+        clearMappedCatalog(this.dependencies.indexedDB),
+        clearPlanningViews(this.dependencies.indexedDB),
+      ]);
+    };
+    const installedReleaseId = await this.activeCatalogRelease();
+    if (
+      expectedReleaseId !== undefined &&
+      installedReleaseId !== expectedReleaseId
+    )
+      await prepareReplacement();
     const artifact = await readArtifact(file);
     const verified = await createFoodCatalogReleaseV1({
       manifest: artifact['manifest'] as never,
@@ -314,11 +332,25 @@ export class BrowserStageTwoStore {
     }
     if (expectedReleaseId && verified.releaseId !== expectedReleaseId)
       throw new TypeError('The catalog has an unexpected release ID.');
+    if (installedReleaseId !== verified.releaseId) await prepareReplacement();
     const cache = await IndexedDbReferenceDatasetCache.create({
       databaseName: REFERENCE_CACHE_DATABASE_NAME,
       indexedDB: this.dependencies.indexedDB,
     });
     try {
+      const active = (await cache.listReleases()).find(
+        (release) => release.active,
+      );
+      if (active?.releaseId === verified.releaseId) {
+        if (
+          active.manifestSha256 !== verified.manifestSha256 ||
+          active.payloadSha256 !== verified.payloadSha256
+        )
+          throw new TypeError(
+            'The active catalog release conflicts with the verified artifact.',
+          );
+        return verified.releaseId;
+      }
       await cache.replaceWithActiveRelease(verified);
       return verified.releaseId;
     } finally {

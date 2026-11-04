@@ -3,6 +3,7 @@ import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
 import {
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   nextMealSourceKey,
+  type NextMealCandidateExplanationV1,
 } from '@nutrixx/optimizer-engine';
 import { sha256Canonical } from '@nutrixx/persistence-indexeddb';
 
@@ -18,7 +19,16 @@ export { PLANNING_VIEW_DATABASE_NAME } from './storage-constants';
 
 const STORE = 'views';
 
-export type NextMealDisplayRunV1 = NextMealRunV1;
+export type NextMealDisplayExplanationV1 = Omit<
+  NextMealCandidateExplanationV1,
+  'comparisons'
+> & {
+  readonly comparisonCount: number;
+};
+
+export type NextMealDisplayRunV1 = Omit<NextMealRunV1, 'explanations'> & {
+  readonly explanations: readonly NextMealDisplayExplanationV1[];
+};
 
 export type NextMealDisplaySnapshotV1 =
   LocalPlanningSnapshotV1<NextMealDisplayRunV1>;
@@ -46,7 +56,13 @@ function currentPlanningViewPolicyKey(): string {
 export function projectPlanningSnapshot(
   snapshot: LocalPlanningSnapshotV1,
 ): NextMealDisplaySnapshotV1 {
-  if (!snapshot.run) return snapshot;
+  if (!snapshot.run)
+    return {
+      run: null,
+      fresh: snapshot.fresh,
+      intention: snapshot.intention,
+      loggedMealId: snapshot.loggedMealId,
+    };
   const rankedKeys = new Set(
     snapshot.run.result.ranked.map((row) => row.candidateKey),
   );
@@ -57,6 +73,18 @@ export function projectPlanningSnapshot(
     ...snapshot,
     run: {
       ...snapshot.run,
+      explanations: snapshot.run.explanations.map((entry) => {
+        const existingCount =
+          'comparisonCount' in entry ? entry.comparisonCount : undefined;
+        const { comparisons, ...explanation } = entry;
+        return {
+          ...explanation,
+          comparisonCount:
+            typeof existingCount === 'number'
+              ? existingCount
+              : (comparisons?.length ?? 0),
+        };
+      }),
       input: {
         ...snapshot.run.input,
         candidates: {
@@ -123,6 +151,24 @@ export async function savePlanningView(
     const done = completion(transaction);
     try {
       await requestValue(transaction.objectStore(STORE).put(stored));
+      await done;
+    } catch (error) {
+      await done.catch(() => undefined);
+      throw error;
+    }
+  } finally {
+    database.close();
+  }
+}
+
+/** Releases disposable planning projections before a catalog replacement. */
+export async function clearPlanningViews(factory: IDBFactory): Promise<void> {
+  const database = await openViewDatabase(factory);
+  try {
+    const transaction = database.transaction(STORE, 'readwrite');
+    const done = completion(transaction);
+    try {
+      await requestValue(transaction.objectStore(STORE).clear());
       await done;
     } catch (error) {
       await done.catch(() => undefined);

@@ -1,7 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
-import type { NextMealRunV1 } from '@/lib/browser-planning';
+import type {
+  NextMealDisplayExplanationV1,
+  NextMealDisplayRunV1,
+} from '@/lib/browser-planning';
 
 import {
   NextMealExplanation,
@@ -52,8 +55,15 @@ const explanation = {
     },
   ],
 } as NextMealCandidateExplanationV1;
+const summary = {
+  candidateKey,
+  classification: 'COMPARABLE',
+  displayName: 'Test food',
+  reasonCodes: ['validated-comparable'],
+  comparisonCount: 1,
+} satisfies NextMealDisplayExplanationV1;
 
-function run(provisional = false): NextMealRunV1 {
+function run(provisional = false): NextMealDisplayRunV1 {
   return {
     validUntil: '2026-10-12T12:15:00.000Z',
     input: {
@@ -109,17 +119,19 @@ function run(provisional = false): NextMealRunV1 {
           : '2026-10-12T00:00:00.000Z',
       },
     ],
-  } as unknown as NextMealRunV1;
+  } as unknown as NextMealDisplayRunV1;
 }
 
 describe('next-meal explanation', () => {
   it('shows a concise ranking summary and traceable nutrient, time, and sources', async () => {
     const current = run();
+    const loadExplanation = vi.fn().mockResolvedValue(explanation);
     render(
       <>
         <NextMealRunOverview run={current} />
         <NextMealExplanation
-          explanation={explanation}
+          explanation={summary}
+          loadExplanation={loadExplanation}
           row={row}
           run={current}
         />
@@ -133,6 +145,7 @@ describe('next-meal explanation', () => {
       screen.getByText(/Rank 1 of 1 comparable options/),
     ).toHaveTextContent('combined target gap 0.5');
     expect(screen.queryByText(/Recorded 2 → projected 9 mg/)).toBeNull();
+    expect(loadExplanation).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Why this rank?'));
     expect(
       await screen.findByText(/Recorded 2 → projected 9 mg/),
@@ -149,15 +162,21 @@ describe('next-meal explanation', () => {
     expect(screen.getByText(/Food composition:/)).toHaveTextContent(
       'fixture-food-data, version 1, record food-1',
     );
+    expect(loadExplanation).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText('Why this rank?'));
+    fireEvent.click(screen.getByText('Why this rank?'));
+    expect(loadExplanation).toHaveBeenCalledTimes(1);
   });
 
   it('labels a provisional span and shows its configured start', async () => {
     const current = run(true);
+    const loadExplanation = vi.fn().mockResolvedValue(explanation);
     render(
       <>
         <NextMealRunOverview run={current} />
         <NextMealExplanation
-          explanation={explanation}
+          explanation={summary}
+          loadExplanation={loadExplanation}
           row={row}
           run={current}
         />
@@ -168,5 +187,72 @@ describe('next-meal explanation', () => {
     expect(await screen.findByText(/Short history:/)).toHaveTextContent(
       '2026-10-11 00:00:00.000 UTC',
     );
+  });
+
+  it('aborts an unfinished explanation worker when its result row unmounts', async () => {
+    let receivedSignal: AbortSignal | undefined;
+    const loadExplanation = vi.fn((signal: AbortSignal) => {
+      receivedSignal = signal;
+      return new Promise<NextMealCandidateExplanationV1>((_resolve, reject) => {
+        signal.addEventListener(
+          'abort',
+          () => {
+            const error = new Error('The explanation request was replaced.');
+            error.name = 'AbortError';
+            reject(error);
+          },
+          { once: true },
+        );
+      });
+    });
+    const rendered = render(
+      <NextMealExplanation
+        explanation={summary}
+        loadExplanation={loadExplanation}
+        row={row}
+        run={run()}
+      />,
+    );
+    fireEvent.click(screen.getByText('Why this rank?'));
+    await waitFor(() => expect(loadExplanation).toHaveBeenCalledOnce());
+    expect(receivedSignal?.aborted).toBe(false);
+    rendered.unmount();
+    expect(receivedSignal?.aborted).toBe(true);
+  });
+
+  it('aborts unfinished evidence when the disclosure closes and restarts on reopen', async () => {
+    const receivedSignals: AbortSignal[] = [];
+    const loadExplanation = vi.fn((signal: AbortSignal) => {
+      receivedSignals.push(signal);
+      return new Promise<NextMealCandidateExplanationV1>((_resolve, reject) => {
+        signal.addEventListener(
+          'abort',
+          () => {
+            const error = new Error('The explanation disclosure closed.');
+            error.name = 'AbortError';
+            reject(error);
+          },
+          { once: true },
+        );
+      });
+    });
+    const rendered = render(
+      <NextMealExplanation
+        explanation={summary}
+        loadExplanation={loadExplanation}
+        row={row}
+        run={run()}
+      />,
+    );
+    const disclosure = screen.getByText('Why this rank?');
+    fireEvent.click(disclosure);
+    await waitFor(() => expect(loadExplanation).toHaveBeenCalledOnce());
+    fireEvent.click(disclosure);
+    await waitFor(() => expect(receivedSignals[0]?.aborted).toBe(true));
+    fireEvent.click(disclosure);
+    await waitFor(() => expect(loadExplanation).toHaveBeenCalledTimes(2));
+    expect(receivedSignals[1]?.aborted).toBe(false);
+    rendered.unmount();
+    expect(receivedSignals[1]?.aborted).toBe(true);
   });
 });

@@ -228,6 +228,12 @@ lead to at most one recorded eating occasion, including after the user revises
 their selection.
 Portable export includes user-owned run records and required replay evidence;
 reference releases remain identified by immutable manifest and digest.
+The planning list receives only explanation summaries. Complete nutrient,
+history-window, and provenance evidence remains in the canonical run and is
+loaded for one candidate through a disposable browser worker when its
+explanation is opened. Moving to another result page aborts that request and
+terminates its worker; closing the explanation disclosure has the same effect.
+Replay evidence remains unchanged by this display projection.
 
 `SelectNextMeal` references a `READY` run and one validated ranked candidate,
 then creates or revises an intention. `LogAsEaten` separately confirms the

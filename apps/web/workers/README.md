@@ -5,6 +5,14 @@ This directory contains browser-only background computations.
 catalog and nutrition context, ranks and independently reviews the next meal,
 and saves the validated run. The UI receives only its compact outcome. The
 same worker validates and reloads saved runs for the planning page.
+It also reads one candidate's verified explanation from the canonical run only
+when the user opens that ranking disclosure.
+Pagination unmounts the previous result rows and aborts any unfinished
+explanation request, which terminates its disposable worker immediately.
+Closing an explanation disclosure uses the same cancellation boundary.
+Planning workspace teardown terminates active recommendation, reload, and
+selection operations. The development acceptance panel cancels its benchmark
+worker on teardown or before starting a replacement measurement.
 `next-meal-acceptance.worker.dev.ts` exclusively owns development acceptance
 measurement and is absent from production builds.
 The caller serializes planning operations and gives each operation a disposable

@@ -23,7 +23,7 @@ Reusable, application-local React components shared by multiple routes.
 | `NutritionWorkspace`          | Recorded-intake results, evidence, targets, and seven-day trend |
 | `NutritionDashboardSummary`   | Live local summary of recorded-meal composition coverage        |
 | `PlanningWorkspace`           | One-next-meal ranking, selection, and consumption               |
-| `NextMealExplanation`         | Per-candidate score, history windows, and source trace          |
+| `NextMealExplanation`         | Lazy per-candidate score, history-window, and source evidence   |
 | `PaginationControls`          | Bounded previous/next navigation for large local result sets    |
 | `PlanningDashboardSummary`    | Current next-meal recommendation summary                        |
 | `OutcomeFeedbackWorkspace`    | Optional local weight and lab history, separate from intake     |

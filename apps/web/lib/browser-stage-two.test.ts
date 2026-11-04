@@ -1,8 +1,20 @@
+import { File as NodeFile } from 'node:buffer';
+
+import {
+  createFoodCatalogReleaseV1,
+  deriveFoodCatalogManifestV1,
+} from '@nutrixx/food-knowledge';
+import { sha256Canonical } from '@nutrixx/persistence-indexeddb';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
 
 import { BrowserStageTwoStore } from './browser-stage-two';
+import {
+  readMappedCatalog,
+  saveMappedCatalog,
+} from './next-meal-catalog-cache';
 
+import type { NextMealCandidateSource } from '@nutrixx/optimizer-engine';
 import type { StartingProfileV1 } from '@nutrixx/user-context';
 
 const OWNER_ID = '10000000-0000-4000-8000-000000000001';
@@ -35,7 +47,103 @@ function profile(): StartingProfileV1 {
   };
 }
 
+async function catalogArtifact(releaseId: string): Promise<File> {
+  const payload = {
+    format: 'nutrixx.food-catalog' as const,
+    schemaVersion: 1 as const,
+    sources: [],
+    foods: [],
+    portions: [],
+    composition: [],
+  };
+  const manifest = deriveFoodCatalogManifestV1(
+    {
+      format: 'nutrixx.food-catalog-manifest',
+      schemaVersion: 1,
+      releaseId,
+      publishedAt: NOW,
+      sourceDatasets: [
+        {
+          provider: 'fixture',
+          dataset: 'catalog-update',
+          sourceRelease: releaseId,
+          licenseId: 'CC0-1.0',
+          homepage: 'https://example.com/catalog',
+        },
+      ],
+      quality: {
+        sourceEntries: 0,
+        quarantinedEntries: 0,
+        sourceComponents: 0,
+        quarantinedComponents: 0,
+        quarantineReasonCounts: {},
+      },
+    },
+    payload,
+  );
+  const release = await createFoodCatalogReleaseV1({
+    manifest,
+    payload,
+    hash: sha256Canonical,
+  });
+  return new NodeFile([JSON.stringify(release)], `${releaseId}.json`, {
+    type: 'application/json',
+  }) as unknown as File;
+}
+
 describe('browser Stage 2 golden flow', () => {
+  it('reclaims disposable catalog data before an update and preserves idempotent installs', async () => {
+    const indexedDB = new IDBFactory();
+    const store = new BrowserStageTwoStore({
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: idFactory(),
+      now: () => NOW,
+      timeZone: () => 'America/New_York',
+      onboarding: { load: async () => profile() },
+    });
+    await store.installCatalog(
+      await catalogArtifact('catalog-release-1'),
+      'catalog-release-1',
+    );
+    const mappedEntry = (releaseId: string) =>
+      ({
+        reference: {
+          kind: 'food',
+          catalogReleaseId: releaseId,
+          foodId: '10000000-0000-4000-8000-000000000010',
+          foodRevision: 1,
+        },
+        displayName: 'Cached food',
+      }) as unknown as NextMealCandidateSource;
+    await saveMappedCatalog(indexedDB, 'catalog-release-1', [
+      mappedEntry('catalog-release-1'),
+    ]);
+
+    await store.installCatalog(
+      await catalogArtifact('catalog-release-2'),
+      'catalog-release-2',
+    );
+
+    await expect(store.activeCatalogRelease()).resolves.toBe(
+      'catalog-release-2',
+    );
+    await expect(
+      readMappedCatalog(indexedDB, 'catalog-release-1'),
+    ).resolves.toBeNull();
+
+    await saveMappedCatalog(indexedDB, 'catalog-release-2', [
+      mappedEntry('catalog-release-2'),
+    ]);
+    await store.installCatalog(
+      await catalogArtifact('catalog-release-2'),
+      'catalog-release-2',
+    );
+    await expect(
+      readMappedCatalog(indexedDB, 'catalog-release-2'),
+    ).resolves.toHaveLength(1);
+  });
+
   it('persists an unambiguous USDA cooking yield inferred from a linked step', async () => {
     const store = new BrowserStageTwoStore({
       indexedDB: new IDBFactory(),

@@ -4,6 +4,7 @@ import type {
 } from './browser-planning-core';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
+import type { NextMealCandidateExplanationV1 } from '@nutrixx/optimizer-engine';
 import type { StartingProfileV1 } from '@nutrixx/user-context';
 
 export type NextMealPreparationRequestV1 =
@@ -14,6 +15,12 @@ export type NextMealPreparationRequestV1 =
       readonly rankingChunkHints?: NextMealRankingChunkHintsV1;
     }
   | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 }
+  | {
+      readonly kind: 'LOCAL_EXPLANATION';
+      readonly profile: StartingProfileV1;
+      readonly runId: string;
+      readonly candidateKey: string;
+    }
   | {
       readonly kind: 'LOCAL_SELECT';
       readonly profile: StartingProfileV1;
@@ -52,6 +59,10 @@ export type NextMealPreparationResultV1 =
   | {
       readonly status: 'SNAPSHOT';
       readonly snapshot: NextMealDisplaySnapshotV1;
+    }
+  | {
+      readonly status: 'EXPLANATION';
+      readonly explanation: NextMealCandidateExplanationV1;
     }
   | {
       readonly status: 'SELECTION';

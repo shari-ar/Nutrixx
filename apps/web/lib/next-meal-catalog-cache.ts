@@ -121,3 +121,21 @@ export async function saveMappedCatalog(
     database.close();
   }
 }
+
+/** Releases disposable mapped catalog data before replacing its authority. */
+export async function clearMappedCatalog(factory: IDBFactory): Promise<void> {
+  const database = await openCache(factory);
+  try {
+    const transaction = database.transaction(STORE, 'readwrite');
+    const done = completion(transaction);
+    try {
+      await requestValue(transaction.objectStore(STORE).clear());
+      await done;
+    } catch (error) {
+      await done.catch(() => undefined);
+      throw error;
+    }
+  } finally {
+    database.close();
+  }
+}

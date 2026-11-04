@@ -17,26 +17,41 @@ type NextMealAcceptanceResultV1 =
     }
   | { readonly status: 'FAILED'; readonly reasonCode: string };
 
+function cancellationError(): Error {
+  const error = new Error('The acceptance measurement was canceled.');
+  error.name = 'AbortError';
+  return error;
+}
+
 /** Starts the development-only full-catalog benchmark worker. */
-export function measureNextMealAcceptanceInWorker(): Promise<NextMealAcceptanceResultV1> {
+export function measureNextMealAcceptanceInWorker(
+  signal?: AbortSignal,
+): Promise<NextMealAcceptanceResultV1> {
+  if (signal?.aborted) return Promise.reject(cancellationError());
   return new Promise((resolve, reject) => {
     const worker = new Worker(
       new URL('../workers/next-meal-acceptance.worker.dev.ts', import.meta.url),
       { type: 'module' },
     );
-    const fail = (message: string) => {
+    let settled = false;
+    const finish = (completion: () => void) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
       worker.terminate();
-      reject(new TypeError(message));
+      completion();
     };
+    const fail = (message: string) =>
+      finish(() => reject(new TypeError(message)));
+    const abort = () => finish(() => reject(cancellationError()));
     const timer = setTimeout(
       () => fail('The acceptance worker exceeded its 90-second limit.'),
       90_000,
     );
+    signal?.addEventListener('abort', abort, { once: true });
     worker.onmessage = (event: MessageEvent<NextMealAcceptanceResultV1>) => {
-      clearTimeout(timer);
-      worker.terminate();
-      resolve(event.data);
+      finish(() => resolve(event.data));
     };
     worker.onerror = () => fail('The acceptance worker could not complete.');
     worker.postMessage({ kind: 'ACCEPTANCE' });

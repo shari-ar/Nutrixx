@@ -623,6 +623,21 @@ export class BrowserPlanningStore {
     });
   }
 
+  public async loadExplanation(
+    runId: string,
+    candidateKey: string,
+  ): Promise<NextMealCandidateExplanationV1> {
+    const snapshot = await this.load();
+    if (!snapshot.run || snapshot.run.runId !== runId)
+      throw new TypeError('The saved recommendation changed.');
+    const explanation = snapshot.run.explanations.find(
+      (item) => item.candidateKey === candidateKey,
+    );
+    if (!explanation)
+      throw new TypeError('The requested ranking explanation is unavailable.');
+    return explanation;
+  }
+
   public async selectIntention(
     runId: string,
     candidateKey: string,
