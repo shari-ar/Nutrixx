@@ -29,6 +29,7 @@
     "docs:check": "node scripts/check-readmes.mjs && node scripts/check-doc-language.mjs && node scripts/check-mermaid.mjs && node scripts/check-agent-curation-assets.mjs",
     "config:check": "node scripts/check-config-consistency.mjs",
     "production:boundary:check": "node scripts/check-production-boundaries.mjs",
+    "check:push": "node scripts/pre-push-gate.mjs",
     "quality:dead-code": "knip",
     "quality:duplication": "jscpd apps packages scripts .devcontainer --config .jscpd.json",
     "quality:code": "npm run quality:dead-code && npm run quality:duplication",

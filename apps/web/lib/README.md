@@ -92,6 +92,9 @@ projection. Saving a projection evicts every prior local owner view, and a
 failed revision, release, policy, or digest check removes the stale entry
 instead of retaining dead IndexedDB data. The mapped-catalog cache follows the
 same single-active-release rule and evicts a mismatched or invalid mapping.
+Disposable planning projections expire after seven days and are removed on
+their next read. Device-specific chunk hints expire after 30 days and are
+relearned from conservative measurements.
 The client retains only bounded, non-sensitive classification and scoring
 chunk recommendations in origin-local storage. A first run starts at eight
 entries; later runs start at half the last measured recommendation and continue
@@ -110,6 +113,10 @@ Dashboard summary cancels its load when it unmounts. Completed, failed, timed
 out, and canceled clients detach worker handlers before termination. The
 development-only acceptance workspace applies the same lifecycle boundary to
 benchmark workers and superseded measurements.
+Planning and catalog-installation progress surfaces provide explicit Cancel
+actions. Cancellation aborts downloads and disposable workers before
+activation; an activation already committed completes its derived-cache
+cleanup and remains authoritative.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

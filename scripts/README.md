@@ -16,6 +16,7 @@ Small, cross-platform automation used by contributors and CI.
 | `create-agent-curation-packet.mjs`      | Resolves supplied food names against the active work queue and emits the two-file agent research packet                                                   |
 | `create-agent-curation-packet.test.mjs` | Covers exact alias resolution, task construction, and ambiguous-name rejection                                                                            |
 | `install-git-hooks.mjs`                 | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                                     |
+| `pre-push-gate.mjs`                     | Runs a change-scoped local quality gate and promotes platform-sensitive pushes to the complete repository gate                                            |
 | `run-with-node-env.mjs`                 | Runs a command with an explicit, cross-platform Node environment                                                                                          |
 | `data-quality-radar.mjs`                | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                          |
 | `render-reference-work-queue.mjs`       | Renders the internal food-composition coverage queue with searchable, paginated details                                                                   |

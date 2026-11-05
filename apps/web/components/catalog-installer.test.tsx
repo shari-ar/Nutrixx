@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ACTIVE_FOOD_CATALOG } from '@/config/active-food-catalog';
@@ -93,6 +93,7 @@ describe('catalog installer local draft status', () => {
     expect(installCatalog).toHaveBeenCalledWith(
       expect.any(File),
       draftReleaseId,
+      expect.any(AbortSignal),
     );
     expect(
       screen.queryByRole('button', { name: 'Use local draft' }),
@@ -135,5 +136,41 @@ describe('catalog installer local draft status', () => {
         `Catalog ${draftReleaseId} is verified and active offline.`,
       ),
     ).toBeInTheDocument();
+  });
+
+  it('cancels an in-flight catalog download without changing the active release', async () => {
+    const installCatalog = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_input, init?: RequestInit) => {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Canceled', 'AbortError')),
+            { once: true },
+          );
+        });
+      }),
+    );
+
+    render(
+      <CatalogInstaller
+        store={{
+          activeCatalogRelease: vi
+            .fn()
+            .mockResolvedValue(ACTIVE_FOOD_CATALOG.releaseId),
+          installCatalog,
+        }}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    expect(
+      await screen.findByText(
+        'Catalog installation canceled. The active catalog is unchanged.',
+      ),
+    ).toBeInTheDocument();
+    expect(installCatalog).not.toHaveBeenCalled();
   });
 });

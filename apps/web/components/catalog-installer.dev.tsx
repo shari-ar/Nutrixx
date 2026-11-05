@@ -41,7 +41,7 @@ export function DevelopmentCatalogInstaller({
       draft === null
         ? undefined
         : {
-            status: ({ release, target, installing, error }) => (
+            status: ({ release, target, installing, error, canceled }) => (
               <div
                 className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent"
                 role="status"
@@ -54,9 +54,11 @@ export function DevelopmentCatalogInstaller({
                   ? 'Using Local Draft'
                   : installing
                     ? 'Syncing Local Draft'
-                    : error
-                      ? 'Local Draft sync failed'
-                      : 'Local Draft detected'}
+                    : canceled
+                      ? 'Local Draft sync canceled'
+                      : error
+                        ? 'Local Draft sync failed'
+                        : 'Local Draft detected'}
                 <span className="font-normal text-muted">
                   Revision {draft.draftRevision}
                 </span>
@@ -70,9 +72,11 @@ export function DevelopmentCatalogInstaller({
                 this browser automatically.
               </>
             ),
-            buttonLabel: ({ error }) =>
-              error ? 'Retry local draft sync' : 'Synchronizing local draft…',
-            disableButton: ({ error }) => error === null,
+            buttonLabel: ({ error, canceled }) =>
+              error || canceled
+                ? 'Retry local draft sync'
+                : 'Synchronizing local draft…',
+            disableButton: ({ error, canceled }) => error === null && !canceled,
           },
     [draft],
   );

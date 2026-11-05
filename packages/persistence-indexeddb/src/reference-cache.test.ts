@@ -131,6 +131,35 @@ describe('separate IndexedDB reference dataset cache', () => {
     await cache.close();
   });
 
+  it('preserves the prior active release when staged verification fails', async () => {
+    const indexedDB = new IDBFactory();
+    let hashCalls = 0;
+    let failPersistedVerification = false;
+    const cache = await IndexedDbReferenceDatasetCache.create({
+      databaseName: `nutrixx-reference-staging-${randomUUID()}`,
+      indexedDB,
+      now: () => NOW,
+      hash: async (value) => {
+        hashCalls += 1;
+        if (failPersistedVerification && hashCalls > 2) return '0'.repeat(64);
+        return sha256Canonical(value);
+      },
+    });
+    const previous = await release('previous', 100);
+    await cache.putRelease(previous);
+    await cache.activateRelease(previous.releaseId);
+    hashCalls = 0;
+    failPersistedVerification = true;
+
+    await expect(
+      cache.replaceWithActiveRelease(await release('current', 120)),
+    ).rejects.toMatchObject({ code: 'invalid-reference-release' });
+    await expect(cache.listReleases()).resolves.toMatchObject([
+      { releaseId: 'previous', active: true },
+    ]);
+    await cache.close();
+  });
+
   it('clears only disposable reference data and resets active metadata', async () => {
     const indexedDB = new IDBFactory();
     const cache = await IndexedDbReferenceDatasetCache.create({

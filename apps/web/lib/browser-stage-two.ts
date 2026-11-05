@@ -208,12 +208,17 @@ function localDate(instant: string, timeZone: string): string {
   return `${values['year']}-${values['month']}-${values['day']}`;
 }
 
-async function readArtifact(file: File): Promise<Record<string, unknown>> {
+async function readArtifact(
+  file: File,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>> {
+  signal?.throwIfAborted();
   const gzip = file.name.toLocaleLowerCase('en').endsWith('.gz');
   const stream = gzip
     ? file.stream().pipeThrough(new DecompressionStream('gzip'))
     : file.stream();
   const value: unknown = JSON.parse(await new Response(stream).text());
+  signal?.throwIfAborted();
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new TypeError('The catalog artifact must be a JSON object.');
   }
@@ -296,29 +301,16 @@ export class BrowserStageTwoStore {
   public async installCatalog(
     file: File,
     expectedReleaseId?: string,
+    signal?: AbortSignal,
   ): Promise<string> {
-    let replacementPrepared = false;
-    const prepareReplacement = async () => {
-      if (replacementPrepared) return;
-      replacementPrepared = true;
-      BrowserStageTwoStore.planningCatalogs.delete(this.dependencies.indexedDB);
-      await Promise.all([
-        clearMappedCatalog(this.dependencies.indexedDB),
-        clearPlanningViews(this.dependencies.indexedDB),
-      ]);
-    };
-    const installedReleaseId = await this.activeCatalogRelease();
-    if (
-      expectedReleaseId !== undefined &&
-      installedReleaseId !== expectedReleaseId
-    )
-      await prepareReplacement();
-    const artifact = await readArtifact(file);
+    signal?.throwIfAborted();
+    const artifact = await readArtifact(file, signal);
     const verified = await createFoodCatalogReleaseV1({
       manifest: artifact['manifest'] as never,
       payload: artifact['payload'] as FoodCatalogPayloadV1,
       hash: sha256Canonical,
     });
+    signal?.throwIfAborted();
     for (const field of [
       'releaseId',
       'publishedAt',
@@ -332,7 +324,6 @@ export class BrowserStageTwoStore {
     }
     if (expectedReleaseId && verified.releaseId !== expectedReleaseId)
       throw new TypeError('The catalog has an unexpected release ID.');
-    if (installedReleaseId !== verified.releaseId) await prepareReplacement();
     const cache = await IndexedDbReferenceDatasetCache.create({
       databaseName: REFERENCE_CACHE_DATABASE_NAME,
       indexedDB: this.dependencies.indexedDB,
@@ -351,7 +342,13 @@ export class BrowserStageTwoStore {
           );
         return verified.releaseId;
       }
+      signal?.throwIfAborted();
       await cache.replaceWithActiveRelease(verified);
+      BrowserStageTwoStore.planningCatalogs.delete(this.dependencies.indexedDB);
+      await Promise.all([
+        clearMappedCatalog(this.dependencies.indexedDB),
+        clearPlanningViews(this.dependencies.indexedDB),
+      ]);
       return verified.releaseId;
     } finally {
       await cache.close();

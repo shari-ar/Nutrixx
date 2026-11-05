@@ -18,6 +18,7 @@ import type {
 export { PLANNING_VIEW_DATABASE_NAME } from './storage-constants';
 
 const STORE = 'views';
+const PLANNING_VIEW_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 
 export type NextMealDisplayExplanationV1 = Omit<
   NextMealCandidateExplanationV1,
@@ -38,6 +39,8 @@ interface StoredView {
   readonly sequence: number;
   readonly activeReleaseId: string | null;
   readonly policyKey: string;
+  readonly cachedAt: string;
+  readonly expiresAt: string;
   readonly snapshot: NextMealDisplaySnapshotV1;
   readonly digest: string;
 }
@@ -141,9 +144,18 @@ function viewDigest(view: Omit<StoredView, 'digest'>): Promise<string> {
 /** A disposable projection. The canonical run and transaction log remain authoritative. */
 export async function savePlanningView(
   factory: IDBFactory,
-  view: Omit<StoredView, 'digest' | 'policyKey'>,
+  view: Omit<StoredView, 'digest' | 'policyKey' | 'cachedAt' | 'expiresAt'>,
+  now = Date.now(),
 ): Promise<void> {
-  const value = { ...view, policyKey: currentPlanningViewPolicyKey() };
+  const cachedAt = new Date(now).toISOString();
+  const value = {
+    ...view,
+    policyKey: currentPlanningViewPolicyKey(),
+    cachedAt,
+    expiresAt: new Date(
+      Date.parse(cachedAt) + PLANNING_VIEW_TTL_MS,
+    ).toISOString(),
+  };
   const stored: StoredView = { ...value, digest: await viewDigest(value) };
   const database = await openViewDatabase(factory);
   try {
@@ -180,7 +192,8 @@ async function deletePlanningViewIfUnchanged(
         current?.digest === stale.digest &&
         current.sequence === stale.sequence &&
         current.activeReleaseId === stale.activeReleaseId &&
-        current.policyKey === stale.policyKey
+        current.policyKey === stale.policyKey &&
+        current.expiresAt === stale.expiresAt
       )
         await requestValue(store.delete(stale.owner));
       await done;
@@ -216,6 +229,7 @@ export async function readPlanningView(
   owner: string,
   sequence: number,
   activeReleaseId: string | null,
+  now = Date.now(),
 ): Promise<NextMealDisplaySnapshotV1 | null> {
   try {
     const database = await openViewDatabase(factory);
@@ -238,12 +252,16 @@ export async function readPlanningView(
       stored.sequence === sequence &&
       stored.activeReleaseId === activeReleaseId &&
       stored.policyKey === currentPlanningViewPolicyKey() &&
+      Number.isFinite(Date.parse(stored.expiresAt)) &&
+      Date.parse(stored.expiresAt) > now &&
       stored.digest ===
         (await viewDigest({
           owner: stored.owner,
           sequence: stored.sequence,
           activeReleaseId: stored.activeReleaseId,
           policyKey: stored.policyKey,
+          cachedAt: stored.cachedAt,
+          expiresAt: stored.expiresAt,
           snapshot: stored.snapshot,
         }));
     if (!valid) {

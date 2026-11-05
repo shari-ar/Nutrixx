@@ -10,15 +10,17 @@
 Prettier version and restages the result safely. Filenames are passed as a
 null-delimited stream, so spaces and Unicode paths remain safe.
 
-`pre-push` runs the repository's complete `npm run check` quality gate. A push
-is blocked unless documentation policy, formatting, dead-code detection,
-duplication limits, documentation build, linting, tests, contract build, API
-build, and Web build all succeed.
+`pre-push` runs `npm run check:push`. Routine application and package changes
+receive a change-scoped gate: changed-file formatting and linting, affected
+package builds and tests, Web or API type checks and tests, plus repository
+policy checks. Platform, dependency, infrastructure, CI, hook, and automation
+changes receive the complete `npm run check` gate. CI independently runs the
+complete gate for every push.
 
 Execution order:
 
 1. use the local locked npm toolchain when available;
-2. otherwise use the running `web` DevContainer, which has the Web workspace dependencies required by the complete gate;
+2. otherwise use the running `web` DevContainer, which has the workspace dependencies required by either gate;
 3. otherwise block the push with recovery instructions.
 
 Husky is installed by the root `prepare` lifecycle through

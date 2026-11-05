@@ -8,6 +8,10 @@ Versioned exports are validated before an all-or-nothing replacement import;
 record state, transaction history, and idempotency receipts are restored in one
 strict transaction. Immutable reference releases use a separate disposable
 IndexedDB database, so cache eviction or clearing cannot remove user data.
+Catalog replacement stages the new immutable release beside the current
+authority, verifies the bytes read back from IndexedDB, then atomically switches
+the active pointer and removes prior releases in one strict transaction. A
+staging or verification failure preserves the previous active release.
 
 The adapter also exposes the ADR-0006 storage-pressure assessment and explicit
 database deletion primitive used by the Storage Status UI. Capacity estimates

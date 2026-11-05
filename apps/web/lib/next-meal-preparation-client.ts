@@ -78,9 +78,11 @@ let pending = Promise.resolve();
 const CHUNK_PROFILE_KEY = 'nutrixx:next-meal-chunk-profile:v1';
 const MINIMUM_CHUNK_SIZE = 4;
 const MAXIMUM_CHUNK_SIZE = 2_048;
+const CHUNK_PROFILE_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
 
 interface StoredChunkProfileV1 {
   readonly schemaVersion: 1;
+  readonly updatedAt: number;
   readonly classifying?: number;
   readonly scoring?: number;
 }
@@ -108,6 +110,16 @@ function readStoredChunkProfile(storage: Storage): StoredChunkProfileV1 | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (parsed['schemaVersion'] !== 1) return null;
+    const updatedAt = parsed['updatedAt'];
+    if (
+      typeof updatedAt !== 'number' ||
+      !Number.isSafeInteger(updatedAt) ||
+      updatedAt > Date.now() ||
+      Date.now() - updatedAt > CHUNK_PROFILE_TTL_MS
+    ) {
+      storage.removeItem(CHUNK_PROFILE_KEY);
+      return null;
+    }
     const classifying = parsed['classifying'];
     const scoring = parsed['scoring'];
     if (
@@ -117,6 +129,7 @@ function readStoredChunkProfile(storage: Storage): StoredChunkProfileV1 | null {
       return null;
     return {
       schemaVersion: 1,
+      updatedAt,
       ...(classifying === undefined ? {} : { classifying }),
       ...(scoring === undefined ? {} : { scoring }),
     };
@@ -149,12 +162,15 @@ function retainChunkRecommendation(
   if (!validChunkSize(size)) return;
   const storage = browserStorage();
   if (!storage) return;
-  const current = readStoredChunkProfile(storage) ?? { schemaVersion: 1 };
+  const current = readStoredChunkProfile(storage) ?? {
+    schemaVersion: 1,
+    updatedAt: Date.now(),
+  };
   const phase = stage === 'classifying-catalog' ? 'classifying' : 'scoring';
   try {
     storage.setItem(
       CHUNK_PROFILE_KEY,
-      JSON.stringify({ ...current, [phase]: size }),
+      JSON.stringify({ ...current, updatedAt: Date.now(), [phase]: size }),
     );
   } catch {
     // Performance hints are disposable; planning continues without persistence.

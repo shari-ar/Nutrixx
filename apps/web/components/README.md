@@ -35,6 +35,7 @@ Reusable, application-local React components shared by multiple routes.
 - Keep components accessible, typed, composable, and independent of routes.
 - Keep domain calculations and direct persistence access outside UI components.
 - Keep catalog download, verification, and installation in `CatalogInstaller`.
+- Give every visible long-running browser operation progress and cancellation.
 - Keep local workbench behavior in `.dev` modules excluded from production.
 - Place route-specific components beside their route instead of here.
 - Add tests for behavior, keyboard interaction, and meaningful variants.

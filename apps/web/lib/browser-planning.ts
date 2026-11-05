@@ -85,6 +85,7 @@ export class BrowserPlanningStore {
   > {
     if (!this.runOffThread) return this.core.createRecommendation(options);
     this.recommendationController?.abort();
+    this.loadController?.abort();
     const operation = this.startWorkerOperation(signal);
     const { controller } = operation;
     this.recommendationController = controller;

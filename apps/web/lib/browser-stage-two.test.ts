@@ -92,7 +92,7 @@ async function catalogArtifact(releaseId: string): Promise<File> {
 }
 
 describe('browser Stage 2 golden flow', () => {
-  it('reclaims disposable catalog data before an update and preserves idempotent installs', async () => {
+  it('reclaims disposable catalog data after activation and preserves idempotent installs', async () => {
     const indexedDB = new IDBFactory();
     const store = new BrowserStageTwoStore({
       indexedDB,
@@ -119,6 +119,22 @@ describe('browser Stage 2 golden flow', () => {
     await saveMappedCatalog(indexedDB, 'catalog-release-1', [
       mappedEntry('catalog-release-1'),
     ]);
+
+    const canceled = new AbortController();
+    canceled.abort();
+    await expect(
+      store.installCatalog(
+        await catalogArtifact('catalog-release-2'),
+        'catalog-release-2',
+        canceled.signal,
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(store.activeCatalogRelease()).resolves.toBe(
+      'catalog-release-1',
+    );
+    await expect(
+      readMappedCatalog(indexedDB, 'catalog-release-1'),
+    ).resolves.toHaveLength(1);
 
     await store.installCatalog(
       await catalogArtifact('catalog-release-2'),

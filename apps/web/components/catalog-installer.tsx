@@ -20,6 +20,7 @@ interface CatalogInstallerState {
   readonly target: ActiveFoodCatalog;
   readonly installing: boolean;
   readonly error: string | null;
+  readonly canceled: boolean;
 }
 
 export interface CatalogInstallerPresentation {
@@ -46,8 +47,12 @@ export function CatalogInstaller({
       store ?? {
         activeCatalogRelease: () =>
           new BrowserStageTwoStore().activeCatalogRelease(),
-        installCatalog: (file, expectedReleaseId) =>
-          new BrowserStageTwoStore().installCatalog(file, expectedReleaseId),
+        installCatalog: (file, expectedReleaseId, signal) =>
+          new BrowserStageTwoStore().installCatalog(
+            file,
+            expectedReleaseId,
+            signal,
+          ),
       },
     [store],
   );
@@ -56,10 +61,12 @@ export function CatalogInstaller({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [installing, setInstalling] = useState(false);
+  const [canceled, setCanceled] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [installationPhase, setInstallationPhase] = useState<string | null>(
     null,
   );
+  const activeInstallation = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -78,13 +85,21 @@ export function CatalogInstaller({
       });
     return () => {
       active = false;
+      activeInstallation.current?.abort();
+      activeInstallation.current = null;
     };
   }, [runtime]);
 
-  async function installArtifact(file: File, target: ActiveFoodCatalog) {
+  async function installArtifact(
+    file: File,
+    target: ActiveFoodCatalog,
+    signal: AbortSignal,
+  ) {
+    signal.throwIfAborted();
     if (file.size !== target.compressedByteLength)
       throw new TypeError('The catalog download has an unexpected length.');
     const bytes = await file.arrayBuffer();
+    signal.throwIfAborted();
     const digest = Array.from(
       new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
       (byte) => byte.toString(16).padStart(2, '0'),
@@ -93,7 +108,12 @@ export function CatalogInstaller({
       throw new TypeError(
         'The catalog download failed its pinned SHA-256 check.',
       );
-    const releaseId = await runtime.installCatalog(file, target.releaseId);
+    signal.throwIfAborted();
+    const releaseId = await runtime.installCatalog(
+      file,
+      target.releaseId,
+      signal,
+    );
     if (releaseId !== target.releaseId)
       throw new TypeError(
         'The installed catalog has an unexpected release ID.',
@@ -105,7 +125,9 @@ export function CatalogInstaller({
   async function downloadCatalog(
     response: Response,
     target: ActiveFoodCatalog,
+    signal: AbortSignal,
   ): Promise<File> {
+    signal.throwIfAborted();
     const contentLength = Number(response.headers.get('content-length'));
     if (
       !response.body ||
@@ -113,7 +135,9 @@ export function CatalogInstaller({
       contentLength <= 0
     ) {
       setInstallationPhase('Downloading catalog…');
-      return new File([await response.blob()], target.artifactName, {
+      const blob = await response.blob();
+      signal.throwIfAborted();
+      return new File([blob], target.artifactName, {
         type: 'application/gzip',
       });
     }
@@ -125,6 +149,7 @@ export function CatalogInstaller({
     setDownloadProgress(0);
 
     while (true) {
+      signal.throwIfAborted();
       const { done, value } = await reader.read();
       if (done) break;
       if (value) {
@@ -142,20 +167,29 @@ export function CatalogInstaller({
   }
 
   async function installBundledCatalog(selectedCatalog = target) {
+    activeInstallation.current?.abort();
+    const controller = new AbortController();
+    activeInstallation.current = controller;
     setInstalling(true);
+    setCanceled(false);
     setError(null);
     setStatus(null);
     setDownloadProgress(null);
     try {
       const response = await fetch(`/catalog/${selectedCatalog.artifactName}`, {
         cache: 'no-store',
+        signal: controller.signal,
       });
       if (!response.ok) {
         throw new Error(
           `Catalog download failed with HTTP ${response.status}.`,
         );
       }
-      const artifact = await downloadCatalog(response, selectedCatalog);
+      const artifact = await downloadCatalog(
+        response,
+        selectedCatalog,
+        controller.signal,
+      );
       setDownloadProgress(100);
       setInstallationPhase(
         'Verifying, decompressing, and indexing locally… This can take a moment.',
@@ -163,7 +197,7 @@ export function CatalogInstaller({
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => resolve()),
       );
-      await installArtifact(artifact, selectedCatalog);
+      await installArtifact(artifact, selectedCatalog, controller.signal);
     } catch (cause) {
       const installedRelease = await runtime
         .activeCatalogRelease()
@@ -175,13 +209,28 @@ export function CatalogInstaller({
         );
         return;
       }
+      if (
+        typeof cause === 'object' &&
+        cause !== null &&
+        'name' in cause &&
+        cause.name === 'AbortError'
+      ) {
+        setCanceled(true);
+        setStatus(
+          'Catalog installation canceled. The active catalog is unchanged.',
+        );
+        return;
+      }
       console.error('Offline catalog installation failed.', cause);
       setError(
         'The offline catalog could not be installed. Check your connection and available browser storage, then retry.',
       );
     } finally {
-      setInstalling(false);
-      setInstallationPhase(null);
+      if (activeInstallation.current === controller) {
+        activeInstallation.current = null;
+        setInstalling(false);
+        setInstallationPhase(null);
+      }
     }
   }
 
@@ -207,6 +256,7 @@ export function CatalogInstaller({
     target,
     installing,
     error,
+    canceled,
   };
 
   return (
@@ -264,6 +314,15 @@ export function CatalogInstaller({
                   ? 'Install offline catalog'
                   : 'Update offline catalog')}
           </button>
+          {installing ? (
+            <button
+              className="ml-3 mt-4 rounded-xl border border-separator px-4 py-2.5 text-sm font-semibold"
+              onClick={() => activeInstallation.current?.abort()}
+              type="button"
+            >
+              Cancel
+            </button>
+          ) : null}
           {installationPhase ? (
             <div className="mt-4 text-sm" role="status">
               <p>{installationPhase}</p>

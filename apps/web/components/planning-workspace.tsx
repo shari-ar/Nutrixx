@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FoodPicker } from '@/components/food-picker';
 import {
@@ -74,6 +74,7 @@ export function PlanningWorkspace() {
     'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other'
   >('other');
   const [actualGrams, setActualGrams] = useState('');
+  const activeOperation = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -90,6 +91,8 @@ export function PlanningWorkspace() {
       });
     return () => {
       active = false;
+      activeOperation.current?.abort();
+      activeOperation.current = null;
       planning.cancelActiveWorkers();
     };
   }, [planning]);
@@ -128,27 +131,43 @@ export function PlanningWorkspace() {
   }, [planning]);
 
   async function perform(
-    action: () => Promise<void>,
+    action: (signal: AbortSignal) => Promise<void>,
     refreshSnapshot = true,
   ): Promise<void> {
+    activeOperation.current?.abort();
+    const controller = new AbortController();
+    activeOperation.current = controller;
     setBusy(true);
     setError(null);
     setNotice(null);
     setInputLink(null);
     try {
-      await action();
-      if (refreshSnapshot) setSnapshot(await planning.load());
+      await action(controller.signal);
+      controller.signal.throwIfAborted();
+      if (refreshSnapshot) setSnapshot(await planning.load(controller.signal));
     } catch (failure) {
+      if (failure instanceof Error && failure.name === 'AbortError') {
+        setPlanningProgress('Operation canceled.');
+        return;
+      }
       setPlanningProgress(null);
-      if (failure instanceof Error && failure.name === 'AbortError') return;
       setError(
         failure instanceof Error
           ? failure.message
           : 'Local planning is unavailable.',
       );
     } finally {
-      setBusy(false);
+      if (activeOperation.current === controller) {
+        activeOperation.current = null;
+        setBusy(false);
+      }
     }
+  }
+
+  function cancelActiveOperation(): void {
+    activeOperation.current?.abort();
+    planning.cancelActiveWorkers();
+    setPlanningProgress('Canceling the active operation…');
   }
 
   const run = snapshot?.run;
@@ -275,10 +294,11 @@ export function PlanningWorkspace() {
           type="button"
           onClick={() => {
             setPlanningProgress('Starting the local ranking worker…');
-            perform(async () => {
+            perform(async (signal) => {
               const result = await planning.createRecommendation(
                 { inventory: inventoryOnly ? inventory : null },
                 (progress) => setPlanningProgress(progress.message),
+                signal,
               );
               if (result.status !== 'READY') {
                 setNotice(inputGuidance(result.reasonCodes));
@@ -332,12 +352,18 @@ export function PlanningWorkspace() {
         </p>
       ) : null}
       {planningProgress ? (
-        <p
-          className="rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm"
-          role="status"
-        >
-          {planningProgress}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm">
+          <p role="status">{planningProgress}</p>
+          {busy ? (
+            <button
+              className="rounded-lg border border-separator px-3 py-1.5 font-semibold"
+              onClick={cancelActiveOperation}
+              type="button"
+            >
+              Cancel
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {run ? (
@@ -392,11 +418,12 @@ export function PlanningWorkspace() {
                         setPlanningProgress(
                           'Starting the local selection worker…',
                         );
-                        perform(async () => {
+                        perform(async (signal) => {
                           const intention = await planning.selectForDisplay(
                             run.runId,
                             row.candidateKey,
                             (progress) => setPlanningProgress(progress.message),
+                            signal,
                           );
                           setSnapshot((current) =>
                             current?.run?.runId === run.runId

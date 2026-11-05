@@ -407,6 +407,15 @@ describe('browser next-meal planning', () => {
       primaryGoal: 'maintain',
       foodRestrictions: [],
     });
+    localStorage.setItem(
+      'nutrixx:next-meal-chunk-profile:v1',
+      JSON.stringify({
+        schemaVersion: 1,
+        updatedAt: Date.now() - 31 * 24 * 60 * 60 * 1_000,
+        classifying: 2_048,
+        scoring: 2_048,
+      }),
+    );
     const requests: NextMealPreparationRequestV1[] = [];
     class WorkerStub {
       public onmessage:

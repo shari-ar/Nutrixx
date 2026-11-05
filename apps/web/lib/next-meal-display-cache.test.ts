@@ -169,4 +169,34 @@ describe('disposable next-meal display view', () => {
       readPlanningView(factory, 'owner-2', 1, 'release-1'),
     ).resolves.toEqual(snapshot);
   });
+
+  it('automatically evicts an expired disposable projection', async () => {
+    const factory = new IDBFactory();
+    const snapshot = {
+      run: null,
+      fresh: false,
+      intention: null,
+      loggedMealId: null,
+    } as NextMealDisplaySnapshotV1;
+    await savePlanningView(
+      factory,
+      {
+        owner: 'owner-1',
+        sequence: 1,
+        activeReleaseId: 'release-1',
+        snapshot,
+      },
+      Date.parse('2026-11-01T00:00:00.000Z'),
+    );
+
+    await expect(
+      readPlanningView(
+        factory,
+        'owner-1',
+        1,
+        'release-1',
+        Date.parse('2026-11-09T00:00:00.000Z'),
+      ),
+    ).resolves.toBeNull();
+  });
 });

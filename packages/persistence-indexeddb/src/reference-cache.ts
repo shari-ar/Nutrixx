@@ -22,15 +22,6 @@ const CACHE_METADATA_STORE = 'cache-metadata';
 const ACTIVE_RELEASE_KEY = 'active-release';
 const SHA256_HEX = /^[a-f0-9]{64}$/;
 
-function isQuotaExceededError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'name' in error &&
-    error.name === 'QuotaExceededError'
-  );
-}
-
 interface ActiveReleaseMetadata {
   readonly key: typeof ACTIVE_RELEASE_KEY;
   readonly releaseId: string | null;
@@ -232,59 +223,9 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
     }
   }
 
-  async #addVerifiedActiveRelease(
-    input: ReferenceReleaseInputV1,
-    releases: IDBObjectStore,
-    metadata: IDBObjectStore,
-  ): Promise<void> {
-    const now = this.#now();
-    await requestResult(
-      releases.add({
-        ...structuredClone(input),
-        cachedAt: now,
-        lastAccessedAt: now,
-      } satisfies CachedReferenceReleaseV1),
-    );
-    await requestResult(
-      metadata.put({
-        key: ACTIVE_RELEASE_KEY,
-        releaseId: input.releaseId,
-      } satisfies ActiveReleaseMetadata),
-    );
-  }
-
-  async #storeVerifiedActiveRelease(
-    input: ReferenceReleaseInputV1,
-  ): Promise<void> {
-    const transaction = this.#database.transaction(
-      [RELEASE_STORE, CACHE_METADATA_STORE],
-      'readwrite',
-      { durability: 'strict' },
-    );
-    const completion = transactionComplete(transaction);
-    try {
-      await this.#addVerifiedActiveRelease(
-        input,
-        transaction.objectStore(RELEASE_STORE),
-        transaction.objectStore(CACHE_METADATA_STORE),
-      );
-      await completion;
-    } catch (error) {
-      try {
-        transaction.abort();
-      } catch {
-        // The transaction may already be aborting.
-      }
-      await completion.catch(() => undefined);
-      throw error;
-    }
-  }
-
-  public async putRelease(
+  async #putVerifiedRelease(
     input: ReferenceReleaseInputV1,
   ): Promise<ReferenceCacheWriteResult> {
-    this.#assertOpen();
-    await this.#validateRelease(input);
     const transaction = this.#database.transaction(RELEASE_STORE, 'readwrite', {
       durability: 'relaxed',
     });
@@ -298,12 +239,11 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
         if (
           canonicalizeJson(releaseContent(existing)) !==
           canonicalizeJson(releaseContent(input))
-        ) {
+        )
           throw new PersistenceError(
             'reference-conflict',
             'A different immutable reference release uses this identifier.',
           );
-        }
         await completion;
         return 'unchanged';
       }
@@ -328,11 +268,56 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
     }
   }
 
+  async #removeInactiveRelease(releaseId: string): Promise<void> {
+    const transaction = this.#database.transaction(
+      [RELEASE_STORE, CACHE_METADATA_STORE],
+      'readwrite',
+      { durability: 'relaxed' },
+    );
+    const completion = transactionComplete(transaction);
+    const active = (await requestResult(
+      transaction.objectStore(CACHE_METADATA_STORE).get(ACTIVE_RELEASE_KEY),
+    )) as ActiveReleaseMetadata | undefined;
+    if (active?.releaseId !== releaseId)
+      await requestResult(
+        transaction.objectStore(RELEASE_STORE).delete(releaseId),
+      );
+    await completion;
+  }
+
+  public async putRelease(
+    input: ReferenceReleaseInputV1,
+  ): Promise<ReferenceCacheWriteResult> {
+    this.#assertOpen();
+    await this.#validateRelease(input);
+    return this.#putVerifiedRelease(input);
+  }
+
   public async replaceWithActiveRelease(
     input: ReferenceReleaseInputV1,
   ): Promise<void> {
     this.#assertOpen();
     await this.#validateRelease(input);
+    const staged = await this.#putVerifiedRelease(input);
+    try {
+      const persisted = await this.getRelease(input.releaseId);
+      if (
+        persisted === null ||
+        canonicalizeJson(releaseContent(persisted)) !==
+          canonicalizeJson(releaseContent(input))
+      )
+        throw new PersistenceError(
+          'invalid-reference-release',
+          'The staged reference release differs from its verified input.',
+        );
+      await this.#validateRelease(persisted);
+    } catch (error) {
+      if (staged === 'inserted')
+        await this.#removeInactiveRelease(input.releaseId).catch(
+          () => undefined,
+        );
+      throw error;
+    }
     const transaction = this.#database.transaction(
       [RELEASE_STORE, CACHE_METADATA_STORE],
       'readwrite',
@@ -341,12 +326,28 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
     const completion = transactionComplete(transaction);
     try {
       const releases = transaction.objectStore(RELEASE_STORE);
-      await requestResult(releases.clear());
-      await this.#addVerifiedActiveRelease(
-        input,
-        releases,
-        transaction.objectStore(CACHE_METADATA_STORE),
+      const persisted = (await requestResult(releases.get(input.releaseId))) as
+        | CachedReferenceReleaseV1
+        | undefined;
+      if (
+        persisted === undefined ||
+        canonicalizeJson(releaseContent(persisted)) !==
+          canonicalizeJson(releaseContent(input))
+      )
+        throw new PersistenceError(
+          'invalid-reference-release',
+          'The staged reference release changed before activation.',
+        );
+      await requestResult(
+        transaction.objectStore(CACHE_METADATA_STORE).put({
+          key: ACTIVE_RELEASE_KEY,
+          releaseId: input.releaseId,
+        } satisfies ActiveReleaseMetadata),
       );
+      const releaseKeys = await requestResult(releases.getAllKeys());
+      for (const releaseId of releaseKeys)
+        if (releaseId !== input.releaseId)
+          await requestResult(releases.delete(releaseId));
       await completion;
     } catch (error) {
       try {
@@ -355,14 +356,10 @@ export class IndexedDbReferenceDatasetCache implements ReferenceDatasetCache {
         // The transaction may already be aborting.
       }
       await completion.catch(() => undefined);
-      if (isQuotaExceededError(error)) {
-        // Reference releases are reproducible and disposable. Evicting the old
-        // authority in a committed transaction avoids requiring space for two
-        // complete catalogs during a constrained-device update.
-        await this.clear();
-        await this.#storeVerifiedActiveRelease(input);
-        return;
-      }
+      if (staged === 'inserted')
+        await this.#removeInactiveRelease(input.releaseId).catch(
+          () => undefined,
+        );
       throw error;
     }
   }
