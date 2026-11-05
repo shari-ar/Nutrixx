@@ -11,8 +11,10 @@ Pagination unmounts the previous result rows and aborts any unfinished
 explanation request, which terminates its disposable worker immediately.
 Closing an explanation disclosure uses the same cancellation boundary.
 Planning workspace teardown terminates active recommendation, reload, and
-selection operations. The development acceptance panel cancels its benchmark
-worker on teardown or before starting a replacement measurement.
+selection operations. Repeated snapshot loads replace and terminate their
+predecessors. Dashboard summary teardown also aborts its disposable load. The
+development acceptance panel cancels its benchmark worker on teardown or
+before starting a replacement measurement.
 `next-meal-acceptance.worker.dev.ts` exclusively owns development acceptance
 measurement and is absent from production builds.
 The caller serializes planning operations and gives each operation a disposable

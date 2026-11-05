@@ -324,6 +324,72 @@ describe('browser next-meal planning', () => {
     expect(terminated).toBe(1);
   });
 
+  it('terminates a superseded snapshot load before starting its replacement', async () => {
+    const onboarding = new BrowserOnboardingStore({
+      storage: localStorage,
+      indexedDB,
+      keyRange: IDBKeyRange,
+      createId: () => crypto.randomUUID(),
+      now: () => NOW,
+      timeZone: () => 'UTC',
+    });
+    await onboarding.save({
+      ageYears: 30,
+      heightCentimeters: '170',
+      weightKilograms: '70',
+      physiologicalReference: 'female',
+      primaryGoal: 'maintain',
+      foodRestrictions: [],
+    });
+    let releaseFirstStart: (() => void) | undefined;
+    const firstStarted = new Promise<void>((resolve) => {
+      releaseFirstStart = resolve;
+    });
+    const terminated: number[] = [];
+    let workersCreated = 0;
+    class WorkerStub {
+      private readonly id = ++workersCreated;
+      public onmessage:
+        | ((event: MessageEvent<NextMealPreparationMessageV1>) => void)
+        | null = null;
+      public onerror: ((event: ErrorEvent) => void) | null = null;
+
+      public postMessage(request: NextMealPreparationRequestV1): void {
+        expect(request.kind).toBe('LOCAL_LOAD');
+        if (this.id === 1) {
+          releaseFirstStart?.();
+          return;
+        }
+        queueMicrotask(() =>
+          this.onmessage?.({
+            data: {
+              status: 'SNAPSHOT',
+              snapshot: {
+                run: null,
+                fresh: false,
+                intention: null,
+                loggedMealId: null,
+              },
+            },
+          } as MessageEvent<NextMealPreparationMessageV1>),
+        );
+      }
+
+      public terminate(): void {
+        terminated.push(this.id);
+      }
+    }
+    vi.stubGlobal('Worker', WorkerStub);
+    const planning = new BrowserPlanningStore(undefined, onboarding);
+    const superseded = planning.load();
+    await firstStarted;
+    const replacement = planning.load();
+
+    await expect(superseded).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(replacement).resolves.toMatchObject({ run: null });
+    expect(terminated).toEqual([1, 2]);
+  });
+
   it('reuses a conservative device chunk profile on the next recommendation', async () => {
     const onboarding = new BrowserOnboardingStore({
       storage: localStorage,

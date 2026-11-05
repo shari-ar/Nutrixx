@@ -24,6 +24,7 @@ export type LocalPlanningSnapshotV1 = NextMealDisplaySnapshotV1;
 export class BrowserPlanningStore {
   private readonly core: InProcessPlanningStore;
   private recommendationController: AbortController | null = null;
+  private loadController: AbortController | null = null;
   private readonly workerControllers = new Set<AbortController>();
   public constructor(
     compute?: ConstructorParameters<typeof InProcessPlanningStore>[0],
@@ -70,6 +71,7 @@ export class BrowserPlanningStore {
     this.workerControllers.forEach((controller) => controller.abort());
     this.workerControllers.clear();
     this.recommendationController = null;
+    this.loadController = null;
   }
 
   public async createRecommendation(
@@ -116,7 +118,10 @@ export class BrowserPlanningStore {
       );
       return projectPlanningSnapshot(await this.core.load());
     }
+    this.loadController?.abort();
     const operation = this.startWorkerOperation(signal);
+    const { controller } = operation;
+    this.loadController = controller;
     try {
       const profile = await this.browserOnboarding.load();
       if (!profile) throw new TypeError('Complete the starting profile first.');
@@ -126,13 +131,14 @@ export class BrowserPlanningStore {
           profile,
         },
         undefined,
-        operation.controller.signal,
+        controller.signal,
       );
       if (loaded.status !== 'SNAPSHOT')
         throw new TypeError('The saved local recommendation could not open.');
       return loaded.snapshot;
     } finally {
       operation.release();
+      if (this.loadController === controller) this.loadController = null;
     }
   }
 

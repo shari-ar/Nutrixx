@@ -55,6 +55,34 @@ async function digest(
   );
 }
 
+async function deleteMappedReleaseIfUnchanged(
+  factory: IDBFactory,
+  stale: MappedRelease,
+): Promise<void> {
+  const database = await openCache(factory);
+  try {
+    const transaction = database.transaction(STORE, 'readwrite');
+    const done = completion(transaction);
+    const store = transaction.objectStore(STORE);
+    try {
+      const current = await requestValue(
+        store.get(stale.releaseId) as IDBRequest<MappedRelease | undefined>,
+      );
+      if (
+        current?.digest === stale.digest &&
+        current.mappingVersion === stale.mappingVersion
+      )
+        await requestValue(store.delete(stale.releaseId));
+      await done;
+    } catch (error) {
+      await done.catch(() => undefined);
+      throw error;
+    }
+  } finally {
+    database.close();
+  }
+}
+
 /** This cache is disposable; the verified reference release is the authority. */
 export async function readMappedCatalog(
   factory: IDBFactory,
@@ -75,18 +103,22 @@ export async function readMappedCatalog(
     } finally {
       database.close();
     }
-    if (
-      !item ||
-      item.releaseId !== releaseId ||
-      item.mappingVersion !== MAPPING_VERSION ||
-      item.entries.some(
+    if (item === undefined) return null;
+    const valid =
+      item.releaseId === releaseId &&
+      item.mappingVersion === MAPPING_VERSION &&
+      !item.entries.some(
         (entry) =>
           entry.reference.kind !== 'food' ||
           entry.reference.catalogReleaseId !== releaseId,
-      ) ||
-      item.digest !== (await digest(releaseId, item.entries))
-    )
+      ) &&
+      item.digest === (await digest(releaseId, item.entries));
+    if (!valid) {
+      await deleteMappedReleaseIfUnchanged(factory, item).catch(
+        () => undefined,
+      );
       return null;
+    }
     return item.entries;
   } catch {
     return null;

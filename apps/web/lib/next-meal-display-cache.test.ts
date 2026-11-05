@@ -10,6 +10,7 @@ import {
 } from './next-meal-display-cache';
 
 import type { LocalPlanningSnapshotV1 } from './browser-planning-core';
+import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 
 describe('disposable next-meal display view', () => {
   it('stores the compact active snapshot and invalidates by revision and release', async () => {
@@ -122,5 +123,50 @@ describe('disposable next-meal display view', () => {
     expect(
       await readPlanningView(factory, 'owner-1', 5, 'release-1'),
     ).toBeNull();
+
+    const evictedDatabase = await new Promise<IDBDatabase>(
+      (resolve, reject) => {
+        const request = factory.open(PLANNING_VIEW_DATABASE_NAME, 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      },
+    );
+    const evictedTransaction = evictedDatabase.transaction('views', 'readonly');
+    const evicted = await new Promise<unknown>((resolve, reject) => {
+      const request = evictedTransaction.objectStore('views').get('owner-1');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    evictedDatabase.close();
+    expect(evicted).toBeUndefined();
+  });
+
+  it('retains only the latest local owner projection', async () => {
+    const factory = new IDBFactory();
+    const snapshot = {
+      run: null,
+      fresh: false,
+      intention: null,
+      loggedMealId: null,
+    } as NextMealDisplaySnapshotV1;
+    await savePlanningView(factory, {
+      owner: 'owner-1',
+      sequence: 1,
+      activeReleaseId: 'release-1',
+      snapshot,
+    });
+    await savePlanningView(factory, {
+      owner: 'owner-2',
+      sequence: 1,
+      activeReleaseId: 'release-1',
+      snapshot,
+    });
+
+    await expect(
+      readPlanningView(factory, 'owner-1', 1, 'release-1'),
+    ).resolves.toBeNull();
+    await expect(
+      readPlanningView(factory, 'owner-2', 1, 'release-1'),
+    ).resolves.toEqual(snapshot);
   });
 });

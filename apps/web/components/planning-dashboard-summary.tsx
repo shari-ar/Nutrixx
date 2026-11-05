@@ -1,17 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { BrowserPlanningStore } from '@/lib/browser-planning';
 
-export function PlanningDashboardSummary() {
+interface PlanningDashboardSummaryProps {
+  readonly store?: Pick<BrowserPlanningStore, 'load' | 'cancelActiveWorkers'>;
+}
+
+export function PlanningDashboardSummary({
+  store,
+}: PlanningDashboardSummaryProps = {}) {
+  const planning = useMemo(() => store ?? new BrowserPlanningStore(), [store]);
   const [summary, setSummary] = useState(
     'Open the planner for your next suggested meal.',
   );
   useEffect(() => {
     let active = true;
-    void new BrowserPlanningStore()
-      .load()
+    const controller = new AbortController();
+    void planning
+      .load(controller.signal)
       .then((snapshot) => {
         if (!active) return;
         if (!snapshot.run) {
@@ -43,7 +51,9 @@ export function PlanningDashboardSummary() {
       });
     return () => {
       active = false;
+      controller.abort();
+      planning.cancelActiveWorkers();
     };
-  }, []);
+  }, [planning]);
   return <span>{summary}</span>;
 }

@@ -88,7 +88,10 @@ that omits unranked candidate composition and full per-candidate comparison
 evidence. A canonical transaction, active
 catalog release, policy release, or expiry invalidates its fast-load path;
 canonical data remains the authority and rebuilds a missing or invalid
-projection.
+projection. Saving a projection evicts every prior local owner view, and a
+failed revision, release, policy, or digest check removes the stale entry
+instead of retaining dead IndexedDB data. The mapped-catalog cache follows the
+same single-active-release rule and evicts a mismatched or invalid mapping.
 The client retains only bounded, non-sensitive classification and scoring
 chunk recommendations in origin-local storage. A first run starts at eight
 entries; later runs start at half the last measured recommendation and continue
@@ -102,8 +105,11 @@ that mounted row remains open. Leaving its result page aborts and terminates an
 unfinished explanation worker before the row unmounts. Closing the disclosure
 does the same; reopening it starts a fresh bounded request.
 Leaving the Planning workspace also cancels active recommendation, reload, and
-selection workers. The development-only acceptance workspace applies the same
-lifecycle boundary to benchmark workers and superseded measurements.
+selection workers. A newer snapshot load cancels its predecessor, and the
+Dashboard summary cancels its load when it unmounts. Completed, failed, timed
+out, and canceled clients detach worker handlers before termination. The
+development-only acceptance workspace applies the same lifecycle boundary to
+benchmark workers and superseded measurements.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.

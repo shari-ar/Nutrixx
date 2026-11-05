@@ -186,6 +186,8 @@ export function prepareNextMealInWorker(
         settled = true;
         clearTimeout(timer);
         signal?.removeEventListener('abort', abort);
+        worker.onmessage = null;
+        worker.onerror = null;
         worker.terminate();
         completion();
       };

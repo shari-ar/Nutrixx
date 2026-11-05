@@ -150,7 +150,39 @@ export async function savePlanningView(
     const transaction = database.transaction(STORE, 'readwrite');
     const done = completion(transaction);
     try {
-      await requestValue(transaction.objectStore(STORE).put(stored));
+      const store = transaction.objectStore(STORE);
+      await requestValue(store.clear());
+      await requestValue(store.put(stored));
+      await done;
+    } catch (error) {
+      await done.catch(() => undefined);
+      throw error;
+    }
+  } finally {
+    database.close();
+  }
+}
+
+async function deletePlanningViewIfUnchanged(
+  factory: IDBFactory,
+  stale: StoredView,
+): Promise<void> {
+  const database = await openViewDatabase(factory);
+  try {
+    const transaction = database.transaction(STORE, 'readwrite');
+    const done = completion(transaction);
+    const store = transaction.objectStore(STORE);
+    try {
+      const current = await requestValue(
+        store.get(stale.owner) as IDBRequest<StoredView | undefined>,
+      );
+      if (
+        current?.digest === stale.digest &&
+        current.sequence === stale.sequence &&
+        current.activeReleaseId === stale.activeReleaseId &&
+        current.policyKey === stale.policyKey
+      )
+        await requestValue(store.delete(stale.owner));
       await done;
     } catch (error) {
       await done.catch(() => undefined);
@@ -200,22 +232,26 @@ export async function readPlanningView(
     } finally {
       database.close();
     }
-    if (
-      !stored ||
-      stored.owner !== owner ||
-      stored.sequence !== sequence ||
-      stored.activeReleaseId !== activeReleaseId ||
-      stored.policyKey !== currentPlanningViewPolicyKey() ||
-      stored.digest !==
+    if (!stored) return null;
+    const valid =
+      stored.owner === owner &&
+      stored.sequence === sequence &&
+      stored.activeReleaseId === activeReleaseId &&
+      stored.policyKey === currentPlanningViewPolicyKey() &&
+      stored.digest ===
         (await viewDigest({
           owner: stored.owner,
           sequence: stored.sequence,
           activeReleaseId: stored.activeReleaseId,
           policyKey: stored.policyKey,
           snapshot: stored.snapshot,
-        }))
-    )
+        }));
+    if (!valid) {
+      await deletePlanningViewIfUnchanged(factory, stored).catch(
+        () => undefined,
+      );
       return null;
+    }
     return stored.snapshot;
   } catch {
     return null;
