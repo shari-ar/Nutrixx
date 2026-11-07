@@ -73,7 +73,7 @@ async function prepare(
               ...(detail
                 ? { recommendedChunkSize: detail.recommendedChunkSize }
                 : {}),
-              message: `${stage === 'classifying-catalog' ? 'Classifying catalog entries' : 'Scoring comparable foods'}… ${processed.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} (${percent}%).`,
+              message: `${stage === 'classifying-catalog' ? 'Classifying catalog entries' : 'Simulating robust multi-day continuations'}… ${processed.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} (${percent}%).`,
             });
             return;
           }

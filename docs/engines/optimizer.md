@@ -2,15 +2,18 @@
 
 | Field         | Value                                             |
 | ------------- | ------------------------------------------------- |
-| Status        | Active Free contract; future paid design          |
+| Status        | Active normative design                           |
 | Audience      | Optimization, nutrition science, product, quality |
 | Owner         | Nutrixx Optimization Engineering                  |
-| Last reviewed | 2026-10-13                                        |
+| Last reviewed | 2026-11-07                                        |
 
 ## Contract
 
-The Free recommendation engine receives one immutable, eligible next-meal
-context and returns a complete, classified local-catalog ranking. The
+The recommendation engine receives one immutable, eligible next-meal context
+and returns a complete, classified local-catalog ranking. The normative product
+semantics are defined by [next-meal planning](next-meal-planning.md): recorded
+history supplies the dietary state, rolling-horizon continuation protects
+against a myopic next action, and only the next-meal ranking is published. The
 application supplies immutable state and publishes validated results to the
 user.
 
@@ -19,7 +22,7 @@ NextMealContextSnapshot
 → Eligibility
 → Full local catalog census
 → Candidate classification + hard-rule validation
-→ Evidence-qualified portion evaluation
+→ Evidence-qualified portion and continuation evaluation
 → Deterministic ranking
 → Independent result validation
 → Explanation + freshness gate
@@ -46,29 +49,43 @@ optimizer and optimizer authority require their dedicated entitlement.
 Entitlement differences affect available compute/capabilities while safety
 constraints and nutrient meanings remain universal.
 
-The accepted Stage 4 Free policy is specified by
+The accepted Stage 4 Free implementation milestone is specified by
 [history-aware constraints](../decisions/ADR-0016-history-aware-next-meal-constraints.md),
 [complete ranking and replay](../decisions/ADR-0017-complete-local-next-meal-ranking.md),
 [next-meal lifecycle and inventory](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
 and the [capability and quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
-These ADRs define the active Free planning design. The
+These ADRs define the current local implementation boundary within the
+normative next-meal design. The
 [Free next-meal contract](next-meal-contract.md) specifies its typed boundary,
-outcomes, invariants, and replay. The mixed-integer model below remains a
-candidate for the later full optimizer.
+outcomes, invariants, and replay.
 
-## Full optimizer planning context
+## Rolling-horizon planning context
 
-The later paid full-optimizer snapshot includes horizon/meal slots, nutrition state, applicable target
+The complete optimizer snapshot includes horizon/meal slots, nutrition state, applicable target
 and safety policy, foods/recipes and exact revisions, portions/availability,
 allergens/restrictions, preferences, culture/cuisine, budget, preparation time,
-inventory/waste when supported, prior-plan stability, and all data quality
-limitations.
+inventory/waste when supported, prior-plan stability, forecast assumptions,
+terminal-state policy, and all data quality limitations. Capability tiers may
+change where computation runs and which validated models are available; they
+preserve the meaning of Nutrixx's next-meal decision.
 
 ## Optimization model
 
 A mixed-integer linear model is the proposed baseline for discrete food choices,
-portion increments, and meal assignments. A solver adapter keeps domain
+portion increments, and meal assignments. Every comparable candidate is tested
+as the first action of a feasible continuation over the configured horizon. Its
+ranking value reflects the best validated continuation it enables, while only
+the first action is published. A terminal value prevents objectives from being
+artificially postponed beyond the finite horizon. A solver adapter keeps domain
 semantics independent of a vendor.
+
+The active local policy uses a deterministic bounded continuation portfolio to
+keep full-catalog work practical in a browser. It evaluates a three-day horizon
+with three modeled opportunities per day, multiple continuation seeds and both
+an expected schedule and a one-opportunity-loss scenario. Exact rational
+arithmetic and a fixed policy make the result reproducible. This search makes
+no unsupported global-optimality claim; a future solver adapter may expand the
+search while preserving the same contract and objective hierarchy.
 
 ### Hard constraints
 
@@ -100,6 +117,15 @@ Predictions are independent modules with a declared outcome, horizon,
 population, baseline, model/data version, interval, and validation evidence.
 Safety limits and user goals change through their dedicated authorized
 workflows. Models enter production after evaluation/shadow validation.
+
+Paid AI modules may recognize preference patterns, predict adherence, extract
+typed context and explain a validated result. Preference and adherence outputs
+enter only declared soft-objective channels. Extracted facts remain drafts, and
+generated explanations resolve exclusively to validated trace evidence. The
+deterministic optimizer retains authority over feasibility, safety, nutrient
+arithmetic, objective hierarchy and ranking. These paid modules are documented
+target capabilities scheduled for a paid-plan delivery stage. The current local
+planner remains deterministic and fully functional without these modules.
 
 ## Determinism and replay
 

@@ -86,6 +86,7 @@ interface NextMealStoredCandidateV1
 }
 
 interface NextMealStoredInputV1 {
+  readonly planningPolicy: NextMealRankingRequest['planningPolicy'];
   readonly temporalRules: NextMealRankingRequest['temporalRules'];
   readonly acceptedMeals: readonly Pick<
     NextMealRankingRequest['acceptedMeals'][number],
@@ -157,6 +158,7 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
   if (
     !isObject(data['input']) ||
     !isObject(data['input']['candidates']) ||
+    !isObject(data['input']['planningPolicy']) ||
     typeof data['input']['candidates']['requestedAt'] !== 'string' ||
     !Array.isArray(data['input']['candidates']['entries']) ||
     !Array.isArray(data['input']['temporalRules']) ||
@@ -241,6 +243,7 @@ function storedInput(
     input.temporalRules.map((rule) => rule.nutrientId),
   );
   return {
+    planningPolicy: input.planningPolicy,
     temporalRules: input.temporalRules,
     acceptedMeals: input.acceptedMeals.map(({ mealId, consumedAt }) => ({
       mealId,

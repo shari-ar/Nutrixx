@@ -16,8 +16,8 @@ hero:
       text: Start with the product constitution
       link: /product/constitution
     - theme: alt
-      text: Explore the architecture
-      link: /architecture/target-architecture
+      text: Understand next-meal planning
+      link: /engines/next-meal-planning
 
 features:
   - icon: 🎯
@@ -53,7 +53,8 @@ features:
 | Follow local-to-cloud evolution         | [Local-first architecture](/architecture/local-first-evolution) |
 | Learn the core language and concepts    | [Domain model](/domain/domain-model)                            |
 | Understand nutrition computation        | [Nutrition-model foundation](/nutrition-model/foundation)       |
-| Inspect recommendation behavior         | [Decision engines](/engines/)                                   |
+| Understand Find my next meal            | [Next-meal planning](/engines/next-meal-planning)               |
+| Inspect other decision-engine contracts | [Decision engines](/engines/)                                   |
 | Review safety, evidence, and validation | [Quality and evidence](/quality/)                               |
 | See the technologies currently in use   | [Technology stack](/technology-stack)                           |
 | Contribute or govern documentation      | [Documentation governance](/documentation-governance)           |

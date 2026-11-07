@@ -3,7 +3,7 @@
 | Field                | Value                                      |
 | -------------------- | ------------------------------------------ |
 | Status               | Accepted                                   |
-| Date                 | 2026-10-12                                 |
+| Date                 | 2026-11-07                                 |
 | Deciders             | Nutrixx Product                            |
 | Owner                | Nutrixx Product                            |
 | Resolves             | OD-011, revised; OD-015 in part            |
@@ -36,9 +36,11 @@ ingredients they report having at home.
 Adopt option 3. Opening the dashboard or Planning view can request or reuse a
 fresh local ranking automatically. A loading state and an explicit refresh
 control cover longer work. The current recommendation covers one upcoming
-eating occasion. It creates no proposal for later slots or days. The user can
-inspect the ordered list and choose any entry; choosing records a revisable
-next-meal intention. The user can also leave the list without choosing.
+eating occasion. The engine may simulate later opportunities to measure the
+continuation enabled by each next choice, but it publishes no later meal as a
+proposal or commitment. The user can inspect the ordered list and choose any
+entry; choosing records a revisable next-meal intention. The user can also
+leave the list without choosing.
 
 The action **Log as eaten** asks for the actual food or recipe, edible amount,
 and consumption time before creating a meal command in the authoritative
@@ -48,6 +50,12 @@ identities and revisions; an optional link explains which suggestion led to
 the log. An unlinked meal remains fully valid. Corrections to consumed meals
 update the intake context for subsequent rankings. The interface describes
 logged versus suggested actions without a clinical adherence score.
+
+After the meal command commits, the application immediately starts a new
+rolling-horizon run from the updated ledger. The recorded meal remains
+authoritative if that recalculation is canceled or fails; the interface reports
+the separate recommendation failure and permits a retry. A successful run
+replaces the expired ranking and publishes only the newly selected next action.
 
 Personal inventory is an explicit optional filter named **Use my available
 foods and ingredients**. The user can declare items, edible quantities, units,
@@ -83,7 +91,8 @@ separate future consent boundary.
 - Inventory entry takes time for users who enable that mode.
 - Ingredient quantity, preparation, and recipe-yield matching need explicit
   evidence and user correction paths.
-- A next-meal recommendation provides less forward scheduling than a day plan.
+- Rolling-horizon simulation adds computation even though the user sees only
+  the next action.
 
 ## Validation and review triggers
 

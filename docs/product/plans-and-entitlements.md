@@ -5,7 +5,7 @@
 | Status        | Proposed target product policy            |
 | Audience      | Product, engineering, support, operations |
 | Owner         | Nutrixx Product                           |
-| Last reviewed | 2026-09-27                                |
+| Last reviewed | 2026-11-07                                |
 
 This document is the human-readable authority for plan capabilities. Prices,
 taxes, promotions, and market-specific packaging are commercial configuration.
@@ -29,6 +29,28 @@ validated against a versioned machine-readable catalog before paid plans launch.
 All plans receive the same scientific definitions, deterministic nutrient
 arithmetic, safety rules, correction rights, and manual data portability. A
 paid entitlement preserves every safety rule and scientific claim gate.
+
+## Paid planning AI
+
+Paid planning may add managed AI modules around the deterministic
+[next-meal decision system](../engines/next-meal-planning.md). These modules are
+target capabilities scheduled for a paid-plan delivery stage. The current local
+implementation remains deterministic and fully functional on its own.
+
+| AI responsibility      | Pro and Ultimate behavior                                                                  | Authority boundary                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Preference recognition | Learn bounded preference features from choices, rejections, corrections and explicit input | Influences soft objectives only; explicit restrictions remain authoritative      |
+| Adherence prediction   | Estimate acceptance or completion likelihood with calibration, interval and intended use   | Safety, nutrient meaning, hard limits and evidence requirements retain priority  |
+| Information extraction | Convert text, speech, images or links into typed profile, meal, recipe or context drafts   | Drafts require deterministic resolution, validation and required confirmation    |
+| Result explanation     | Translate the validated decision trace into clear, personalized language                   | Typed evidence supplies every reason, number, source and medical-scope statement |
+
+The optimizer remains responsible for feasibility, hierarchical objectives,
+robust rolling-horizon evaluation and the final ranked result. AI supplies
+typed candidate features or language around that result. Every model records
+provider, model, prompt/policy version, intended use, input scope, uncertainty,
+evaluation evidence and rollback target. Unvalidated models run offline or in
+shadow mode, with published recommendations continuing to use deterministic
+engine evidence during evaluation.
 
 ## Free mode
 

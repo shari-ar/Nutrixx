@@ -44,6 +44,19 @@ function inputGuidance(reasonCodes: readonly string[]): string {
     .join(' ');
 }
 
+function inputDestination(
+  reasonCodes: readonly string[],
+): 'nutrition' | 'dashboard' | null {
+  if (reasonCodes.includes('local-catalog-required')) return 'dashboard';
+  return reasonCodes.some(
+    (code) =>
+      code === 'nutrition-market-required' ||
+      code === 'travel-day-reference-unavailable',
+  )
+    ? 'nutrition'
+    : null;
+}
+
 export function PlanningWorkspace() {
   const planning = useMemo(() => new BrowserPlanningStore(), []);
   const foods = useMemo(
@@ -302,17 +315,7 @@ export function PlanningWorkspace() {
               );
               if (result.status !== 'READY') {
                 setNotice(inputGuidance(result.reasonCodes));
-                setInputLink(
-                  result.reasonCodes.includes('local-catalog-required')
-                    ? 'dashboard'
-                    : result.reasonCodes.some(
-                          (code) =>
-                            code === 'nutrition-market-required' ||
-                            code === 'travel-day-reference-unavailable',
-                        )
-                      ? 'nutrition'
-                      : null,
-                );
+                setInputLink(inputDestination(result.reasonCodes));
               }
               setPlanningProgress(
                 result.status === 'READY'
@@ -554,15 +557,53 @@ export function PlanningWorkspace() {
             className="mt-5 rounded-xl bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:opacity-50"
             disabled={busy || !actualGrams}
             onClick={() => {
-              perform(async () => {
+              perform(async (signal) => {
                 const mealId = await planning.logAsEaten({
                   intentionId: snapshot.intention!.intentionId,
                   mealType,
                   occurredAt: new Date().toISOString(),
                   edibleGrams: actualGrams,
                 });
-                setNotice(`Meal recorded: ${mealId}`);
-              }).catch(() => setError('The meal could not be recorded.'));
+                setPlanningProgress(
+                  'Meal recorded. Recalculating the next recommendation…',
+                );
+                let result;
+                try {
+                  result = await planning.createRecommendation(
+                    { inventory: inventoryOnly ? inventory : null },
+                    (progress) => setPlanningProgress(progress.message),
+                    signal,
+                  );
+                } catch (failure) {
+                  if (failure instanceof Error && failure.name === 'AbortError')
+                    throw failure;
+                  setNotice(`Meal recorded: ${mealId}`);
+                  setError(
+                    'The meal was recorded, but the next recommendation could not be recalculated.',
+                  );
+                  setPlanningProgress(null);
+                  return;
+                }
+                if (result.status === 'READY') {
+                  setNotice(
+                    `Meal recorded: ${mealId}. Your next recommendation is ready.`,
+                  );
+                  setPlanningProgress(
+                    'Feedback applied. Review the recalculated ranking below.',
+                  );
+                  setPagination({ runId: null, ranked: 0, unranked: 0 });
+                  return;
+                }
+                setNotice(
+                  `Meal recorded: ${mealId}. ${inputGuidance(result.reasonCodes)}`,
+                );
+                setInputLink(inputDestination(result.reasonCodes));
+                setPlanningProgress(
+                  'The meal was recorded. More information is needed before the next ranking can continue.',
+                );
+              }).catch(() =>
+                setError('The meal operation could not be completed.'),
+              );
             }}
             type="button"
           >

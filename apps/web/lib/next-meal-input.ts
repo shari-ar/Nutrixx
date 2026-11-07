@@ -463,6 +463,7 @@ export function buildNextMealInputV1(context: Context): NextMealInputResultV1 {
               sourceRecordId: target.rule.ruleId,
             },
           },
+          forecastTargetPerDay: value.amount,
           weight: 1,
         };
       },

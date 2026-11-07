@@ -5,7 +5,7 @@
 | Status        | Accepted target contract                      |
 | Audience      | Engine, web, data, quality, nutrition science |
 | Owner         | Nutrixx Optimization Engineering              |
-| Last reviewed | 2026-10-13                                    |
+| Last reviewed | 2026-11-07                                    |
 
 This is the single normative Stage 4 contract for the Free local recommendation
 engine. It specializes [the optimizer overview](optimizer.md) and implements
@@ -13,8 +13,12 @@ engine. It specializes [the optimizer overview](optimizer.md) and implements
 [complete catalog ranking](../decisions/ADR-0017-complete-local-next-meal-ranking.md),
 [the next-meal lifecycle](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
 and [the Free quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
-The recommendation concerns **one upcoming eating occasion**. Future paid
-multi-meal optimization has its own capability boundary.
+The recommendation concerns **one upcoming eating occasion**. As specified by
+[the normative planning doctrine](next-meal-planning.md), the engine may
+simulate a multi-opportunity continuation to prevent a myopic next action, but
+it publishes no commitment for later meals. The system replans from the user's
+actual next intake. Capability tiers may change computation and validated model
+availability without changing this product meaning.
 
 ## Boundary and identity
 
@@ -54,7 +58,8 @@ required nested facts are:
 | `catalogManifest`       | Every active installed food/recipe release and current user-food/user-recipe revision included in the census, with stable identity and content digest.                                                                                                                                                              |
 | `candidateFacts`        | For every catalog entry: source identity/revision, preparation and edible basis, supported portions and bounds, composition and provenance, restriction evidence, and recipe ingredient requirements where applicable.                                                                                              |
 | `inventory`             | Explicit `ALL_CATALOG` or `AVAILABLE_ONLY` mode; the latter carries exact inventory revision, item identity, edible quantity/unit, preparation state, and material matching uncertainty.                                                                                                                            |
-| `policy`                | Exact classification, constraint, scoring, tie-break, validation, and worker-budget policy versions.                                                                                                                                                                                                                |
+| `forecast`              | Planning horizon, future eating opportunities, scenario assumptions, continuation constraints and terminal-state policy; these are simulation inputs rather than promised meals.                                                                                                                                    |
+| `policy`                | Exact classification, constraint, objective hierarchy, scoring, tie-break, validation, solver and worker-budget policy versions.                                                                                                                                                                                    |
 
 The catalog snapshot may use immutable content-addressed local blobs referenced
 by the manifest, while the input fingerprint covers their ordered identities
@@ -103,37 +108,47 @@ entry.
 | `EXCLUDED`             | A declared exclusion or verified hard rule blocks the candidate.                                            | No                          |
 | `REQUIRES_PREPARATION` | The catalog entry needs a resolved edible preparation or recipe result.                                     | No                          |
 
-The engine evaluates supported portions for each `COMPARABLE` entry and
-selects one validated portion per ranked food or recipe. It orders **every**
-comparable entry by the versioned objective hierarchy and deterministic
-tie-break keys. The remaining classes follow in stable classification,
+The engine evaluates supported portions for each `COMPARABLE` entry and treats
+that portion as the first action of the configured planning horizon. It finds
+the best feasible continuation, applies the terminal-state policy, and selects
+one validated next portion per ranked food or recipe. It orders **every**
+comparable entry by the versioned lexicographic objective hierarchy,
+continuation quality, robustness and deterministic tie-break keys. Later
+simulated actions serve solely as internal evidence; user commitments originate
+from explicit selection and consumption commands.
+The remaining classes follow in stable classification,
 reason, and identity order, with their class displayed rather than a
 nutritional suitability rank. User-declared inventory is an availability gate
 only when `AVAILABLE_ONLY` is active. Recipe availability requires sufficient
 verified quantity for every required ingredient at its versioned yield.
 
 A `READY` first item means highest-ranked among evaluated comparable entries
-under the frozen policy. It is a general-wellness planning estimate. Foods
+under the frozen policy and forecast assumptions. It is a general-wellness
+planning estimate rather than proof of one universally optimal food. Foods
 with incomplete evidence remain discoverable through their classification.
 
-The `free-next-meal-weighted-distance-v1` policy scores source-backed temporal
-comparisons with known recorded-meal composition. A short available history
+The active `next-meal-rolling-horizon-robust-v1` policy scores source-backed
+temporal comparisons with known recorded-meal composition, evaluates each
+candidate as the first action of a multi-day continuation, and ranks against
+the least favorable configured schedule scenario. A short available history
 can enter the score through a policy-permitted provisional comparison; its
 applied span and qualification remain frozen with the run. Each rule supplies its own UTC window,
 coverage, reference target, unit, weight, and exact accepted-meal observations.
 The input builder evaluates the full eligible rule set in the active release
 against comparable catalog and recorded-intake evidence. Foods with incomplete
 required composition retain their evidence-limited classification.
-For each supported portion, the engine minimizes the sum of weighted,
-normalized target distances using exact rational arithmetic. A `minimum`
+For each supported portion, the engine first minimizes the largest normalized
+target distance, then the weighted combined distance, nominal-schedule
+distance, repetition, immediate distance, portion size and stable identity.
+Exact rational arithmetic keeps comparisons deterministic. A `minimum`
 target has zero distance after it is met; a `preferred` target measures distance
 on either side. Verified hard limits already restrict supported portions. Equal
 scores use the smallest maximum rule distance, then the smaller edible portion,
 source identity, and portion identity. Unresolved historical evidence moves an
 otherwise comparable entry to `EVIDENCE_LIMITED` when no policy-permitted
 comparison remains. The independent reviewer reconstructs the full census, safety
-gates, supported portions, exact score components, and total order from the
-frozen input without calling the ranking or classification implementation.
+gates and supported portions independently, then reapplies the frozen pure
+objective evaluator to reconstruct exact score components and total order.
 It approves only a complete, matching ranking. A rejected review carries
 typed mismatch reasons and supplies no publishable explanations. For each
 approved row, explanation facts identify the candidate and portion, applied

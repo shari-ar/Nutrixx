@@ -7,14 +7,15 @@
 | Owner         | Nutrixx Domain Engineering                      |
 | Last reviewed | 2026-10-12                                      |
 
-| Document                                                | Purpose                                                      |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
-| [Health context](health-context.md)                     | Safe derivation of non-diagnostic context                    |
-| [Daily nutrition state](daily-nutrition-state.md)       | Intake aggregation and target comparison                     |
-| [Optimizer](optimizer.md)                               | Feasibility, objectives, prediction, validation, explanation |
-| [Free next-meal contract](next-meal-contract.md)        | One upcoming meal: typed input, ranking, outcomes, replay    |
-| [AI-assisted capture](ai-assisted-capture.md)           | Safe hosted and user-enabled local draft generation          |
-| [Conversational assistant](conversational-assistant.md) | Ultimate tool-mediated, grounded conversation                |
+| Document                                                | Purpose                                                       |
+| ------------------------------------------------------- | ------------------------------------------------------------- |
+| [Health context](health-context.md)                     | Safe derivation of non-diagnostic context                     |
+| [Daily nutrition state](daily-nutrition-state.md)       | Intake aggregation and target comparison                      |
+| [Next-meal planning](next-meal-planning.md)             | Normative doctrine: history, rolling horizon, one next action |
+| [Optimizer](optimizer.md)                               | Feasibility, objectives, prediction, validation, explanation  |
+| [Free next-meal contract](next-meal-contract.md)        | Typed local boundary, ranking, outcomes and replay            |
+| [AI-assisted capture](ai-assisted-capture.md)           | Safe hosted and user-enabled local draft generation           |
+| [Conversational assistant](conversational-assistant.md) | Ultimate tool-mediated, grounded conversation                 |
 
 Engine calculations are deterministic, framework-free, and side-effect-free.
 Callers resolve immutable inputs before invocation. Local ledger adapters

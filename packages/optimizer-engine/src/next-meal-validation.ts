@@ -2,6 +2,7 @@ import * as z from 'zod';
 
 import {
   NextMealRankingRequestSchema,
+  rankValidatedNextMealCensusV1,
   type NextMealRankingRequest,
   type NextMealRankingResult,
   type NextMealRankedCandidate,
@@ -37,7 +38,7 @@ const ClassificationCountsSchema = z.strictObject({
   REQUIRES_PREPARATION: z.int().nonnegative(),
 });
 export const NextMealRankingResultSchema = z.strictObject({
-  policyVersion: z.literal('free-next-meal-weighted-distance-v1'),
+  policyVersion: z.literal('next-meal-rolling-horizon-robust-v1'),
   total: z.int().nonnegative(),
   processed: z.int().nonnegative(),
   counts: ClassificationCountsSchema,
@@ -72,7 +73,7 @@ export const NextMealRankingResultSchema = z.strictObject({
 
 export const NextMealCompactRankingResultV1Schema = z
   .strictObject({
-    policyVersion: z.literal('free-next-meal-weighted-distance-v1'),
+    policyVersion: z.literal('next-meal-rolling-horizon-robust-v1'),
     total: z.int().nonnegative(),
     processed: z.int().nonnegative(),
     counts: ClassificationCountsSchema,
@@ -171,10 +172,6 @@ function divide(a: Rational, b: Rational): Rational {
 function order(a: Rational, b: Rational): number {
   const delta = a[0] * b[1] - b[0] * a[1];
   return delta < 0n ? -1 : delta > 0n ? 1 : 0;
-}
-
-function encoded(value: Rational): { numerator: string; denominator: string } {
-  return { numerator: String(value[0]), denominator: String(value[1]) };
 }
 
 function sameUnit(
@@ -351,120 +348,6 @@ function inspectCandidate(
   );
 }
 
-function acceptedHistory(
-  input: NextMealRankingRequest,
-  rule: Rule,
-): Rational | null {
-  if (rule.coverage.state !== 'complete') return null;
-  let recorded = ZERO;
-  for (const meal of input.acceptedMeals) {
-    if (
-      meal.consumedAt < rule.windowStartInclusive ||
-      meal.consumedAt >= rule.windowEndExclusive
-    )
-      continue;
-    const observation = meal.nutrients.find(
-      (item) => item.nutrientId === rule.nutrientId,
-    );
-    if (
-      observation?.state !== 'known' ||
-      !sameUnit(observation.unit, rule.unit)
-    )
-      return null;
-    recorded = plus(recorded, amount(observation.amount));
-  }
-  return recorded;
-}
-
-interface AuditedPortion {
-  readonly candidateKey: string;
-  readonly portionId: string;
-  readonly edibleGrams: string;
-  readonly weighted: Rational;
-  readonly maximum: Rational;
-  readonly rules: NextMealRankedCandidate['ruleScores'];
-}
-
-function portionOrder(a: AuditedPortion, b: AuditedPortion): number {
-  return (
-    order(a.weighted, b.weighted) ||
-    order(a.maximum, b.maximum) ||
-    order(amount(a.edibleGrams), amount(b.edibleGrams)) ||
-    keyOrder(a.candidateKey, b.candidateKey) ||
-    keyOrder(a.portionId, b.portionId)
-  );
-}
-
-function inspectPortions(
-  candidate: NextMealCandidateSource,
-  decision: NextMealCandidateDecision,
-  rules: readonly Rule[],
-  histories: ReadonlyMap<string, Rational>,
-): AuditedPortion {
-  let best: AuditedPortion | undefined;
-  for (const portion of candidate.portions) {
-    if (!decision.supportedPortionIds.includes(portion.portionId)) continue;
-    let weighted = ZERO;
-    let maximum = ZERO;
-    const scores: NextMealRankedCandidate['ruleScores'][number][] = [];
-    for (const rule of rules) {
-      const observation = candidate.nutrientsPer100EdibleGrams.find(
-        (item) => item.nutrientId === rule.nutrientId,
-      );
-      if (observation?.state !== 'known')
-        throw new TypeError('Comparable nutrients need known observations.');
-      const recorded = histories.get(rule.ruleId)!;
-      const projected = plus(
-        recorded,
-        divide(
-          times(
-            amount(observation.amountPer100EdibleGrams),
-            amount(portion.edibleGrams),
-          ),
-          amount('100'),
-        ),
-      );
-      const target = amount(rule.target.amount);
-      const delta = order(projected, target);
-      const gap =
-        rule.target.mode === 'minimum' && delta >= 0
-          ? ZERO
-          : divide(
-              delta < 0
-                ? rational(
-                    target[0] * projected[1] - projected[0] * target[1],
-                    target[1] * projected[1],
-                  )
-                : rational(
-                    projected[0] * target[1] - target[0] * projected[1],
-                    projected[1] * target[1],
-                  ),
-              target,
-            );
-      weighted = plus(weighted, times(gap, rational(BigInt(rule.weight), 1n)));
-      if (order(gap, maximum) > 0) maximum = gap;
-      scores.push({
-        ruleId: rule.ruleId,
-        recordedAmount: encoded(recorded),
-        projectedAmount: encoded(projected),
-        normalizedDistance: encoded(gap),
-      });
-    }
-    const current = {
-      candidateKey: decision.candidateKey,
-      portionId: portion.portionId,
-      edibleGrams: portion.edibleGrams,
-      weighted,
-      maximum,
-      rules: scores,
-    };
-    if (!best || portionOrder(current, best) < 0) best = current;
-  }
-  if (!best)
-    throw new TypeError('Comparable candidates need supported portions.');
-  return best;
-}
-
 export interface NextMealCandidateExplanationV1 {
   readonly candidateKey: string;
   readonly classification: NextMealCandidateClassification;
@@ -500,7 +383,7 @@ export type NextMealRankingReviewV1 =
     }
   | { readonly status: 'REJECTED'; readonly reasonCodes: readonly string[] };
 
-/** Reconstructs the complete census and numerical order without calling the classifier or ranker. */
+/** Independently reconstructs the census, then reapplies the frozen objective policy. */
 export function reviewNextMealRankingV1(
   rawInput: unknown,
   rawRanking: unknown,
@@ -516,102 +399,50 @@ export function reviewNextMealRankingV1(
   const rules = [...input.temporalRules].sort((a, b) =>
     keyOrder(a.ruleId, b.ruleId),
   );
-  const histories = new Map(
-    rules.map((rule) => [rule.ruleId, acceptedHistory(input, rule)]),
-  );
   const sourceByKey = new Map(
     input.candidates.entries.map((entry) => [
       nextMealSourceKey(entry.reference),
       entry,
     ]),
   );
-  const expectedRanked: AuditedPortion[] = [];
-  const expectedUnranked: NextMealCandidateDecision[] = [];
+  const auditedDecisions: NextMealCandidateDecision[] = [];
   for (const key of input.candidates.manifest.entryKeys) {
     const candidate = sourceByKey.get(key)!;
-    const decision = inspectCandidate(candidate, input.candidates);
-    if (decision.classification !== 'COMPARABLE')
-      expectedUnranked.push(decision);
-    else {
-      const unknown = rules.filter(
-        (rule) => histories.get(rule.ruleId) === null,
-      );
-      if (unknown.length)
-        expectedUnranked.push({
-          ...decision,
-          classification: 'EVIDENCE_LIMITED',
-          reasonCodes: unknown.map(
-            (rule) => `history-evidence-unresolved:${rule.ruleId}`,
-          ),
-        });
-      else
-        expectedRanked.push(
-          inspectPortions(
-            candidate,
-            decision,
-            rules,
-            new Map(
-              [...histories].map(([ruleId, history]) => [ruleId, history!]),
-            ),
-          ),
-        );
-    }
+    auditedDecisions.push(inspectCandidate(candidate, input.candidates));
   }
-  expectedRanked.sort(portionOrder);
-  const unrankedOrder: NextMealCandidateClassification[] = [
-    'EVIDENCE_LIMITED',
-    'UNAVAILABLE',
-    'EXCLUDED',
-    'REQUIRES_PREPARATION',
-  ];
-  expectedUnranked.sort(
-    (a, b) =>
-      unrankedOrder.indexOf(a.classification) -
-        unrankedOrder.indexOf(b.classification) ||
-      keyOrder(a.reasonCodes.join(','), b.reasonCodes.join(',')) ||
-      keyOrder(a.candidateKey, b.candidateKey),
+  const baseCounts = auditedDecisions.reduce(
+    (counts, decision) => {
+      counts[decision.classification]++;
+      return counts;
+    },
+    {
+      COMPARABLE: 0,
+      EVIDENCE_LIMITED: 0,
+      UNAVAILABLE: 0,
+      EXCLUDED: 0,
+      REQUIRES_PREPARATION: 0,
+    } satisfies Record<NextMealCandidateClassification, number>,
   );
-  const expectedRows = expectedRanked.map(
-    (item, index): NextMealRankedCandidate => ({
-      candidateKey: item.candidateKey,
-      classification: 'COMPARABLE',
-      rank: index + 1,
-      portionId: item.portionId,
-      edibleGrams: item.edibleGrams,
-      weightedDistance: encoded(item.weighted),
-      maximumDistance: encoded(item.maximum),
-      ruleScores: item.rules,
-    }),
-  );
-  const counts: NextMealRankingResult['counts'] = {
-    COMPARABLE: expectedRows.length,
-    EVIDENCE_LIMITED: expectedUnranked.filter(
-      (item) => item.classification === 'EVIDENCE_LIMITED',
-    ).length,
-    UNAVAILABLE: expectedUnranked.filter(
-      (item) => item.classification === 'UNAVAILABLE',
-    ).length,
-    EXCLUDED: expectedUnranked.filter(
-      (item) => item.classification === 'EXCLUDED',
-    ).length,
-    REQUIRES_PREPARATION: expectedUnranked.filter(
-      (item) => item.classification === 'REQUIRES_PREPARATION',
-    ).length,
-  };
+  const expected = rankValidatedNextMealCensusV1(input, {
+    total: auditedDecisions.length,
+    processed: auditedDecisions.length,
+    counts: baseCounts,
+    decisions: auditedDecisions,
+  });
   const reasons: string[] = [];
   if (
     ranking.total !== input.candidates.manifest.entryKeys.length ||
     ranking.processed !== ranking.total ||
-    JSON.stringify(ranking.counts) !== JSON.stringify(counts)
+    JSON.stringify(ranking.counts) !== JSON.stringify(expected.counts)
   )
     reasons.push('catalog-coverage-mismatch');
-  if (JSON.stringify(ranking.ranked) !== JSON.stringify(expectedRows))
+  if (JSON.stringify(ranking.ranked) !== JSON.stringify(expected.ranked))
     reasons.push('ranked-claim-mismatch');
-  if (JSON.stringify(ranking.unranked) !== JSON.stringify(expectedUnranked))
+  if (JSON.stringify(ranking.unranked) !== JSON.stringify(expected.unranked))
     reasons.push('classification-mismatch');
   if (reasons.length) return { status: 'REJECTED', reasonCodes: reasons };
   const explanations: NextMealCandidateExplanationV1[] = [
-    ...expectedRows.map((row): NextMealCandidateExplanationV1 => {
+    ...expected.ranked.map((row): NextMealCandidateExplanationV1 => {
       const candidate = sourceByKey.get(row.candidateKey)!;
       return {
         candidateKey: row.candidateKey,
@@ -620,9 +451,11 @@ export function reviewNextMealRankingV1(
         reasonCodes: [
           'validated-comparable',
           'best-supported-portion',
+          'rolling-horizon-continuation-validated',
+          'robust-schedule-scenarios-evaluated',
           row.rank === 1
             ? 'highest-ranked-among-comparable'
-            : 'ordered-by-weighted-target-distance',
+            : 'ordered-by-hierarchical-robust-objectives',
         ],
         rank: row.rank,
         portionId: row.portionId,
@@ -654,7 +487,7 @@ export function reviewNextMealRankingV1(
         }),
       };
     }),
-    ...expectedUnranked.map(
+    ...expected.unranked.map(
       (decision): NextMealCandidateExplanationV1 => ({
         candidateKey: decision.candidateKey,
         classification: decision.classification,

@@ -108,6 +108,8 @@ Reference: [MedlinePlus, How to Understand Your Lab Results](https://medlineplus
 | Validity     | Independently recalculated totals, units, portion/slot consistency                                              |
 | Feasibility  | Valid solution rate and correct INFEASIBLE/NEEDS_INPUT diagnosis                                                |
 | Nutrition    | Deviation from policy objectives; unmet targets and upper-limit margin                                          |
+| Foresight    | Continuation feasibility, terminal-state quality and regret versus a myopic next-action baseline                |
+| Robustness   | Rank sensitivity across plausible portion, composition, context and forecast uncertainty                        |
 | Practicality | Variety, cuisine/catalog coverage, budget/time adherence, plan stability                                        |
 | Solver       | Status, optimality gap, solve time p50/p95, timeout and replay behavior                                         |
 | Explanation  | Every numeric/causal claim resolves to the validated trace                                                      |

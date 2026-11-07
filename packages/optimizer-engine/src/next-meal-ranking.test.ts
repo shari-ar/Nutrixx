@@ -5,6 +5,7 @@ import {
   type NextMealCandidateSource,
 } from './next-meal-candidates.js';
 import {
+  DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1,
   rankNextMealCandidatesChunkedV1,
   rankNextMealCandidatesV1,
   type NextMealRankingChunkProgressV1,
@@ -70,6 +71,7 @@ function rule(ruleId: string, start: string, weight = 1) {
       releaseId: 'fixture-release',
       source,
     },
+    forecastTargetPerDay: '25',
     weight,
   };
 }
@@ -219,7 +221,17 @@ describe('next-meal ranking', () => {
   it('changes the first choice when actual recorded intake changes', () => {
     const high = food(1, '20');
     const low = food(2, '5');
-    const base = request([low, high]);
+    const base = {
+      ...request([low, high]),
+      planningPolicy: {
+        ...DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1,
+        horizonDays: 2,
+        opportunitiesPerDay: 1,
+        robustScenarios: [
+          { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
+        ],
+      },
+    };
     const before = rankNextMealCandidatesV1(base);
     const after = rankNextMealCandidatesV1({
       ...base,
@@ -236,6 +248,53 @@ describe('next-meal ranking', () => {
       numerator: '20',
       denominator: '1',
     });
+  });
+
+  it('uses the least favorable rolling-horizon schedule without publishing future meals', () => {
+    const candidate = food(1, '12.5');
+    const base = request([candidate]);
+    const expectedOnly = rankNextMealCandidatesV1({
+      ...base,
+      planningPolicy: {
+        ...DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1,
+        horizonDays: 2,
+        opportunitiesPerDay: 1,
+        robustScenarios: [
+          { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
+        ],
+      },
+    });
+    const robust = rankNextMealCandidatesV1({
+      ...base,
+      planningPolicy: {
+        ...DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1,
+        horizonDays: 2,
+        opportunitiesPerDay: 1,
+        robustScenarios: [
+          { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
+          { scenarioId: 'one-opportunity-lost', missedFutureOpportunities: 1 },
+        ],
+      },
+    });
+
+    expect(expectedOnly.ranked[0]?.weightedDistance).toEqual({
+      numerator: '0',
+      denominator: '1',
+    });
+    expect(robust.ranked[0]?.weightedDistance).toEqual({
+      numerator: '1',
+      denominator: '2',
+    });
+    expect(Object.keys(robust.ranked[0]!).sort()).toEqual([
+      'candidateKey',
+      'classification',
+      'edibleGrams',
+      'maximumDistance',
+      'portionId',
+      'rank',
+      'ruleScores',
+      'weightedDistance',
+    ]);
   });
 
   it('uses each sourced rule window independently, including previous days', () => {

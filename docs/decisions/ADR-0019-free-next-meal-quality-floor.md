@@ -3,7 +3,7 @@
 | Field                     | Value                                          |
 | ------------------------- | ---------------------------------------------- |
 | Status                    | Accepted                                       |
-| Date                      | 2026-10-12                                     |
+| Date                      | 2026-11-07                                     |
 | Deciders                  | Nutrixx Product and Optimization               |
 | Owner                     | Nutrixx Product                                |
 | Resolves                  | OD-019, revised                                |
@@ -51,6 +51,10 @@ The Stage 4 release quality floor is:
   remaining entry assigned a visible reason;
 - one independently validated result per user-visible ranked candidate, with
   explicit evidence-limited treatment where comparison support is incomplete;
+- validated continuation feasibility and terminal-state evaluation for every
+  published comparable candidate once rolling-horizon ranking is activated;
+- no claim that continuation influenced a result before that implementation
+  passes its dedicated acceptance fixtures;
 - distinct `READY`, `PARTIAL`, `NEEDS_INPUT`, `INFEASIBLE`, `SEARCH_LIMIT`,
   `OUT_OF_SCOPE`, `CANCELLED`, and `ERROR` states under the next-meal contract;
 - stable ranking and run hashes for identical completed inputs and versions;
@@ -87,6 +91,9 @@ Stage 4 closes after the complete advertised Free contract and this quality
 floor pass. The acceptance corpus includes large and sparse catalogs,
 inventory-filtered cases, time-zone transitions, historical corrections,
 offline replay, cancellation, and performance on named browser/device pairs.
+Rolling-horizon fixtures additionally cover myopic traps, alternative forecast
+scenarios, terminal effects, infeasible continuation and replanning after the
+actual meal differs from the suggestion.
 Qualified scientific and user-language review before public launch follows
 [ADR-0011](ADR-0011-provisional-science-release-gate.md). New source classes,
 population scope, temporal policies, and entitlement boundaries trigger a

@@ -3,7 +3,7 @@
 | Field                | Value                                  |
 | -------------------- | -------------------------------------- |
 | Status               | Accepted                               |
-| Date                 | 2026-10-12                             |
+| Date                 | 2026-11-07                             |
 | Deciders             | Nutrixx Product and Optimization       |
 | Owner                | Nutrixx Optimization Engineering       |
 | Resolves             | OD-010, revised                        |
@@ -45,15 +45,20 @@ scoring, and verified hard constraints precede soft objectives.
 
 The worker evaluates supported portions for each eligible candidate against
 the frozen profile, recorded history, temporal policy, source releases, and
-preferences. Its scoring policy has explicit, versioned objective order,
-normalization, and deterministic tie-breakers. The result is a complete order
-of comparable eligible candidates under that policy, with one selected portion
-per ranked food or recipe. The full catalog view places comparable eligible
+preferences. Each candidate portion becomes the first action in a bounded
+rolling-horizon simulation. The optimizer evaluates its best feasible
+continuation and terminal state, while the product publishes only that first
+action. Its scoring policy has explicit, versioned lexicographic objective
+tiers, normalization, forecast assumptions, uncertainty treatment and
+deterministic tie-breakers. The result is a complete order of comparable
+eligible candidates under that policy, with one selected next portion per
+ranked food or recipe. The full catalog view places comparable eligible
 entries first, followed by evidence-limited entries and other classified
 entries in stable reason-and-identity order. The latter groups carry their
 classification rather than an implied nutritional suitability rank. The first
 item means **highest-ranked among evaluated eligible candidates under this
-policy**, rather than a clinical claim or proven global nutritional optimum.
+policy and its forecast assumptions**, rather than a clinical claim or proven
+global nutritional optimum.
 The user can browse the entire classified list with pagination or
 virtualization.
 

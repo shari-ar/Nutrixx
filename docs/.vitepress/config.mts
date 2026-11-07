@@ -246,6 +246,7 @@ export default withMermaid(
       siteTitle: 'Nutrixx Docs',
       nav: [
         { text: 'Product', link: '/product/' },
+        { text: 'Next-meal planning', link: '/engines/next-meal-planning' },
         { text: 'Architecture', link: '/architecture/' },
         { text: 'Domain', link: '/domain/' },
         {

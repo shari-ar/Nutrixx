@@ -66,18 +66,22 @@ remains useful offline.
 
 Deliver a deterministic, fully local ranking for the next meal across the
 active food and recipe catalog. Nutrient-specific historical intake context,
-eligibility, hard/soft constraints, optional personal inventory, independent
-validation, evidence-linked explanation, and explicit consumed-meal logging
-form the Free experience.
+validated rolling-horizon continuation, eligibility, hard/soft constraints,
+optional personal inventory, independent validation, evidence-linked
+explanation, and explicit consumed-meal logging form the Free experience. The
+user sees one next-meal decision; simulated later actions prevent myopic
+ranking and create no future meal commitment.
 
 Stage 4 follows the accepted Free
 [history-aware constraints](../decisions/ADR-0016-history-aware-next-meal-constraints.md),
 [complete local ranking](../decisions/ADR-0017-complete-local-next-meal-ranking.md),
 [next-meal lifecycle and inventory](../decisions/ADR-0018-next-meal-lifecycle-and-inventory.md),
 and [quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md).
-The [next-meal engine contract](../engines/next-meal-contract.md) defines the
-Stage 4 boundary. Candidate preparation, ranking, validation, and browser
-integration are implemented. The
+The [next-meal planning doctrine](../engines/next-meal-planning.md) defines the
+product semantics, and the
+[next-meal engine contract](../engines/next-meal-contract.md) defines the Stage
+4 boundary. Candidate preparation, history-aware robust rolling-horizon
+ranking, validation, and browser integration are implemented. The
 [Stage 4 acceptance evidence](../quality/stage-4-local-planning-acceptance.md)
 confirms a complete, independently reviewed 8,156-food census and records
 browser performance on one workstation. Worker-based preparation and saved-run

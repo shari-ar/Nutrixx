@@ -101,6 +101,17 @@ export function NextMealRunOverview({
         count. This recommendation expires at{' '}
         <time dateTime={run.validUntil}>{utc(run.validUntil)}</time>.
       </p>
+      <p className="mt-2 text-muted">
+        Each next option was tested as the first action in a{' '}
+        {run.input.planningPolicy.horizonDays}-day rolling horizon with{' '}
+        {run.input.planningPolicy.opportunitiesPerDay} modeled eating
+        opportunities per day and{' '}
+        {run.input.planningPolicy.robustScenarios.length} schedule scenario
+        {run.input.planningPolicy.robustScenarios.length === 1 ? '' : 's'}. Only
+        the next meal is suggested; later actions are simulations, not a
+        committed menu. The complete calculation runs again after actual intake
+        is recorded.
+      </p>
       {provisional > 0 ? (
         <p className="mt-2 text-muted">
           {provisional} comparison{provisional === 1 ? '' : 's'} use a shorter
@@ -215,9 +226,10 @@ export function NextMealExplanation({
         Rank {row.rank} of {run.result.ranked.length} comparable options ·{' '}
         {explanation.comparisonCount} nutrient comparison
         {explanation.comparisonCount === 1 ? '' : 's'} · combined target gap{' '}
-        {decimal(row.score)}. A smaller gap ranks earlier within this run; ties
-        use the largest single gap, portion size, then stable IDs. This gap is
-        not a health score.
+        {decimal(row.score)} in the least favorable modeled schedule. The
+        hierarchy first minimizes the largest nutrient gap, then the combined
+        gap, continuation robustness, repetition, portion size, and stable IDs.
+        This gap is not a health score.
       </p>
       <details
         className="mt-2"

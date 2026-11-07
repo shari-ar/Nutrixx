@@ -5,7 +5,7 @@
 | Status        | Evidence collected; release gate open            |
 | Audience      | Engineering, quality, product, nutrition science |
 | Owner         | Nutrixx Quality                                  |
-| Last reviewed | 2026-10-17                                       |
+| Last reviewed | 2026-11-07                                       |
 
 ## Frozen corpus
 
@@ -52,6 +52,12 @@ ranking plus review took approximately 2.4 s, 1.4 s, 0.9 s, and 3.4 s;
 peak resident memory was approximately 2.1 GB. These are process-level
 diagnostics rather than browser sign-off.
 
+On 2026-11-07, the same full-catalog Node acceptance completed with the active
+`next-meal-rolling-horizon-robust-v1` policy in 20.4 seconds. The independent
+review approved the complete result, including deterministic replay. This is
+correctness and full-catalog feasibility evidence. Browser p95 and
+supported-device performance require separate measured evidence.
+
 Both browser runs used one Windows workstation with an Intel Core i5-11400,
 24 GB physical memory, and headless Chromium-family browsers. The pinned
 artifact and all 8,156 catalog identities matched the Node audit.
@@ -88,21 +94,23 @@ required before claiming a latency improvement or closing the gate.
 
 ## Exit decision
 
-| Gate                                              | Evidence and disposition                                                                                                        |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Pinned full-catalog census and independent review | Pass: one classification per entry, complete processed count, and approved ranking                                              |
-| Sparse composition handling                       | Pass: an unknown nutrient remains evidence-limited; golden tests cover hard-rule and explanation tampering                      |
-| Deterministic policy and temporal replay          | Pass: engine unit fixtures and identical repeated full-catalog ranking; result hash recorded in the local report                |
-| Browser worker budget on the measured workstation | Pass for the five worker-only runs in each named browser                                                                        |
-| Responsive local workflow                         | Pass on the measured workstation: 17 ms fixture gaps; 118 ms create and 14 ms reload gaps in the installed-cache journey        |
-| Full local-journey latency                        | Open: the first installed-cache creation took 52.7 s and saved-run reload took 16.9 s on this workstation                       |
-| Supported device/browser matrix                   | Open: Chrome and Edge measurements share one workstation; additional representative devices need measured results               |
-| Complete outcome and cancellation contract        | Open: the active browser flow exposes `READY` and `NEEDS_INPUT`; the eight-status contract and cancellation remain to implement |
-| Full offline user journey                         | Open: measure installed-cache load, actual selection, cancellation, and logging on each supported browser/device pair           |
+| Gate                                              | Evidence and disposition                                                                                                                                                           |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pinned full-catalog census and independent review | Pass: one classification per entry, complete processed count, and approved ranking                                                                                                 |
+| Sparse composition handling                       | Pass: an unknown nutrient remains evidence-limited; golden tests cover hard-rule and explanation tampering                                                                         |
+| Deterministic policy and temporal replay          | Pass: engine unit fixtures and identical repeated full-catalog ranking; result hash recorded in the local report                                                                   |
+| Browser worker budget on the measured workstation | Pass for the five worker-only runs in each named browser                                                                                                                           |
+| Responsive local workflow                         | Pass on the measured workstation: 17 ms fixture gaps; 118 ms create and 14 ms reload gaps in the installed-cache journey                                                           |
+| Full local-journey latency                        | Open: the first installed-cache creation took 52.7 s and saved-run reload took 16.9 s on this workstation                                                                          |
+| Supported device/browser matrix                   | Open: Chrome and Edge measurements share one workstation; additional representative devices need measured results                                                                  |
+| Complete outcome and cancellation contract        | Open: the active browser flow exposes `READY` and `NEEDS_INPUT`; the eight-status contract and cancellation remain to implement                                                    |
+| Full offline user journey                         | Open: measure installed-cache load, actual selection, cancellation, and logging on each supported browser/device pair                                                              |
+| Rolling-horizon continuation                      | Pass for full-catalog Node acceptance: three-day hierarchical robust continuation completed and independently reviewed in 20.4 s; browser/device performance sign-off remains open |
 
 Stage 4 exit remains open. The next release candidate needs faster local
-creation and reload, typed non-ready outcomes and cancellation, additional
-device measurements, and complete selection/logging evidence before sign-off.
+creation and reload, typed non-ready outcomes and cancellation, full-catalog
+rolling-horizon performance measurements, additional device measurements, and
+complete selection/logging evidence before sign-off.
 The [Free next-meal contract](../engines/next-meal-contract.md) and
 [quality floor](../decisions/ADR-0019-free-next-meal-quality-floor.md)
 remain the governing criteria.
