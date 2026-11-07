@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { FoodPicker } from '@/components/food-picker';
 import { BrowserStageTwoStore, type FoodChoice } from '@/lib/browser-stage-two';
+import { foodComponentDisplayNameV1 } from '@/lib/food-component-presentation';
 
 import type { CustomFoodVersionV1 } from '@nutrixx/food-knowledge';
 
@@ -235,75 +236,91 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
                   <ul className="mt-2 grid max-h-56 gap-1 overflow-auto sm:grid-cols-2">
                     {selected.nutrients.map((nutrient) => (
                       <li key={nutrient.id ?? nutrient.nutrientId}>
-                        {nutrient.nutrientId}: {nutrient.value}
-                        {nutrient.source ? (
-                          <span className="block text-xs text-muted">
-                            Source: {nutrient.source}
-                            {nutrient.sourceNutrientId
-                              ? ` · ${nutrient.sourceNutrientId}`
-                              : ''}
-                            {nutrient.sourceNutrientName
-                              ? ` (${nutrient.sourceNutrientName})`
-                              : ''}
-                            {nutrient.sourceConfidenceCode
-                              ? ` · Ciqual confidence ${nutrient.sourceConfidenceCode}`
-                              : ''}
-                            {nutrient.sourceReference
-                              ? ` · ${nutrient.sourceReference}`
-                              : ''}
-                          </span>
-                        ) : null}
-                        {nutrient.agentProvenance ? (
-                          <span className="block text-xs text-muted">
-                            Collected by Nutrixx Agent ·{' '}
-                            {evidenceTypeLabel(
-                              nutrient.agentProvenance.evidenceType,
-                            )}{' '}
-                            · {nutrient.agentProvenance.agentId} ·{' '}
-                            {nutrient.agentProvenance.model}
-                            {nutrient.agentProvenance.sourceTitle
-                              ? ` · ${nutrient.agentProvenance.sourceTitle}`
-                              : ''}
-                            {nutrient.agentProvenance.publisher
-                              ? ` · ${nutrient.agentProvenance.publisher}`
-                              : ''}
-                            {nutrient.agentProvenance.locator
-                              ? ` · ${nutrient.agentProvenance.locator}`
-                              : ''}
-                            {nutrient.agentProvenance.method
-                              ? ` · ${nutrient.agentProvenance.method}`
-                              : ''}
-                            {nutrient.agentProvenance.sourceUrl ? (
-                              <>
-                                {' · '}
-                                <a
-                                  className="text-accent underline"
-                                  href={nutrient.agentProvenance.sourceUrl}
-                                  rel="noreferrer"
-                                  target="_blank"
-                                >
-                                  Open source
-                                </a>
-                              </>
-                            ) : null}
-                            {nutrient.agentProvenance.knowledgeDescription
-                              ? ` · ${nutrient.agentProvenance.knowledgeDescription}`
-                              : ''}
-                            {nutrient.agentProvenance.derivation
-                              ? ` · ${nutrient.agentProvenance.derivation}`
-                              : ''}
-                            {nutrient.agentProvenance.inputs?.map((input) => (
-                              <span
-                                className="block pl-3"
-                                key={`${input.description}:${input.provenance}`}
-                              >
-                                Input: {input.description} · {input.provenance}
+                        <span className="font-medium">
+                          {foodComponentDisplayNameV1(
+                            nutrient.nutrientId,
+                            nutrient.sourceNutrientName,
+                          )}
+                        </span>
+                        : {nutrient.value}
+                        {nutrient.source || nutrient.agentProvenance ? (
+                          <details className="mt-1 text-xs text-muted">
+                            <summary className="cursor-pointer">
+                              Source and method
+                            </summary>
+                            {nutrient.source ? (
+                              <span className="mt-1 block">
+                                Source: {nutrient.source}
+                                {nutrient.sourceNutrientId
+                                  ? ` · ${nutrient.sourceNutrientId}`
+                                  : ''}
+                                {nutrient.sourceNutrientName
+                                  ? ` (${nutrient.sourceNutrientName})`
+                                  : ''}
+                                {nutrient.sourceConfidenceCode
+                                  ? ` · Ciqual confidence ${nutrient.sourceConfidenceCode}`
+                                  : ''}
+                                {nutrient.sourceReference
+                                  ? ` · ${nutrient.sourceReference}`
+                                  : ''}
                               </span>
-                            ))}
-                            {nutrient.agentProvenance.note
-                              ? ` · ${nutrient.agentProvenance.note}`
-                              : ''}
-                          </span>
+                            ) : null}
+                            {nutrient.agentProvenance ? (
+                              <span className="mt-1 block">
+                                Collected by Nutrixx Agent ·{' '}
+                                {evidenceTypeLabel(
+                                  nutrient.agentProvenance.evidenceType,
+                                )}{' '}
+                                · {nutrient.agentProvenance.agentId} ·{' '}
+                                {nutrient.agentProvenance.model}
+                                {nutrient.agentProvenance.sourceTitle
+                                  ? ` · ${nutrient.agentProvenance.sourceTitle}`
+                                  : ''}
+                                {nutrient.agentProvenance.publisher
+                                  ? ` · ${nutrient.agentProvenance.publisher}`
+                                  : ''}
+                                {nutrient.agentProvenance.locator
+                                  ? ` · ${nutrient.agentProvenance.locator}`
+                                  : ''}
+                                {nutrient.agentProvenance.method
+                                  ? ` · ${nutrient.agentProvenance.method}`
+                                  : ''}
+                                {nutrient.agentProvenance.sourceUrl ? (
+                                  <>
+                                    {' · '}
+                                    <a
+                                      className="text-accent underline"
+                                      href={nutrient.agentProvenance.sourceUrl}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      Open source
+                                    </a>
+                                  </>
+                                ) : null}
+                                {nutrient.agentProvenance.knowledgeDescription
+                                  ? ` · ${nutrient.agentProvenance.knowledgeDescription}`
+                                  : ''}
+                                {nutrient.agentProvenance.derivation
+                                  ? ` · ${nutrient.agentProvenance.derivation}`
+                                  : ''}
+                                {nutrient.agentProvenance.inputs?.map(
+                                  (input) => (
+                                    <span
+                                      className="block pl-3"
+                                      key={`${input.description}:${input.provenance}`}
+                                    >
+                                      Input: {input.description} ·{' '}
+                                      {input.provenance}
+                                    </span>
+                                  ),
+                                )}
+                                {nutrient.agentProvenance.note
+                                  ? ` · ${nutrient.agentProvenance.note}`
+                                  : ''}
+                              </span>
+                            ) : null}
+                          </details>
                         ) : null}
                       </li>
                     ))}
@@ -409,7 +426,7 @@ export function FoodWorkspace({ store }: { store?: FoodStore }) {
                         >
                           {version.composition.map((nutrient) => (
                             <li key={nutrient.nutrientId}>
-                              {nutrient.nutrientId}:{' '}
+                              {foodComponentDisplayNameV1(nutrient.nutrientId)}:{' '}
                               {nutrient.value.state === 'known'
                                 ? `${nutrient.value.amount} ${nutrient.value.unit.code} per serving`
                                 : 'Unknown'}

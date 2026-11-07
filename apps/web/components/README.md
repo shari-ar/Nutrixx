@@ -19,7 +19,7 @@ Reusable, application-local React components shared by multiple routes.
 | `FoodWorkspace`               | Food details, categories, portions, and custom-food corrections |
 | `RecipeWorkspace`             | Versioned recipes, cooking-loss inputs, steps, and output foods |
 | `MealWorkspace`               | Manual local meal ledger                                        |
-| `MealDetail`                  | Retained meal history and nutrition                             |
+| `MealDetail`                  | Human-readable canonical meal nutrition and retained history    |
 | `NutritionWorkspace`          | Recorded-intake results, evidence, targets, and seven-day trend |
 | `NutritionDashboardSummary`   | Live local summary of recorded-meal composition coverage        |
 | `PlanningWorkspace`           | One-next-meal ranking, selection, and consumption               |
@@ -37,6 +37,8 @@ Reusable, application-local React components shared by multiple routes.
 - Keep catalog download, verification, and installation in `CatalogInstaller`.
 - Give every visible long-running browser operation progress and cancellation.
 - Keep local workbench behavior in `.dev` modules excluded from production.
+- Present nutrient names from the shared 112-component register; keep provider
+  identifiers inside explicit provenance disclosures.
 - Place route-specific components beside their route instead of here.
 - Add tests for behavior, keyboard interaction, and meaningful variants.
 

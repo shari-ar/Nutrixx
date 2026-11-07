@@ -171,7 +171,7 @@ describe('food workspace', () => {
     expect(
       within(list).getByText('Revision 2 · Revised oats'),
     ).toBeInTheDocument();
-    expect(within(list).getAllByText('protein: 9 g per serving')).toHaveLength(
+    expect(within(list).getAllByText('Protein: 9 g per serving')).toHaveLength(
       2,
     );
   });
@@ -239,7 +239,9 @@ describe('food workspace', () => {
     expect(screen.getByText('Grains')).toBeInTheDocument();
     expect(screen.getByText('$0.25')).toBeInTheDocument();
     expect(screen.getByText(/half bowl: 40 g/)).toBeInTheDocument();
-    expect(screen.getByText(/protein: 10 g/)).toBeInTheDocument();
+    expect(screen.getByText('Protein').closest('li')).toHaveTextContent(
+      'Protein: 10 g',
+    );
     fireEvent.click(
       screen.getByRole('button', { name: 'Edit this custom food' }),
     );

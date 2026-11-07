@@ -108,13 +108,13 @@ describe('recipe workspace', () => {
       within(list).getAllByText('Cooking yield factor 2 · usda-yield 1'),
     ).toHaveLength(2);
     expect(
-      within(list).getAllByText('protein: retention 0.8 · retention.usda 1'),
+      within(list).getAllByText('Protein: retention 0.8 · retention.usda 1'),
     ).toHaveLength(2);
     expect(within(list).getAllByText('Cook the oats.')).toHaveLength(2);
     fireEvent.click(
       within(list).getByText('Nutrition per serving for version 1'),
     );
-    expect(within(list).getAllByText('protein: 8 g')).toHaveLength(2);
+    expect(within(list).getAllByText('Protein: 8 g')).toHaveLength(2);
   });
 
   it('enables an automatic weight estimate after a unique linked cooking step', async () => {

@@ -18,6 +18,7 @@ export {
 } from './nutrient-crosswalk.js';
 export {
   FOOD_COMPONENTS_V1,
+  findFoodComponentObservationV1,
   findFoodComponentV1,
   resolveFoodComponentV1,
   type FoodComponentKindV1,

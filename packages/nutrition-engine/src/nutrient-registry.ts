@@ -182,11 +182,18 @@ export function findFoodComponentV1(
   return byId.get(componentId);
 }
 
+export function findFoodComponentObservationV1(
+  observationNutrientId: string,
+): FoodComponentV1 | undefined {
+  return (
+    byId.get(observationNutrientId) ?? bySourceId.get(observationNutrientId)
+  );
+}
+
 export function resolveFoodComponentV1(
   observationNutrientId: string,
   observationUnit: string,
 ): string | null {
-  const entry =
-    byId.get(observationNutrientId) ?? bySourceId.get(observationNutrientId);
+  const entry = findFoodComponentObservationV1(observationNutrientId);
   return entry?.unit === observationUnit ? entry.componentId : null;
 }

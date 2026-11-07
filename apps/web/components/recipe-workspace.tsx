@@ -14,6 +14,7 @@ import {
   BrowserStageTwoStore,
   type SaveRecipeInput,
 } from '@/lib/browser-stage-two';
+import { foodComponentDisplayNameV1 } from '@/lib/food-component-presentation';
 import {
   estimateUsdaFinalWeight,
   inferCookingMethod,
@@ -385,7 +386,10 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
                           {recipe.version.outputFood.nutrition.nutrients.map(
                             (nutrient) => (
                               <li key={nutrient.nutrientId}>
-                                {nutrient.nutrientId}:{' '}
+                                {foodComponentDisplayNameV1(
+                                  nutrient.nutrientId,
+                                )}
+                                :{' '}
                                 {nutrient.state === 'known'
                                   ? `${nutrient.perServing.amount} ${nutrient.perServing.unit.code}`
                                   : 'Incomplete evidence'}
@@ -490,8 +494,10 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
                                 <ul className="pl-4 text-muted">
                                   {ingredient.retentionFactors.map((factor) => (
                                     <li key={factor.nutrientId}>
-                                      {factor.nutrientId}: retention{' '}
-                                      {factor.factor}
+                                      {foodComponentDisplayNameV1(
+                                        factor.nutrientId,
+                                      )}
+                                      : retention {factor.factor}
                                       {' · '}
                                       {factor.rule.component}{' '}
                                       {factor.rule.version}
@@ -525,7 +531,10 @@ export function RecipeWorkspace({ store }: { store?: RecipeStore }) {
                               {version.outputFood.nutrition.nutrients.map(
                                 (nutrient) => (
                                   <li key={nutrient.nutrientId}>
-                                    {nutrient.nutrientId}:{' '}
+                                    {foodComponentDisplayNameV1(
+                                      nutrient.nutrientId,
+                                    )}
+                                    :{' '}
                                     {nutrient.state === 'known'
                                       ? `${nutrient.perServing.amount} ${nutrient.perServing.unit.code}`
                                       : 'Incomplete evidence'}

@@ -1,13 +1,54 @@
 'use client';
 
+import { FOOD_COMPONENTS_V1 } from '@nutrixx/nutrition-engine';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
+import {
+  presentMealNutritionV1,
+  type MealNutritionPresentationRowV1,
+} from '@/lib/meal-nutrition-presentation';
 
 import type { MealRevisionV1 } from '@nutrixx/consumption';
 
 type MealHistoryStore = Pick<BrowserStageTwoStore, 'mealHistory'>;
+
+const featuredAccessCodes = new Set([
+  'ENERC_KCAL',
+  'PROCNT',
+  'CHOCDF',
+  'FAT',
+  'FIBTG',
+  'NA',
+]);
+
+function NutrientValue({
+  nutrient,
+}: {
+  nutrient: MealNutritionPresentationRowV1;
+}) {
+  const value =
+    nutrient.state === 'known'
+      ? `${nutrient.amount} ${nutrient.unit}`
+      : nutrient.knownAmount === undefined
+        ? 'Amount unavailable'
+        : `${nutrient.knownAmount} ${nutrient.unit} known subtotal`;
+  const evidence =
+    nutrient.state === 'incomplete'
+      ? `Incomplete composition for ${nutrient.missingItemCount} consumed item${nutrient.missingItemCount === 1 ? '' : 's'}`
+      : nutrient.amount === '0'
+        ? 'Recorded zero; distinct from missing data'
+        : 'Complete for the retained meal items';
+
+  return (
+    <div className="rounded-xl bg-background/60 p-4">
+      <dt className="font-medium">{nutrient.name}</dt>
+      <dd className="mt-1 font-semibold">{value}</dd>
+      <dd className="mt-1 text-xs text-muted">{evidence}</dd>
+    </div>
+  );
+}
 
 export function MealDetail({
   mealId,
@@ -68,6 +109,19 @@ export function MealDetail({
   }
 
   const current = history.at(-1)!;
+  const nutrition = presentMealNutritionV1(current.nutrition);
+  const featuredNutrition = nutrition.rows.filter((nutrient) =>
+    featuredAccessCodes.has(nutrient.accessCode),
+  );
+  const categoryGroups = Array.from(
+    nutrition.rows.reduce((groups, nutrient) => {
+      groups.set(nutrient.category, [
+        ...(groups.get(nutrient.category) ?? []),
+        nutrient,
+      ]);
+      return groups;
+    }, new Map<string, MealNutritionPresentationRowV1[]>()),
+  );
   return (
     <div className="py-12 sm:py-16">
       <Link className="text-sm font-semibold text-accent" href="/meals">
@@ -120,22 +174,90 @@ export function MealDetail({
           <p className="mt-4 text-muted">
             No nutrient evidence is available for the selected items.
           </p>
+        ) : nutrition.rows.length === 0 ? (
+          <p className="mt-4 text-muted">
+            The retained source observations do not map to the recognized
+            Nutrixx food-component register.
+          </p>
         ) : (
-          <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-            {current.nutrition.map((nutrient) => (
-              <div
-                className="rounded-xl bg-background/60 p-4"
-                key={nutrient.nutrientId}
-              >
-                <dt className="font-medium">{nutrient.nutrientId}</dt>
-                <dd className="mt-1 text-sm text-muted">
-                  {nutrient.state === 'known'
-                    ? `${nutrient.amount} ${nutrient.unit.code}`
-                    : `Incomplete evidence${nutrient.knownAmount && nutrient.unit ? ` · known part ${nutrient.knownAmount} ${nutrient.unit.code}` : ''}`}
-                </dd>
+          <>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
+              Totals use the exact food and recipe versions retained with this
+              meal. Recognized source observations are normalized to the Nutrixx
+              food-component register before presentation.
+            </p>
+            {featuredNutrition.length > 0 ? (
+              <div className="mt-5">
+                <h3 className="font-semibold">Nutrition highlights</h3>
+                <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {featuredNutrition.map((nutrient) => (
+                    <NutrientValue
+                      key={nutrient.componentId}
+                      nutrient={nutrient}
+                    />
+                  ))}
+                </dl>
               </div>
-            ))}
-          </dl>
+            ) : null}
+            <details className="mt-6 border-t border-separator pt-5">
+              <summary className="cursor-pointer font-semibold">
+                Browse all {nutrition.rows.length} recorded food components
+              </summary>
+              <div className="mt-5 space-y-7">
+                {categoryGroups.map(([category, nutrients]) => (
+                  <section
+                    aria-labelledby={`meal-nutrition-${category.toLowerCase().replaceAll(' ', '-')}`}
+                    key={category}
+                  >
+                    <h3
+                      className="text-lg font-semibold"
+                      id={`meal-nutrition-${category.toLowerCase().replaceAll(' ', '-')}`}
+                    >
+                      {category}
+                    </h3>
+                    <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {nutrients.map((nutrient) => (
+                        <NutrientValue
+                          key={nutrient.componentId}
+                          nutrient={nutrient}
+                        />
+                      ))}
+                    </dl>
+                  </section>
+                ))}
+              </div>
+            </details>
+            <details className="mt-5 border-t border-separator pt-5 text-sm">
+              <summary className="cursor-pointer font-semibold">
+                Data interpretation and traceability
+              </summary>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
+                <li>
+                  {nutrition.recognizedObservationCount} recognized source
+                  observations were consolidated into {nutrition.rows.length} of{' '}
+                  {FOOD_COMPONENTS_V1.length} food components.
+                </li>
+                <li>
+                  A recorded zero is shown as zero. Missing or partial evidence
+                  is labeled incomplete and is never converted to zero.
+                </li>
+                {nutrition.collapsedEquivalentObservationCount > 0 ? (
+                  <li>
+                    {nutrition.collapsedEquivalentObservationCount} equivalent
+                    source observations were consolidated instead of shown as
+                    duplicate nutrients.
+                  </li>
+                ) : null}
+                {nutrition.hiddenTechnicalObservationCount > 0 ? (
+                  <li>
+                    {nutrition.hiddenTechnicalObservationCount} technical source
+                    observations remain retained for audit but are outside the
+                    112-component consumer view.
+                  </li>
+                ) : null}
+              </ul>
+            </details>
+          </>
         )}
       </section>
 

@@ -45,8 +45,15 @@ and holds an exclusive origin-wide Web Lock per subject across tabs. Meal-change
 recomputations use the same lock. A secure browser context provides the Web
 Locks API used by the supported browser matrix.
 `nutrition-context.ts` resolves exact catalog, custom-food, and recipe-version
-composition for publication. It preserves unknown values and supports local
-recipe and meal nutrition snapshots entirely in the browser.
+composition for publication. It normalizes recognized observations to the
+112-component register at this boundary, follows the verified catalog's source
+order when equivalent observations exist, preserves unknown values, and
+supports local recipe and meal nutrition snapshots entirely in the browser.
+`meal-nutrition-presentation.ts` gives retained historical meals the same
+canonical, human-readable view without rewriting their immutable revisions.
+`food-component-presentation.ts` is the shared consumer-label boundary for
+Food and Recipe views; source identifiers remain available only inside explicit
+provenance disclosures.
 
 `usda-cooking.ts` exposes pinned USDA Release 6 nutrient-retention treatments,
 Release 2 meat/poultry weight yields, and a small, audited set of Handbook 102

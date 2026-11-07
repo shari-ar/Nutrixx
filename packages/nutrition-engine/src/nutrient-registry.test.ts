@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { NUTRIENT_CROSSWALK_V1 } from './nutrient-crosswalk.js';
 import {
   FOOD_COMPONENTS_V1,
+  findFoodComponentObservationV1,
   findFoodComponentV1,
   resolveFoodComponentV1,
 } from './nutrient-registry.js';
@@ -81,5 +82,11 @@ describe('Feasibility food-component register', () => {
     expect(resolveFoodComponentV1('source.usda-fdc.1099', 'ug')).toBeNull();
     expect(resolveFoodComponentV1('source.usda-fdc.1185', 'ug')).toBeNull();
     expect(resolveFoodComponentV1('source.usda-fdc.1009', 'mg')).toBeNull();
+    expect(findFoodComponentObservationV1('source.usda-fdc.1003')?.name).toBe(
+      'Protein',
+    );
+    expect(
+      findFoodComponentObservationV1('source.usda-fdc.1002'),
+    ).toBeUndefined();
   });
 });

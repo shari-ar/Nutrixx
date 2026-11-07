@@ -3,6 +3,7 @@ import {
   type FoodCatalogPayloadV1,
   type FoodCompositionObservationV1,
 } from '@nutrixx/food-knowledge';
+import { findFoodComponentObservationV1 } from '@nutrixx/nutrition-engine';
 import {
   IndexedDbReferenceDatasetCache,
   type IndexedDbCanonicalRecordRepository,
@@ -25,6 +26,17 @@ function referenceKey(reference: RecipeIngredientReferenceV1): string {
 }
 
 type NutrientMap = Map<string, ResolvedIngredientCompositionV1>;
+
+function canonicalComponentId(
+  nutrientId: string,
+  unit: string | undefined,
+): string | null {
+  const component = findFoodComponentObservationV1(nutrientId);
+  return component !== undefined &&
+    (unit === undefined || component.unit === unit)
+    ? component.componentId
+    : null;
+}
 
 export interface NutritionContextV1 {
   readonly nutrientIds: readonly string[];
@@ -195,12 +207,19 @@ export async function loadNutritionContextV1(options: {
         for (const observation of payload.composition) {
           const foodKey = `${observation.foodId}:${observation.foodRevision}`;
           if (!foodKeys.has(foodKey)) continue;
-          const key = `${foodKey}:${observation.nutrientId}`;
+          const componentId = canonicalComponentId(
+            observation.nutrientId,
+            observation.value.state === 'known'
+              ? observation.value.unit.code
+              : undefined,
+          );
+          if (componentId === null) continue;
+          const key = `${foodKey}:${componentId}`;
           observations.set(key, [
             ...(observations.get(key) ?? []),
             observation,
           ]);
-          nutrientIds.add(observation.nutrientId);
+          nutrientIds.add(componentId);
         }
         for (const reference of selected) {
           const key = referenceKey(reference);
@@ -213,8 +232,7 @@ export async function loadNutritionContextV1(options: {
             const match = matches[0];
             nutrients.set(
               nutrientId,
-              matches.length === 1 &&
-                match?.value.state === 'known' &&
+              match?.value.state === 'known' &&
                 match.value.basis === 'per-100-gram-edible'
                 ? {
                     state: 'known',
