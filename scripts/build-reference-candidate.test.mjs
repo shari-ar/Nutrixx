@@ -250,6 +250,7 @@ test('reviewed local evidence creates a deterministic inactive candidate after r
         windowStartInclusive: '2026-10-18T00:00:00.000Z',
         windowEndExclusive: '2026-10-19T00:00:00.000Z',
         coverage: { state: 'complete', source: evidence },
+        forecastTargetPerDay: '10',
         target: {
           amount: '10',
           mode: 'preferred',
