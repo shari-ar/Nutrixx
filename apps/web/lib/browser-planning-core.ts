@@ -7,12 +7,15 @@ import {
 } from '@nutrixx/canonical-schema';
 import { getAdultDriBaselineReleaseV1 } from '@nutrixx/nutrition-engine';
 import {
+  NEXT_MEAL_DOMAIN_ADAPTER_VERSION_V1,
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
+  PLANNING_DOMAIN_MODEL_VERSION_V1,
   nextMealSourceKey,
   NextMealCompactRankingResultV1Schema,
   NextMealAppliedTemporalRuleV1Schema,
   NextMealTemporalPolicyReleaseV1Schema,
   compactNextMealRankingResultV1,
+  createNextMealPlanningDecisionChainV1,
   rankNextMealCandidatesChunkedV1,
   reviewNextMealRankingV1,
   nextMealIsCurrentV1,
@@ -70,6 +73,13 @@ export interface NextMealRunV1 {
   readonly freshnessHash: string;
   readonly inputHash: string;
   readonly resultHash: string;
+  readonly decisionModel: {
+    readonly modelVersion: typeof PLANNING_DOMAIN_MODEL_VERSION_V1;
+    readonly adapterVersion: typeof NEXT_MEAL_DOMAIN_ADAPTER_VERSION_V1;
+    readonly problemId: string;
+    readonly stateKey: string;
+    readonly decisionChainHash: string;
+  };
   readonly input: NextMealStoredInputV1;
   readonly result: NextMealCompactRankingResultV1;
   readonly explanations: readonly NextMealCandidateExplanationV1[];
@@ -155,6 +165,17 @@ async function readRun(record: CanonicalRecordV1): Promise<NextMealRunV1> {
     typeof data['resultHash'] !== 'string'
   )
     throw new TypeError('A stored next-meal run is invalid.');
+  if (
+    !isObject(data['decisionModel']) ||
+    data['decisionModel']['modelVersion'] !==
+      PLANNING_DOMAIN_MODEL_VERSION_V1 ||
+    data['decisionModel']['adapterVersion'] !==
+      NEXT_MEAL_DOMAIN_ADAPTER_VERSION_V1 ||
+    typeof data['decisionModel']['problemId'] !== 'string' ||
+    typeof data['decisionModel']['stateKey'] !== 'string' ||
+    typeof data['decisionModel']['decisionChainHash'] !== 'string'
+  )
+    throw new TypeError('A stored next-meal decision model is invalid.');
   if (
     !isObject(data['input']) ||
     !isObject(data['input']['candidates']) ||
@@ -487,7 +508,22 @@ export class BrowserPlanningStore {
       throw new TypeError('The next-meal result failed independent review.');
     const compactResult = compactNextMealRankingResultV1(review.ranking);
     const runId = crypto.randomUUID();
+    const problemId = crypto.randomUUID();
     const completedAt = new Date().toISOString();
+    const decisionChain = createNextMealPlanningDecisionChainV1(
+      built.request,
+      review.ranking,
+      {
+        problemId,
+        runId,
+        subjectKey: profile.ownerSubjectId,
+        capturedAt: built.request.candidates.requestedAt,
+        validatedAt: completedAt,
+      },
+    );
+    const decisionChainHash = await sha256Canonical(
+      canonicalizeJson(JsonValueSchema.parse(decisionChain)),
+    );
     const validUntil = nextMealValidUntilV1(
       built.request,
       built.temporalPolicy,
@@ -520,6 +556,13 @@ export class BrowserPlanningStore {
         resultHash: await sha256Canonical(
           canonicalizeJson(JsonValueSchema.parse(compactResult)),
         ),
+        decisionModel: {
+          modelVersion: PLANNING_DOMAIN_MODEL_VERSION_V1,
+          adapterVersion: NEXT_MEAL_DOMAIN_ADAPTER_VERSION_V1,
+          problemId,
+          stateKey: decisionChain.problem.state.stateKey,
+          decisionChainHash,
+        },
         input: storedInput(built.request, compactResult),
         result: compactResult,
         explanations: review.explanations,

@@ -140,7 +140,7 @@ describe('independent next-meal review', () => {
   it('rejects compact results with incomplete coverage or unstable order', () => {
     expect(() =>
       NextMealCompactRankingResultV1Schema.parse({
-        policyVersion: 'next-meal-rolling-horizon-robust-v1',
+        policyVersion: 'next-meal-hierarchical-robust-v1',
         total: 2,
         processed: 1,
         counts: {

@@ -1,6 +1,7 @@
 import * as z from 'zod';
 
 import {
+  NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   NextMealRankingRequestSchema,
   rankValidatedNextMealCensusV1,
   type NextMealRankingRequest,
@@ -38,7 +39,7 @@ const ClassificationCountsSchema = z.strictObject({
   REQUIRES_PREPARATION: z.int().nonnegative(),
 });
 export const NextMealRankingResultSchema = z.strictObject({
-  policyVersion: z.literal('next-meal-rolling-horizon-robust-v1'),
+  policyVersion: z.literal(NEXT_MEAL_RANKING_POLICY_VERSION_V1),
   total: z.int().nonnegative(),
   processed: z.int().nonnegative(),
   counts: ClassificationCountsSchema,
@@ -51,6 +52,11 @@ export const NextMealRankingResultSchema = z.strictObject({
       edibleGrams: z.string().min(1),
       weightedDistance: RatioSchema,
       maximumDistance: RatioSchema,
+      nominalWeightedDistance: RatioSchema,
+      nominalMaximumDistance: RatioSchema,
+      immediateWeightedDistance: RatioSchema,
+      immediateMaximumDistance: RatioSchema,
+      repetitionCount: z.int().nonnegative(),
       ruleScores: z.array(
         z.strictObject({
           ruleId: z.string().min(1),
@@ -73,7 +79,7 @@ export const NextMealRankingResultSchema = z.strictObject({
 
 export const NextMealCompactRankingResultV1Schema = z
   .strictObject({
-    policyVersion: z.literal('next-meal-rolling-horizon-robust-v1'),
+    policyVersion: z.literal(NEXT_MEAL_RANKING_POLICY_VERSION_V1),
     total: z.int().nonnegative(),
     processed: z.int().nonnegative(),
     counts: ClassificationCountsSchema,

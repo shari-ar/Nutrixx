@@ -19,12 +19,19 @@ import {
   type NextMealCandidateDecision,
   type NextMealCandidateSource,
 } from './next-meal-candidates.js';
+import {
+  NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1,
+  NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
+  NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+} from './next-meal-decision-policy.js';
 
 export const NEXT_MEAL_RANKING_POLICY_VERSION_V1 =
-  'next-meal-rolling-horizon-robust-v1' as const;
+  'next-meal-hierarchical-robust-v1' as const;
 
 export const DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1 = {
   policyVersion: NEXT_MEAL_RANKING_POLICY_VERSION_V1,
+  hardConstraintPolicyVersion: NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
+  objectiveHierarchyVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
   horizonDays: 3,
   opportunitiesPerDay: 3,
   continuationCandidateLimit: 12,
@@ -61,6 +68,12 @@ export const NextMealRankingRequestSchema = z
     planningPolicy: z
       .strictObject({
         policyVersion: z.literal(NEXT_MEAL_RANKING_POLICY_VERSION_V1),
+        hardConstraintPolicyVersion: z
+          .literal(NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1)
+          .default(NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1),
+        objectiveHierarchyVersion: z
+          .literal(NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1)
+          .default(NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1),
         horizonDays: z.int().min(2).max(7),
         opportunitiesPerDay: z.int().min(1).max(6),
         continuationCandidateLimit: z.int().min(4).max(64),
@@ -251,6 +264,11 @@ export interface NextMealRankedCandidate {
   readonly edibleGrams: string;
   readonly weightedDistance: ExactRatio;
   readonly maximumDistance: ExactRatio;
+  readonly nominalWeightedDistance: ExactRatio;
+  readonly nominalMaximumDistance: ExactRatio;
+  readonly immediateWeightedDistance: ExactRatio;
+  readonly immediateMaximumDistance: ExactRatio;
+  readonly repetitionCount: number;
   readonly ruleScores: readonly NextMealRuleScore[];
 }
 
@@ -373,26 +391,51 @@ interface ScoredPortion {
 }
 
 function compareScored(left: ScoredPortion, right: ScoredPortion): number {
-  return (
-    compare(left.maximumDistance, right.maximumDistance) ||
-    compare(left.weightedDistance, right.weightedDistance) ||
-    compare(left.nominalMaximumDistance, right.nominalMaximumDistance) ||
-    compare(left.nominalWeightedDistance, right.nominalWeightedDistance) ||
-    left.repetitionCount - right.repetitionCount ||
-    compare(left.immediateMaximumDistance, right.immediateMaximumDistance) ||
-    compare(left.immediateWeightedDistance, right.immediateWeightedDistance) ||
-    compare(decimal(left.edibleGrams), decimal(right.edibleGrams)) ||
-    (left.candidateKey < right.candidateKey
-      ? -1
-      : left.candidateKey > right.candidateKey
-        ? 1
-        : 0) ||
-    (left.portionId < right.portionId
-      ? -1
-      : left.portionId > right.portionId
-        ? 1
-        : 0)
-  );
+  for (const objectiveId of NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1) {
+    const comparison = (() => {
+      switch (objectiveId) {
+        case 'nutrition.robust-maximum-gap':
+          return compare(left.maximumDistance, right.maximumDistance);
+        case 'nutrition.robust-weighted-gap':
+          return compare(left.weightedDistance, right.weightedDistance);
+        case 'nutrition.nominal-maximum-gap':
+          return compare(
+            left.nominalMaximumDistance,
+            right.nominalMaximumDistance,
+          );
+        case 'nutrition.nominal-weighted-gap':
+          return compare(
+            left.nominalWeightedDistance,
+            right.nominalWeightedDistance,
+          );
+        case 'nutrition.immediate-maximum-gap':
+          return compare(
+            left.immediateMaximumDistance,
+            right.immediateMaximumDistance,
+          );
+        case 'nutrition.immediate-weighted-gap':
+          return compare(
+            left.immediateWeightedDistance,
+            right.immediateWeightedDistance,
+          );
+        case 'practicality.portion-size':
+          return compare(decimal(left.edibleGrams), decimal(right.edibleGrams));
+        case 'context.variety-repetition':
+          return left.repetitionCount - right.repetitionCount;
+        case 'stability.deterministic-identity':
+          return (
+            compareKeys(left.candidateKey, right.candidateKey) ||
+            compareKeys(left.portionId, right.portionId)
+          );
+        default:
+          throw new TypeError(
+            `Active objective ${objectiveId} has no comparator.`,
+          );
+      }
+    })();
+    if (comparison !== 0) return comparison;
+  }
+  return 0;
 }
 
 interface HorizonObjective {
@@ -1041,6 +1084,11 @@ function finishRanking(accumulator: RankingAccumulator): NextMealRankingResult {
       edibleGrams: entry.edibleGrams,
       weightedDistance: ratio(entry.weightedDistance),
       maximumDistance: ratio(entry.maximumDistance),
+      nominalWeightedDistance: ratio(entry.nominalWeightedDistance),
+      nominalMaximumDistance: ratio(entry.nominalMaximumDistance),
+      immediateWeightedDistance: ratio(entry.immediateWeightedDistance),
+      immediateMaximumDistance: ratio(entry.immediateMaximumDistance),
+      repetitionCount: entry.repetitionCount,
       ruleScores: entry.ruleScores,
     })),
     unranked: accumulator.unranked,

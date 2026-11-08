@@ -53,7 +53,7 @@ peak resident memory was approximately 2.1 GB. These are process-level
 diagnostics rather than browser sign-off.
 
 On 2026-11-07, the same full-catalog Node acceptance completed with the active
-`next-meal-rolling-horizon-robust-v1` policy in 20.4 seconds. The independent
+`next-meal-hierarchical-robust-v1` policy in 20.4 seconds. The independent
 review approved the complete result, including deterministic replay. This is
 correctness and full-catalog feasibility evidence. Browser p95 and
 supported-device performance require separate measured evidence.

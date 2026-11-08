@@ -677,6 +677,14 @@ describe('browser next-meal planning', () => {
       'free-next-meal-daily-baseline-v1',
     );
     expect(ranked.run.appliedTemporalRules).toHaveLength(1);
+    expect(ranked.run.decisionModel).toMatchObject({
+      modelVersion: 'planning-domain-model-v1',
+      adapterVersion: 'next-meal-domain-adapter-v1',
+    });
+    expect(ranked.run.decisionModel.problemId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(ranked.run.decisionModel.decisionChainHash).toMatch(
+      /^[0-9a-f]{64}$/,
+    );
     expect(ranked.fresh).toBe(true);
     expect(ranked.run.validUntil).toBe('2026-10-12T12:15:00.000Z');
     await new BrowserOutcomeFeedbackStore().saveWeight({

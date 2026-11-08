@@ -59,6 +59,10 @@ normative next-meal design. The
 [Free next-meal contract](next-meal-contract.md) specifies its typed boundary,
 outcomes, invariants, and replay.
 
+The [Planning domain model](planning-domain-model.md) defines the internal,
+solver-neutral State → Action → Constraint → Objective → Outcome chain shared by
+current and future execution strategies.
+
 ## Rolling-horizon planning context
 
 The complete optimizer snapshot includes horizon/meal slots, nutrition state, applicable target

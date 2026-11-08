@@ -68,7 +68,7 @@ function run(provisional = false): NextMealDisplayRunV1 {
     validUntil: '2026-10-12T12:15:00.000Z',
     input: {
       planningPolicy: {
-        policyVersion: 'next-meal-rolling-horizon-robust-v1',
+        policyVersion: 'next-meal-hierarchical-robust-v1',
         horizonDays: 3,
         opportunitiesPerDay: 3,
         continuationCandidateLimit: 12,

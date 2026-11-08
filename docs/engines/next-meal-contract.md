@@ -67,6 +67,11 @@ and digests. A run resolves and verifies every required blob before declaring
 complete coverage. Pagination and worker batching change memory usage while
 preserving the logical full-catalog snapshot.
 
+After independent ranking review, the active adapter creates and validates the
+solver-neutral State → Action → Constraint → Objective → Outcome chain. The
+canonical run retains the domain-model version, adapter version, problem and
+state identities, and a content hash of that exact chain.
+
 Recorded meals are the intake authority. Suggestions, intentions, and gaps in
 logging contribute no inferred intake. Each temporal comparison uses its own
 source-backed window; the effective nutrition-day boundary and elapsed-time
@@ -127,7 +132,7 @@ under the frozen policy and forecast assumptions. It is a general-wellness
 planning estimate rather than proof of one universally optimal food. Foods
 with incomplete evidence remain discoverable through their classification.
 
-The active `next-meal-rolling-horizon-robust-v1` policy scores source-backed
+The active `next-meal-hierarchical-robust-v1` policy scores source-backed
 temporal comparisons with known recorded-meal composition, evaluates each
 candidate as the first action of a multi-day continuation, and ranks against
 the least favorable configured schedule scenario. A short available history
@@ -139,7 +144,8 @@ against comparable catalog and recorded-intake evidence. Foods with incomplete
 required composition retain their evidence-limited classification.
 For each supported portion, the engine first minimizes the largest normalized
 target distance, then the weighted combined distance, nominal-schedule
-distance, repetition, immediate distance, portion size and stable identity.
+distance, immediate distance, portion size, horizon repetition and stable
+identity.
 Exact rational arithmetic keeps comparisons deterministic. A `minimum`
 target has zero distance after it is met; a `preferred` target measures distance
 on either side. Verified hard limits already restrict supported portions. Equal

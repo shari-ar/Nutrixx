@@ -412,14 +412,14 @@ acceptance measures.
 ## Implementation boundary
 
 This document defines the decision semantics implemented by the active local
-engine. `next-meal-rolling-horizon-robust-v1` evaluates every comparable next
+engine. `next-meal-hierarchical-robust-v1` evaluates every comparable next
 candidate through a deterministic continuation portfolio with:
 
 - a three-day horizon and three modeled eating opportunities per day;
 - twelve diverse continuation candidates and up to eight deterministic paths;
 - an expected schedule and a scenario with one lost future opportunity;
 - lexicographic minimization of the largest gap, combined gap, nominal outcome,
-  repetition, immediate gap, portion size and stable identity;
+  immediate gap, portion size, repetition and stable identity;
 - exact rational arithmetic, independent census validation and replayable
   policy inputs;
 - publication of only the next action, followed by complete replanning from
@@ -432,6 +432,7 @@ exact policy, catalog, device envelope, latency and memory.
 
 ## Related specifications
 
+- [Planning domain model](planning-domain-model.md)
 - [Free next-meal recommendation contract](next-meal-contract.md)
 - [Optimizer and recommendation engine](optimizer.md)
 - [Nutrition foundation and calculation policy](../nutrition-model/foundation.md)

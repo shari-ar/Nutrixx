@@ -12,6 +12,7 @@
 | [Health context](health-context.md)                     | Safe derivation of non-diagnostic context                     |
 | [Daily nutrition state](daily-nutrition-state.md)       | Intake aggregation and target comparison                      |
 | [Next-meal planning](next-meal-planning.md)             | Normative doctrine: history, rolling horizon, one next action |
+| [Planning domain model](planning-domain-model.md)       | State → Action → Constraint → Objective → Outcome contract    |
 | [Optimizer](optimizer.md)                               | Feasibility, objectives, prediction, validation, explanation  |
 | [Free next-meal contract](next-meal-contract.md)        | Typed local boundary, ranking, outcomes and replay            |
 | [AI-assisted capture](ai-assisted-capture.md)           | Safe hosted and user-enabled local draft generation           |
