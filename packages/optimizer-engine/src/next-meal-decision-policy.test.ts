@@ -5,6 +5,8 @@ import {
   NEXT_MEAL_HARD_CONSTRAINT_FAMILIES_V1,
   NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
   NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+  NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1,
+  NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1,
   nextMealObjectiveHierarchyV1,
 } from './next-meal-decision-policy.js';
 
@@ -17,6 +19,12 @@ describe('next-meal decision policy', () => {
     );
     expect(NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1).toBe(
       'next-meal-objective-hierarchy-v1',
+    );
+    expect(NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1).toBe(
+      'next-meal-uncertainty-policy-v1',
+    );
+    expect(NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1).toBe(
+      'next-meal-terminal-value-v1',
     );
     expect(
       NEXT_MEAL_HARD_CONSTRAINT_FAMILIES_V1.map(({ familyCode }) => familyCode),
@@ -58,26 +66,38 @@ describe('next-meal decision policy', () => {
         },
         {
           "activation": "ACTIVE",
-          "objectiveId": "nutrition.nominal-maximum-gap",
+          "objectiveId": "nutrition.terminal-maximum-gap",
           "orderWithinTier": 2,
           "priorityTier": 2,
         },
         {
           "activation": "ACTIVE",
-          "objectiveId": "nutrition.nominal-weighted-gap",
+          "objectiveId": "nutrition.terminal-weighted-gap",
           "orderWithinTier": 3,
           "priorityTier": 2,
         },
         {
           "activation": "ACTIVE",
-          "objectiveId": "nutrition.immediate-maximum-gap",
+          "objectiveId": "nutrition.nominal-maximum-gap",
           "orderWithinTier": 4,
           "priorityTier": 2,
         },
         {
           "activation": "ACTIVE",
-          "objectiveId": "nutrition.immediate-weighted-gap",
+          "objectiveId": "nutrition.nominal-weighted-gap",
           "orderWithinTier": 5,
+          "priorityTier": 2,
+        },
+        {
+          "activation": "ACTIVE",
+          "objectiveId": "nutrition.immediate-maximum-gap",
+          "orderWithinTier": 6,
+          "priorityTier": 2,
+        },
+        {
+          "activation": "ACTIVE",
+          "objectiveId": "nutrition.immediate-weighted-gap",
+          "orderWithinTier": 7,
           "priorityTier": 2,
         },
         {
@@ -133,6 +153,8 @@ describe('next-meal decision policy', () => {
     expect(NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1).toEqual([
       'nutrition.robust-maximum-gap',
       'nutrition.robust-weighted-gap',
+      'nutrition.terminal-maximum-gap',
+      'nutrition.terminal-weighted-gap',
       'nutrition.nominal-maximum-gap',
       'nutrition.nominal-weighted-gap',
       'nutrition.immediate-maximum-gap',

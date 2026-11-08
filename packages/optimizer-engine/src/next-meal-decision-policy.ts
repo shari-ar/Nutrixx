@@ -7,6 +7,10 @@ export const NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1 =
   'next-meal-hard-constraints-v1' as const;
 export const NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1 =
   'next-meal-objective-hierarchy-v1' as const;
+export const NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1 =
+  'next-meal-uncertainty-policy-v1' as const;
+export const NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1 =
+  'next-meal-terminal-value-v1' as const;
 
 export const NEXT_MEAL_HARD_CONSTRAINT_FAMILIES_V1 = [
   {
@@ -98,10 +102,36 @@ export function nextMealObjectiveHierarchyV1(): PlanningObjectiveV1[] {
       source: POLICY_SOURCE,
     },
     {
-      objectiveId: 'nutrition.nominal-maximum-gap',
+      objectiveId: 'nutrition.terminal-maximum-gap',
       objectiveVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
       priorityTier: 2,
       orderWithinTier: 2,
+      direction: 'MINIMIZE',
+      metricCode: 'normalized-nutrient-gap',
+      temporalScope: 'TERMINAL',
+      scenarioAggregation: 'WORST_CASE',
+      weight: '1',
+      activation: active,
+      source: POLICY_SOURCE,
+    },
+    {
+      objectiveId: 'nutrition.terminal-weighted-gap',
+      objectiveVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+      priorityTier: 2,
+      orderWithinTier: 3,
+      direction: 'MINIMIZE',
+      metricCode: 'weighted-nutrient-gap',
+      temporalScope: 'TERMINAL',
+      scenarioAggregation: 'WORST_CASE',
+      weight: '1',
+      activation: active,
+      source: POLICY_SOURCE,
+    },
+    {
+      objectiveId: 'nutrition.nominal-maximum-gap',
+      objectiveVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+      priorityTier: 2,
+      orderWithinTier: 4,
       direction: 'MINIMIZE',
       metricCode: 'normalized-nutrient-gap',
       temporalScope: 'HORIZON',
@@ -114,7 +144,7 @@ export function nextMealObjectiveHierarchyV1(): PlanningObjectiveV1[] {
       objectiveId: 'nutrition.nominal-weighted-gap',
       objectiveVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
       priorityTier: 2,
-      orderWithinTier: 3,
+      orderWithinTier: 5,
       direction: 'MINIMIZE',
       metricCode: 'weighted-nutrient-gap',
       temporalScope: 'HORIZON',
@@ -127,7 +157,7 @@ export function nextMealObjectiveHierarchyV1(): PlanningObjectiveV1[] {
       objectiveId: 'nutrition.immediate-maximum-gap',
       objectiveVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
       priorityTier: 2,
-      orderWithinTier: 4,
+      orderWithinTier: 6,
       direction: 'MINIMIZE',
       metricCode: 'normalized-nutrient-gap',
       temporalScope: 'IMMEDIATE',
@@ -140,7 +170,7 @@ export function nextMealObjectiveHierarchyV1(): PlanningObjectiveV1[] {
       objectiveId: 'nutrition.immediate-weighted-gap',
       objectiveVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
       priorityTier: 2,
-      orderWithinTier: 5,
+      orderWithinTier: 7,
       direction: 'MINIMIZE',
       metricCode: 'weighted-nutrient-gap',
       temporalScope: 'IMMEDIATE',

@@ -28,20 +28,28 @@ same problem and produce outcomes under the same validation rules.
 
 `PlanningStateV1` freezes the facts available at one decision instant.
 
-| Area             | Contract                                                       |
-| ---------------- | -------------------------------------------------------------- |
-| Identity         | Model version, state key, subject key                          |
-| Time             | Capture instant and decision instant                           |
-| Policy           | Exact Planning policy version                                  |
-| Rolling horizon  | Days, opportunities per day and one published action           |
-| Robust scenarios | Stable scenario identity, description and optional probability |
-| Facts            | Type, stable key, revision and evidence source                 |
-| Completeness     | `COMPLETE` or `LIMITED` with explicit reason codes             |
+| Area             | Contract                                                             |
+| ---------------- | -------------------------------------------------------------------- |
+| Identity         | Model version, state key, subject key                                |
+| Time             | Capture instant and decision instant                                 |
+| Policy           | Exact Planning policy version                                        |
+| Rolling horizon  | Decision days, opportunities per day and one published action        |
+| Terminal value   | Exact terminal policy version and terminal-tail days                 |
+| Uncertainty      | Exact uncertainty-policy version                                     |
+| Robust scenarios | Nominal/stress role, explicit perturbations and optional probability |
+| Facts            | Type, stable key, revision and evidence source                       |
+| Completeness     | `COMPLETE` or `LIMITED` with explicit reason codes                   |
 
 A State is immutable. New intake, correction, time, inventory, catalog or
 policy information produces a new State key and a fresh Planning problem.
 When probabilities are declared, every scenario receives one and their exact
 total equals one. Expected-value objectives require this complete distribution.
+
+Every scenario set has exactly one unperturbed `NOMINAL` scenario. Each
+`STRESS` scenario declares the uncertainty dimension it changes; the active
+policy models future-opportunity loss without silently changing food,
+composition or target facts. Scenario identities and perturbations are frozen
+with the State.
 
 ## Action
 
@@ -109,13 +117,13 @@ activate a future validated implementation.
 
 ### Active objective hierarchy
 
-| Tier | Policy area                                | Active evaluation                                              | Deferred policy slots                                |
-| ---: | ------------------------------------------ | -------------------------------------------------------------- | ---------------------------------------------------- |
-|    2 | Nutritional risk                           | Robust maximum and weighted gaps, nominal gaps, immediate gaps | —                                                    |
-|    3 | Energy, macronutrients and dietary pattern | —                                                              | Dedicated energy-macro-pattern model                 |
-|    4 | Personalization and practicality           | Portion-size tie-break                                         | Expected adherence, culture and satiety fit          |
-|    5 | Context                                    | Horizon repetition                                             | Cost, preparation effort, inventory expiry and waste |
-|    6 | Stability                                  | Deterministic identity order                                   | Change from a still-valid prior intention            |
+| Tier | Policy area                                | Active evaluation                                                        | Deferred policy slots                                |
+| ---: | ------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+|    2 | Nutritional risk                           | Robust horizon gaps, terminal-tail gaps, nominal gaps and immediate gaps | —                                                    |
+|    3 | Energy, macronutrients and dietary pattern | —                                                                        | Dedicated energy-macro-pattern model                 |
+|    4 | Personalization and practicality           | Portion-size tie-break                                                   | Expected adherence, culture and satiety fit          |
+|    5 | Context                                    | Horizon repetition                                                       | Cost, preparation effort, inventory expiry and waste |
+|    6 | Stability                                  | Deterministic identity order                                             | Change from a still-valid prior intention            |
 
 This explicit activation model keeps the full product hierarchy visible while
 the active ranking uses only validated facts and executable metrics.
@@ -153,6 +161,13 @@ census.
 9. feasible ranks form one consecutive order;
 10. a `READY` result publishes exactly the first-ranked action.
 
+For a scenario-aware active objective, the Outcome also contains the exact
+per-scenario values required by its aggregation rule. `NOMINAL` binds to the
+single nominal scenario, `WORST_CASE` binds to every scenario and equals the
+least favorable exact value, and `EXPECTED` requires a complete probability
+distribution and exact weighted aggregation. The validator rejects missing,
+extra or arithmetically inconsistent scenario traces.
+
 ## Active operational adapter
 
 The optimizer package exports runtime Zod schemas and inferred TypeScript types
@@ -164,13 +179,13 @@ objective completeness, census completeness and publication authority.
 `next-meal-domain-adapter-v1` projects every independently reviewed browser run
 into this model before persistence. The mapping is exact and versioned:
 
-| Domain element | Active next-meal mapping                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| State          | Subject, request instant, planning policy, horizon scenarios, accepted meal revisions, temporal rules and evidence completeness |
-| Action         | The exact best-supported portion selected by the engine for every comparable catalog entry                                      |
-| Constraint     | Version integrity, census, intended use, exclusions, evidence, portion, inventory, schedule and nutrient limits                 |
-| Objective      | Complete tiers 2–6 with exact active values and explicit deferred slots                                                         |
-| Outcome        | Complete feasible action order, first recommendation, validator identity and validation instant                                 |
+| Domain element | Active next-meal mapping                                                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State          | Subject, request instant, planning and uncertainty policies, typed horizon scenarios, accepted meal revisions, temporal rules and evidence completeness |
+| Action         | The exact best-supported portion selected by the engine for every comparable catalog entry                                                              |
+| Constraint     | Version integrity, census, intended use, exclusions, evidence, portion, inventory, schedule and nutrient limits                                         |
+| Objective      | Complete tiers 2–6 with exact active values and explicit deferred slots                                                                                 |
+| Outcome        | Complete feasible action order, exact aggregate and per-scenario traces, first recommendation, validator identity and validation instant                |
 
 Catalog entries without an executable portion remain in the upstream complete
 classification census and state completeness evidence. A complete census with

@@ -87,9 +87,11 @@ The active local policy uses a deterministic bounded continuation portfolio to
 keep full-catalog work practical in a browser. It evaluates a three-day horizon
 with three modeled opportunities per day, multiple continuation seeds and both
 an expected schedule and a one-opportunity-loss scenario. Exact rational
-arithmetic and a fixed policy make the result reproducible. This search makes
-no unsupported global-optimality claim; a future solver adapter may expand the
-search while preserving the same contract and objective hierarchy.
+arithmetic and a fixed policy make the result reproducible. A versioned
+one-day terminal tail evaluates whether the state after the decision horizon
+remains easy to continue while preserving first-action-only publication. This
+search uses an explicitly measured bounded scope; a future solver adapter may
+expand the search while preserving the same contract and objective hierarchy.
 
 ### Hard constraints
 

@@ -16,6 +16,10 @@ normative behavior.
 - Keep database and network access behind callers or injected adapters.
 - Keep hard constraints distinct from weighted objectives.
 - Preserve input, policy, engine, and solver versions for reproducible runs.
+- Freeze one nominal scenario and explicit stress perturbations; retain exact
+  per-scenario values behind every robust aggregate.
+- Evaluate a versioned terminal tail after the decision horizon while
+  publishing exclusively the next action.
 - Return explicit feasibility and search-limit diagnostics.
 - Process full-catalog classification and scoring in deterministic chunks while
   preserving byte-for-byte-equivalent ranking results and reporting real

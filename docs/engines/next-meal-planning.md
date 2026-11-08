@@ -217,6 +217,13 @@ A terminal value carries dietary continuity beyond the finite forecast
 boundary. It estimates whether the final simulated state remains easy to
 continue and discourages postponement of difficult goals beyond the horizon.
 
+The active `next-meal-terminal-value-v1` policy appends one internal day to the
+three-day decision horizon. Candidate ranking first compares robust decision-
+horizon gaps, then the worst terminal maximum and weighted gaps across the same
+scenarios. The tail uses the same candidate, hard-limit, schedule and evidence
+rules. Tail actions remain simulation evidence: the application publishes only
+the first next-meal action and replans after actual intake.
+
 ## Uncertainty and robustness
 
 The system tracks uncertainty from portions, composition, recipes, retention
@@ -230,6 +237,16 @@ and predictive models.
 | Several plausible future behaviors exist              | Evaluate declared scenarios or robust bounds            |
 | Ranking changes under small plausible input variation | Lower confidence and expose sensitivity                 |
 | One option remains strong across scenarios            | Prefer robustness when higher priorities are equivalent |
+
+The active `next-meal-uncertainty-policy-v1` freezes one unperturbed nominal
+schedule followed by deterministic stress scenarios of increasing severity.
+Each stress case names its perturbation; the current implementation removes a
+declared number of future eating opportunities. It preserves every other
+frozen fact. Each candidate records exact maximum-gap, weighted-gap and
+repetition outcomes per scenario, identifies the nominal and least-favorable
+scenario, and derives worst-case objectives from those traces. The independent
+validator publishes exclusively aggregates reproduced exactly from the
+scenario values.
 
 The engine preserves uncertainty and reports only evidence-supported precision.
 
@@ -416,10 +433,11 @@ engine. `next-meal-hierarchical-robust-v1` evaluates every comparable next
 candidate through a deterministic continuation portfolio with:
 
 - a three-day horizon and three modeled eating opportunities per day;
+- a one-day terminal tail that protects continuity beyond the decision horizon;
 - twelve diverse continuation candidates and up to eight deterministic paths;
 - an expected schedule and a scenario with one lost future opportunity;
-- lexicographic minimization of the largest gap, combined gap, nominal outcome,
-  immediate gap, portion size, repetition and stable identity;
+- lexicographic minimization of horizon gaps, terminal-tail gaps, nominal
+  outcome, immediate gap, portion size, repetition and stable identity;
 - exact rational arithmetic, independent census validation and replayable
   policy inputs;
 - publication of only the next action, followed by complete replanning from

@@ -54,9 +54,24 @@ export const NextMealRankingResultSchema = z.strictObject({
       maximumDistance: RatioSchema,
       nominalWeightedDistance: RatioSchema,
       nominalMaximumDistance: RatioSchema,
+      terminalWeightedDistance: RatioSchema,
+      terminalMaximumDistance: RatioSchema,
       immediateWeightedDistance: RatioSchema,
       immediateMaximumDistance: RatioSchema,
       repetitionCount: z.int().nonnegative(),
+      nominalScenarioId: z.string().min(1),
+      worstCaseScenarioId: z.string().min(1),
+      scenarioScores: z.array(
+        z.strictObject({
+          scenarioId: z.string().min(1),
+          role: z.enum(['NOMINAL', 'STRESS']),
+          weightedDistance: RatioSchema,
+          maximumDistance: RatioSchema,
+          terminalWeightedDistance: RatioSchema,
+          terminalMaximumDistance: RatioSchema,
+          repetitionCount: z.int().nonnegative(),
+        }),
+      ),
       ruleScores: z.array(
         z.strictObject({
           ruleId: z.string().min(1),

@@ -228,7 +228,11 @@ describe('next-meal ranking', () => {
         horizonDays: 2,
         opportunitiesPerDay: 1,
         robustScenarios: [
-          { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
+          {
+            scenarioId: 'expected-schedule',
+            role: 'NOMINAL' as const,
+            missedFutureOpportunities: 0,
+          },
         ],
       },
     };
@@ -260,7 +264,11 @@ describe('next-meal ranking', () => {
         horizonDays: 2,
         opportunitiesPerDay: 1,
         robustScenarios: [
-          { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
+          {
+            scenarioId: 'expected-schedule',
+            role: 'NOMINAL' as const,
+            missedFutureOpportunities: 0,
+          },
         ],
       },
     });
@@ -271,8 +279,16 @@ describe('next-meal ranking', () => {
         horizonDays: 2,
         opportunitiesPerDay: 1,
         robustScenarios: [
-          { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
-          { scenarioId: 'one-opportunity-lost', missedFutureOpportunities: 1 },
+          {
+            scenarioId: 'expected-schedule',
+            role: 'NOMINAL' as const,
+            missedFutureOpportunities: 0,
+          },
+          {
+            scenarioId: 'one-opportunity-lost',
+            role: 'STRESS' as const,
+            missedFutureOpportunities: 1,
+          },
         ],
       },
     });
@@ -285,6 +301,14 @@ describe('next-meal ranking', () => {
       numerator: '1',
       denominator: '2',
     });
+    expect(expectedOnly.ranked[0]?.terminalWeightedDistance).toEqual({
+      numerator: '0',
+      denominator: '1',
+    });
+    expect(robust.ranked[0]?.terminalWeightedDistance).toEqual({
+      numerator: '1',
+      denominator: '3',
+    });
     expect(Object.keys(robust.ranked[0]!).sort()).toEqual([
       'candidateKey',
       'classification',
@@ -293,13 +317,29 @@ describe('next-meal ranking', () => {
       'immediateWeightedDistance',
       'maximumDistance',
       'nominalMaximumDistance',
+      'nominalScenarioId',
       'nominalWeightedDistance',
       'portionId',
       'rank',
       'repetitionCount',
       'ruleScores',
+      'scenarioScores',
+      'terminalMaximumDistance',
+      'terminalWeightedDistance',
       'weightedDistance',
+      'worstCaseScenarioId',
     ]);
+    expect(robust.ranked[0]?.scenarioScores).toEqual([
+      expect.objectContaining({
+        scenarioId: 'expected-schedule',
+        role: 'NOMINAL',
+      }),
+      expect.objectContaining({
+        scenarioId: 'one-opportunity-lost',
+        role: 'STRESS',
+      }),
+    ]);
+    expect(robust.ranked[0]?.worstCaseScenarioId).toBe('one-opportunity-lost');
   });
 
   it('uses each sourced rule window independently, including previous days', () => {

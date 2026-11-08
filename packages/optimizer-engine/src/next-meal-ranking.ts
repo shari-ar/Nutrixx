@@ -23,6 +23,8 @@ import {
   NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1,
   NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
   NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+  NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1,
+  NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1,
 } from './next-meal-decision-policy.js';
 
 export const NEXT_MEAL_RANKING_POLICY_VERSION_V1 =
@@ -32,13 +34,24 @@ export const DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1 = {
   policyVersion: NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   hardConstraintPolicyVersion: NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
   objectiveHierarchyVersion: NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+  uncertaintyPolicyVersion: NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1,
+  terminalValuePolicyVersion: NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1,
   horizonDays: 3,
+  terminalTailDays: 1,
   opportunitiesPerDay: 3,
   continuationCandidateLimit: 12,
   continuationPortfolioSize: 8,
   robustScenarios: [
-    { scenarioId: 'expected-schedule', missedFutureOpportunities: 0 },
-    { scenarioId: 'one-opportunity-lost', missedFutureOpportunities: 1 },
+    {
+      scenarioId: 'expected-schedule',
+      role: 'NOMINAL' as const,
+      missedFutureOpportunities: 0,
+    },
+    {
+      scenarioId: 'one-opportunity-lost',
+      role: 'STRESS' as const,
+      missedFutureOpportunities: 1,
+    },
   ],
 };
 
@@ -74,7 +87,14 @@ export const NextMealRankingRequestSchema = z
         objectiveHierarchyVersion: z
           .literal(NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1)
           .default(NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1),
+        uncertaintyPolicyVersion: z
+          .literal(NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1)
+          .default(NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1),
+        terminalValuePolicyVersion: z
+          .literal(NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1)
+          .default(NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1),
         horizonDays: z.int().min(2).max(7),
+        terminalTailDays: z.int().min(1).max(3),
         opportunitiesPerDay: z.int().min(1).max(6),
         continuationCandidateLimit: z.int().min(4).max(64),
         continuationPortfolioSize: z.int().min(2).max(32),
@@ -82,6 +102,7 @@ export const NextMealRankingRequestSchema = z
           .array(
             z.strictObject({
               scenarioId: CanonicalCodeSchema,
+              role: z.enum(['NOMINAL', 'STRESS']),
               missedFutureOpportunities: z.int().min(0).max(6),
             }),
           )
@@ -138,31 +159,48 @@ export const NextMealRankingRequestSchema = z
         request.planningPolicy.opportunitiesPerDay -
       1;
     const scenarioIds = new Set<string>();
+    const opportunityLosses = new Set<number>();
     for (const [
       index,
       scenario,
     ] of request.planningPolicy.robustScenarios.entries()) {
       if (
         scenarioIds.has(scenario.scenarioId) ||
+        opportunityLosses.has(scenario.missedFutureOpportunities) ||
         scenario.missedFutureOpportunities > futureOpportunities
       )
         context.addIssue({
           code: 'custom',
           path: ['planningPolicy', 'robustScenarios', index],
           message:
-            'Planning scenarios need unique IDs and a feasible opportunity loss.',
+            'Planning scenarios need unique IDs, unique stress levels, and a feasible opportunity loss.',
         });
       scenarioIds.add(scenario.scenarioId);
+      opportunityLosses.add(scenario.missedFutureOpportunities);
     }
+    const nominal = request.planningPolicy.robustScenarios.filter(
+      ({ role }) => role === 'NOMINAL',
+    );
     if (
-      !request.planningPolicy.robustScenarios.some(
-        (scenario) => scenario.missedFutureOpportunities === 0,
+      nominal.length !== 1 ||
+      nominal[0]?.missedFutureOpportunities !== 0 ||
+      request.planningPolicy.robustScenarios.some(
+        ({ role, missedFutureOpportunities }) =>
+          role === 'STRESS' && missedFutureOpportunities === 0,
+      ) ||
+      request.planningPolicy.robustScenarios[0]?.role !== 'NOMINAL' ||
+      request.planningPolicy.robustScenarios.some(
+        (scenario, index, scenarios) =>
+          index > 1 &&
+          scenario.missedFutureOpportunities <=
+            scenarios[index - 1]!.missedFutureOpportunities,
       )
     )
       context.addIssue({
         code: 'custom',
         path: ['planningPolicy', 'robustScenarios'],
-        message: 'Rolling-horizon planning requires an expected schedule.',
+        message:
+          'Robust scenarios start with one unperturbed nominal case followed by increasingly severe stress cases.',
       });
     const requestedAt = Date.parse(request.candidates.requestedAt);
     const comparison = new Set(
@@ -256,6 +294,16 @@ export interface NextMealRuleScore {
   readonly normalizedDistance: ExactRatio;
 }
 
+export interface NextMealScenarioScore {
+  readonly scenarioId: string;
+  readonly role: 'NOMINAL' | 'STRESS';
+  readonly weightedDistance: ExactRatio;
+  readonly maximumDistance: ExactRatio;
+  readonly terminalWeightedDistance: ExactRatio;
+  readonly terminalMaximumDistance: ExactRatio;
+  readonly repetitionCount: number;
+}
+
 export interface NextMealRankedCandidate {
   readonly candidateKey: string;
   readonly classification: 'COMPARABLE';
@@ -266,9 +314,14 @@ export interface NextMealRankedCandidate {
   readonly maximumDistance: ExactRatio;
   readonly nominalWeightedDistance: ExactRatio;
   readonly nominalMaximumDistance: ExactRatio;
+  readonly terminalWeightedDistance: ExactRatio;
+  readonly terminalMaximumDistance: ExactRatio;
   readonly immediateWeightedDistance: ExactRatio;
   readonly immediateMaximumDistance: ExactRatio;
   readonly repetitionCount: number;
+  readonly nominalScenarioId: string;
+  readonly worstCaseScenarioId: string;
+  readonly scenarioScores: readonly NextMealScenarioScore[];
   readonly ruleScores: readonly NextMealRuleScore[];
 }
 
@@ -384,9 +437,22 @@ interface ScoredPortion {
   readonly maximumDistance: Fraction;
   readonly nominalWeightedDistance: Fraction;
   readonly nominalMaximumDistance: Fraction;
+  readonly terminalWeightedDistance: Fraction;
+  readonly terminalMaximumDistance: Fraction;
   readonly immediateWeightedDistance: Fraction;
   readonly immediateMaximumDistance: Fraction;
   readonly repetitionCount: number;
+  readonly nominalScenarioId: string;
+  readonly worstCaseScenarioId: string;
+  readonly scenarioScores: readonly {
+    readonly scenarioId: string;
+    readonly role: 'NOMINAL' | 'STRESS';
+    readonly weightedDistance: Fraction;
+    readonly maximumDistance: Fraction;
+    readonly terminalWeightedDistance: Fraction;
+    readonly terminalMaximumDistance: Fraction;
+    readonly repetitionCount: number;
+  }[];
   readonly ruleScores: readonly NextMealRuleScore[];
 }
 
@@ -398,6 +464,16 @@ function compareScored(left: ScoredPortion, right: ScoredPortion): number {
           return compare(left.maximumDistance, right.maximumDistance);
         case 'nutrition.robust-weighted-gap':
           return compare(left.weightedDistance, right.weightedDistance);
+        case 'nutrition.terminal-maximum-gap':
+          return compare(
+            left.terminalMaximumDistance,
+            right.terminalMaximumDistance,
+          );
+        case 'nutrition.terminal-weighted-gap':
+          return compare(
+            left.terminalWeightedDistance,
+            right.terminalWeightedDistance,
+          );
         case 'nutrition.nominal-maximum-gap':
           return compare(
             left.nominalMaximumDistance,
@@ -454,10 +530,30 @@ interface PlanningAction {
 
 interface ContinuationPlan {
   readonly scenarioId: string;
+  readonly horizonActions: readonly PlanningAction[];
   readonly actions: readonly PlanningAction[];
-  readonly amounts: readonly Fraction[];
+  readonly horizonAmounts: readonly Fraction[];
+  readonly terminalAmounts: readonly Fraction[];
   readonly hardLimitAmountsByDay: readonly ReadonlyMap<string, Fraction>[];
-  readonly repetitionCount: number;
+}
+
+interface ScenarioObjective {
+  readonly horizon: HorizonObjective;
+  readonly terminal: HorizonObjective;
+}
+
+function compareScenarioObjective(
+  left: ScenarioObjective,
+  right: ScenarioObjective,
+): number {
+  return (
+    compare(left.horizon.maximumDistance, right.horizon.maximumDistance) ||
+    compare(left.horizon.weightedDistance, right.horizon.weightedDistance) ||
+    compare(left.terminal.maximumDistance, right.terminal.maximumDistance) ||
+    compare(left.terminal.weightedDistance, right.terminal.weightedDistance) ||
+    left.horizon.repetitionCount - right.horizon.repetitionCount ||
+    left.terminal.repetitionCount - right.terminal.repetitionCount
+  );
 }
 
 function objective(
@@ -684,23 +780,27 @@ function buildContinuationPlan(
   request: NextMealRankingRequest,
 ): ContinuationPlan | null {
   const policy = request.planningPolicy;
+  const terminalOpportunityCount =
+    policy.terminalTailDays * policy.opportunitiesPerDay;
+  const totalOpportunityCount =
+    futureOpportunityCount + terminalOpportunityCount;
   const state = {
     totals: [...histories],
     dayTotals: Array.from(
-      { length: policy.horizonDays },
+      { length: policy.horizonDays + policy.terminalTailDays },
       () => new Map<string, Fraction>(),
     ),
     actions: [] as PlanningAction[],
   };
   for (
     let opportunity = 1;
-    opportunity <= futureOpportunityCount;
+    opportunity <= totalOpportunityCount;
     opportunity++
   ) {
     const dayIndex = Math.floor(opportunity / policy.opportunitiesPerDay);
     const targets = targetVector(
       rules,
-      Math.min(dayIndex, policy.horizonDays - 1),
+      Math.min(dayIndex, policy.horizonDays + policy.terminalTailDays - 1),
     );
     const eligible = pool.filter((action) =>
       actionFitsHardLimits(
@@ -747,20 +847,21 @@ function buildContinuationPlan(
       })[0];
     appendAction(selected!, dayIndex, state);
   }
-  const amounts = rules.map((_, ruleIndex) =>
-    state.actions.reduce(
-      (total, action) => add(total, action.amounts[ruleIndex]!),
-      ZERO,
-    ),
-  );
+  const horizonActions = state.actions.slice(0, futureOpportunityCount);
+  const amountsFor = (actions: readonly PlanningAction[]) =>
+    rules.map((_, ruleIndex) =>
+      actions.reduce(
+        (total, action) => add(total, action.amounts[ruleIndex]!),
+        ZERO,
+      ),
+    );
   return {
     scenarioId,
+    horizonActions,
     actions: state.actions,
-    amounts,
+    horizonAmounts: amountsFor(horizonActions),
+    terminalAmounts: amountsFor(state.actions),
     hardLimitAmountsByDay: state.dayTotals,
-    repetitionCount: repetitionCount(
-      state.actions.map((action) => action.candidateKey),
-    ),
   };
 }
 
@@ -844,9 +945,15 @@ function scoreCandidate(
   const supported = new Set(decision.supportedPortionIds);
   const historyVector = rules.map((rule) => histories.get(rule.ruleId)!);
   const currentTargets = rules.map((rule) => decimal(rule.target.amount));
-  const terminalTargets = targetVector(
+  const horizonTargets = targetVector(
     rules,
     request.planningPolicy.horizonDays - 1,
+  );
+  const terminalTargets = targetVector(
+    rules,
+    request.planningPolicy.horizonDays +
+      request.planningPolicy.terminalTailDays -
+      1,
   );
   let best: ScoredPortion | null = null;
   for (const portion of candidate.portions) {
@@ -880,7 +987,7 @@ function scoreCandidate(
     }
     const scenarioObjectives: {
       readonly scenarioId: string;
-      readonly objective: HorizonObjective;
+      readonly objective: ScenarioObjective;
     }[] = [];
     for (const scenario of request.planningPolicy.robustScenarios) {
       const plans = (portfolios.get(scenario.scenarioId) ?? []).filter((plan) =>
@@ -890,19 +997,34 @@ function scoreCandidate(
           request.candidates.hardLimits,
         ),
       );
-      let scenarioBest: HorizonObjective | null = null;
+      let scenarioBest: ScenarioObjective | null = null;
       for (const plan of plans) {
-        const keys = [
+        const horizonKeys = [
+          firstAction.candidateKey,
+          ...plan.horizonActions.map((action) => action.candidateKey),
+        ];
+        const terminalKeys = [
           firstAction.candidateKey,
           ...plan.actions.map((action) => action.candidateKey),
         ];
-        const result = objective(
-          sumVectors(immediateTotals, plan.amounts),
-          terminalTargets,
-          rules,
-          repetitionCount(keys),
-        );
-        if (scenarioBest === null || compareObjective(result, scenarioBest) < 0)
+        const result: ScenarioObjective = {
+          horizon: objective(
+            sumVectors(immediateTotals, plan.horizonAmounts),
+            horizonTargets,
+            rules,
+            repetitionCount(horizonKeys),
+          ),
+          terminal: objective(
+            sumVectors(immediateTotals, plan.terminalAmounts),
+            terminalTargets,
+            rules,
+            repetitionCount(terminalKeys),
+          ),
+        };
+        if (
+          scenarioBest === null ||
+          compareScenarioObjective(result, scenarioBest) < 0
+        )
           scenarioBest = result;
       }
       if (scenarioBest === null) {
@@ -920,25 +1042,73 @@ function scoreCandidate(
     )
       continue;
     const worst = [...scenarioObjectives].sort((left, right) =>
-      compareObjective(right.objective, left.objective),
-    )[0]!.objective;
+      compareScenarioObjective(right.objective, left.objective),
+    )[0]!;
+    const robustMaximumDistance = scenarioObjectives.reduce(
+      (maximum, { objective: current }) =>
+        compare(current.horizon.maximumDistance, maximum) > 0
+          ? current.horizon.maximumDistance
+          : maximum,
+      ZERO,
+    );
+    const robustWeightedDistance = scenarioObjectives.reduce(
+      (maximum, { objective: current }) =>
+        compare(current.horizon.weightedDistance, maximum) > 0
+          ? current.horizon.weightedDistance
+          : maximum,
+      ZERO,
+    );
+    const terminalMaximumDistance = scenarioObjectives.reduce(
+      (maximum, { objective: current }) =>
+        compare(current.terminal.maximumDistance, maximum) > 0
+          ? current.terminal.maximumDistance
+          : maximum,
+      ZERO,
+    );
+    const terminalWeightedDistance = scenarioObjectives.reduce(
+      (maximum, { objective: current }) =>
+        compare(current.terminal.weightedDistance, maximum) > 0
+          ? current.terminal.weightedDistance
+          : maximum,
+      ZERO,
+    );
+    const robustRepetitionCount = scenarioObjectives.reduce(
+      (maximum, { objective: current }) =>
+        Math.max(maximum, current.horizon.repetitionCount),
+      0,
+    );
     const nominal = scenarioObjectives.find(
       ({ scenarioId }) =>
         request.planningPolicy.robustScenarios.find(
           (scenario) => scenario.scenarioId === scenarioId,
-        )?.missedFutureOpportunities === 0,
-    )!.objective;
+        )?.role === 'NOMINAL',
+    )!;
     const scored: ScoredPortion = {
       candidateKey: decision.candidateKey,
       portionId: portion.portionId,
       edibleGrams: portion.edibleGrams,
-      weightedDistance: worst.weightedDistance,
-      maximumDistance: worst.maximumDistance,
-      nominalWeightedDistance: nominal.weightedDistance,
-      nominalMaximumDistance: nominal.maximumDistance,
+      weightedDistance: robustWeightedDistance,
+      maximumDistance: robustMaximumDistance,
+      terminalWeightedDistance,
+      terminalMaximumDistance,
+      nominalWeightedDistance: nominal.objective.horizon.weightedDistance,
+      nominalMaximumDistance: nominal.objective.horizon.maximumDistance,
       immediateWeightedDistance: immediate.weightedDistance,
       immediateMaximumDistance: immediate.maximumDistance,
-      repetitionCount: worst.repetitionCount,
+      repetitionCount: robustRepetitionCount,
+      nominalScenarioId: nominal.scenarioId,
+      worstCaseScenarioId: worst.scenarioId,
+      scenarioScores: scenarioObjectives.map(({ scenarioId, objective }) => ({
+        scenarioId,
+        role: request.planningPolicy.robustScenarios.find(
+          (scenario) => scenario.scenarioId === scenarioId,
+        )!.role,
+        weightedDistance: objective.horizon.weightedDistance,
+        maximumDistance: objective.horizon.maximumDistance,
+        terminalWeightedDistance: objective.terminal.weightedDistance,
+        terminalMaximumDistance: objective.terminal.maximumDistance,
+        repetitionCount: objective.horizon.repetitionCount,
+      })),
       ruleScores,
     };
     if (best === null || compareScored(scored, best) < 0) best = scored;
@@ -1086,9 +1256,22 @@ function finishRanking(accumulator: RankingAccumulator): NextMealRankingResult {
       maximumDistance: ratio(entry.maximumDistance),
       nominalWeightedDistance: ratio(entry.nominalWeightedDistance),
       nominalMaximumDistance: ratio(entry.nominalMaximumDistance),
+      terminalWeightedDistance: ratio(entry.terminalWeightedDistance),
+      terminalMaximumDistance: ratio(entry.terminalMaximumDistance),
       immediateWeightedDistance: ratio(entry.immediateWeightedDistance),
       immediateMaximumDistance: ratio(entry.immediateMaximumDistance),
       repetitionCount: entry.repetitionCount,
+      nominalScenarioId: entry.nominalScenarioId,
+      worstCaseScenarioId: entry.worstCaseScenarioId,
+      scenarioScores: entry.scenarioScores.map((scenario) => ({
+        scenarioId: scenario.scenarioId,
+        role: scenario.role,
+        weightedDistance: ratio(scenario.weightedDistance),
+        maximumDistance: ratio(scenario.maximumDistance),
+        terminalWeightedDistance: ratio(scenario.terminalWeightedDistance),
+        terminalMaximumDistance: ratio(scenario.terminalMaximumDistance),
+        repetitionCount: scenario.repetitionCount,
+      })),
       ruleScores: entry.ruleScores,
     })),
     unranked: accumulator.unranked,

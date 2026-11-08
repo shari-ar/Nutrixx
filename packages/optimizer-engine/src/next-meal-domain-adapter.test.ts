@@ -112,6 +112,9 @@ describe('next-meal planning domain adapter', () => {
     );
 
     expect(chain.problem.actions).toHaveLength(2);
+    expect(chain.problem.state.stateKey).toContain(
+      'next-meal-terminal-value-v1',
+    );
     expect(
       chain.problem.constraints.map(({ constraintId }) => constraintId),
     ).toEqual([
@@ -129,6 +132,8 @@ describe('next-meal planning domain adapter', () => {
     ).toEqual([
       'nutrition.robust-maximum-gap',
       'nutrition.robust-weighted-gap',
+      'nutrition.terminal-maximum-gap',
+      'nutrition.terminal-weighted-gap',
       'nutrition.nominal-maximum-gap',
       'nutrition.nominal-weighted-gap',
       'nutrition.immediate-maximum-gap',
@@ -150,8 +155,29 @@ describe('next-meal planning domain adapter', () => {
       chain.problem.objectives.filter(
         ({ activation }) => activation.status === 'ACTIVE',
       ),
-    ).toHaveLength(9);
-    expect(chain.outcome.actionOutcomes[0]?.objectiveResults).toHaveLength(9);
+    ).toHaveLength(11);
+    expect(
+      chain.outcome.actionOutcomes[0]?.objectiveResults.filter(
+        ({ scenarioId }) => scenarioId === undefined,
+      ),
+    ).toHaveLength(11);
+    expect(
+      chain.outcome.actionOutcomes[0]?.objectiveResults.filter(
+        ({ scenarioId }) => scenarioId !== undefined,
+      ),
+    ).toHaveLength(12);
+    expect(chain.problem.state.horizon).toMatchObject({
+      uncertaintyPolicyVersion: 'next-meal-uncertainty-policy-v1',
+      terminalValuePolicyVersion: 'next-meal-terminal-value-v1',
+      terminalTailDays: 1,
+      scenarios: [
+        { role: 'NOMINAL', perturbations: [] },
+        {
+          role: 'STRESS',
+          perturbations: [{ kind: 'future-opportunity-loss', count: 1 }],
+        },
+      ],
+    });
   });
 
   it('represents a complete census without an actionable candidate', () => {

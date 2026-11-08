@@ -32,18 +32,25 @@ function chain(): PlanningDecisionChainV1 {
         policyVersion: 'next-meal-hierarchical-robust-v1',
         horizon: {
           mode: 'rolling',
+          uncertaintyPolicyVersion: 'next-meal-uncertainty-policy-v1',
+          terminalValuePolicyVersion: 'next-meal-terminal-value-v1',
           days: 3,
+          terminalTailDays: 1,
           opportunitiesPerDay: 3,
           publishedActionCount: 1,
           scenarios: [
             {
               scenarioId: 'expected-schedule',
+              role: 'NOMINAL',
               probability: '0.8',
+              perturbations: [],
               description: 'All modeled eating opportunities remain available.',
             },
             {
               scenarioId: 'one-opportunity-lost',
+              role: 'STRESS',
               probability: '0.2',
+              perturbations: [{ kind: 'future-opportunity-loss', count: 1 }],
               description: 'One future eating opportunity becomes unavailable.',
             },
           ],
@@ -158,7 +165,27 @@ function chain(): PlanningDecisionChainV1 {
               value: { numerator: '1', denominator: '4' },
             },
             {
+              objectiveId: 'robust.maximum-gap',
+              scenarioId: 'expected-schedule',
+              value: { numerator: '1', denominator: '8' },
+            },
+            {
+              objectiveId: 'robust.maximum-gap',
+              scenarioId: 'one-opportunity-lost',
+              value: { numerator: '1', denominator: '4' },
+            },
+            {
               objectiveId: 'robust.combined-gap',
+              value: { numerator: '1', denominator: '2' },
+            },
+            {
+              objectiveId: 'robust.combined-gap',
+              scenarioId: 'expected-schedule',
+              value: { numerator: '1', denominator: '4' },
+            },
+            {
+              objectiveId: 'robust.combined-gap',
+              scenarioId: 'one-opportunity-lost',
               value: { numerator: '1', denominator: '2' },
             },
           ],
@@ -219,6 +246,45 @@ describe('planning domain model', () => {
       probability: '0.3',
     };
     expect(PlanningProblemV1Schema.safeParse(value.problem).success).toBe(
+      false,
+    );
+  });
+
+  it('requires one unperturbed nominal scenario and explicit stress perturbations', () => {
+    const value = chain();
+    value.problem.state.horizon.scenarios[1] = {
+      ...value.problem.state.horizon.scenarios[1]!,
+      role: 'NOMINAL',
+      perturbations: [],
+    };
+    expect(PlanningProblemV1Schema.safeParse(value.problem).success).toBe(
+      false,
+    );
+  });
+
+  it('requires complete scenario traces and exact worst-case aggregation', () => {
+    const missing = chain();
+    missing.outcome.actionOutcomes[0]!.objectiveResults =
+      missing.outcome.actionOutcomes[0]!.objectiveResults.filter(
+        ({ objectiveId, scenarioId }) =>
+          !(
+            objectiveId === 'robust.maximum-gap' &&
+            scenarioId === 'one-opportunity-lost'
+          ),
+      );
+    expect(PlanningDecisionChainV1Schema.safeParse(missing).success).toBe(
+      false,
+    );
+
+    const incorrect = chain();
+    incorrect.outcome.actionOutcomes[0]!.objectiveResults =
+      incorrect.outcome.actionOutcomes[0]!.objectiveResults.map((result) =>
+        result.objectiveId === 'robust.maximum-gap' &&
+        result.scenarioId === undefined
+          ? { ...result, value: { numerator: '1', denominator: '8' } }
+          : result,
+      );
+    expect(PlanningDecisionChainV1Schema.safeParse(incorrect).success).toBe(
       false,
     );
   });

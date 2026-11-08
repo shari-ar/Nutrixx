@@ -20,6 +20,16 @@ const PlanningKeySchema = z
 const PositiveIntegerStringSchema = z.string().regex(/^[1-9][0-9]*$/u);
 const SignedIntegerStringSchema = z.string().regex(/^(?:0|-?[1-9][0-9]*)$/u);
 
+const PlanningScenarioPerturbationV1Schema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('future-opportunity-loss'),
+    count: z
+      .int()
+      .positive()
+      .max(31 * 12 - 1),
+  }),
+]);
+
 function probabilitiesTotalOne(values: readonly string[]): boolean {
   const scale = Math.max(
     0,
@@ -37,6 +47,57 @@ function probabilitiesTotalOne(values: readonly string[]): boolean {
   return total === denominator;
 }
 
+interface ExactFraction {
+  readonly numerator: bigint;
+  readonly denominator: bigint;
+}
+
+function exactFraction(value: {
+  readonly numerator: string;
+  readonly denominator: string;
+}): ExactFraction {
+  return {
+    numerator: BigInt(value.numerator),
+    denominator: BigInt(value.denominator),
+  };
+}
+
+function decimalFraction(value: string): ExactFraction {
+  const [whole = '0', fraction = ''] = value.split('.');
+  return {
+    numerator: BigInt(`${whole}${fraction}`),
+    denominator: 10n ** BigInt(fraction.length),
+  };
+}
+
+function compareExact(left: ExactFraction, right: ExactFraction): number {
+  const difference =
+    left.numerator * right.denominator - right.numerator * left.denominator;
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
+function equalExact(left: ExactFraction, right: ExactFraction): boolean {
+  return compareExact(left, right) === 0;
+}
+
+function expectedExact(
+  values: readonly { readonly value: ExactFraction; readonly weight: string }[],
+): ExactFraction {
+  return values.reduce<ExactFraction>(
+    (total, item) => {
+      const weight = decimalFraction(item.weight);
+      return {
+        numerator:
+          total.numerator * item.value.denominator * weight.denominator +
+          item.value.numerator * weight.numerator * total.denominator,
+        denominator:
+          total.denominator * item.value.denominator * weight.denominator,
+      };
+    },
+    { numerator: 0n, denominator: 1n },
+  );
+}
+
 export const PlanningExactValueV1Schema = z.strictObject({
   numerator: SignedIntegerStringSchema,
   denominator: PositiveIntegerStringSchema,
@@ -52,14 +113,19 @@ export const PlanningStateV1Schema = z
     policyVersion: z.string().min(1).max(200),
     horizon: z.strictObject({
       mode: z.literal('rolling'),
+      uncertaintyPolicyVersion: z.string().min(1).max(200),
+      terminalValuePolicyVersion: z.string().min(1).max(200),
       days: z.int().min(1).max(31),
+      terminalTailDays: z.int().min(1).max(7),
       opportunitiesPerDay: z.int().min(1).max(12),
       publishedActionCount: z.literal(1),
       scenarios: z
         .array(
           z.strictObject({
             scenarioId: CanonicalCodeSchema,
+            role: z.enum(['NOMINAL', 'STRESS']),
             probability: NonnegativeCanonicalDecimalSchema.optional(),
+            perturbations: z.array(PlanningScenarioPerturbationV1Schema).max(8),
             description: z.string().trim().min(1).max(500),
           }),
         )
@@ -91,6 +157,32 @@ export const PlanningStateV1Schema = z
         path: ['horizon', 'scenarios'],
         message: 'Planning scenario identities must be unique.',
       });
+    const nominal = state.horizon.scenarios.filter(
+      ({ role }) => role === 'NOMINAL',
+    );
+    if (
+      nominal.length !== 1 ||
+      nominal[0]?.perturbations.length !== 0 ||
+      state.horizon.scenarios.some(
+        ({ role, perturbations }) =>
+          role === 'STRESS' && perturbations.length === 0,
+      )
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['horizon', 'scenarios'],
+        message:
+          'A scenario set has exactly one unperturbed nominal scenario and explicit perturbations for every stress scenario.',
+      });
+    for (const [index, scenario] of state.horizon.scenarios.entries()) {
+      const perturbationKinds = scenario.perturbations.map(({ kind }) => kind);
+      if (new Set(perturbationKinds).size !== perturbationKinds.length)
+        context.addIssue({
+          code: 'custom',
+          path: ['horizon', 'scenarios', index, 'perturbations'],
+          message: 'A scenario may perturb each uncertainty dimension once.',
+        });
+    }
     const factKeys = state.facts.map(
       ({ factType, factKey }) => `${factType}:${factKey}`,
     );
@@ -468,6 +560,15 @@ export const PlanningDecisionChainV1Schema = z
     const scenarioIds = new Set(
       problem.state.horizon.scenarios.map(({ scenarioId }) => scenarioId),
     );
+    const nominalScenarioId = problem.state.horizon.scenarios.find(
+      ({ role }) => role === 'NOMINAL',
+    )?.scenarioId;
+    const scenarioProbability = new Map(
+      problem.state.horizon.scenarios.map(({ scenarioId, probability }) => [
+        scenarioId,
+        probability,
+      ]),
+    );
     const outcomeActions = new Set<string>();
     for (const [index, actionOutcome] of outcome.actionOutcomes.entries()) {
       if (
@@ -545,6 +646,94 @@ export const PlanningDecisionChainV1Schema = z
           message:
             'Feasible actions must expose one aggregate value for every objective.',
         });
+      if (actionOutcome.classification === 'FEASIBLE') {
+        for (const [objectiveId, objective] of objectives) {
+          if (objective.activation.status !== 'ACTIVE') continue;
+          const aggregate = actionOutcome.objectiveResults.find(
+            (result) =>
+              result.objectiveId === objectiveId &&
+              result.scenarioId === undefined,
+          );
+          const scenarioValues = actionOutcome.objectiveResults.filter(
+            (result) =>
+              result.objectiveId === objectiveId &&
+              result.scenarioId !== undefined,
+          );
+          const requiredScenarioIds =
+            objective.scenarioAggregation === 'NONE'
+              ? []
+              : objective.scenarioAggregation === 'NOMINAL'
+                ? [nominalScenarioId]
+                : [...scenarioIds];
+          if (
+            requiredScenarioIds.some(
+              (scenarioId) =>
+                scenarioId === undefined ||
+                !scenarioValues.some(
+                  (result) => result.scenarioId === scenarioId,
+                ),
+            ) ||
+            scenarioValues.some(
+              ({ scenarioId }) => !requiredScenarioIds.includes(scenarioId),
+            )
+          )
+            context.addIssue({
+              code: 'custom',
+              path: ['outcome', 'actionOutcomes', index, 'objectiveResults'],
+              message:
+                'Scenario objective traces must exactly match the objective aggregation policy.',
+            });
+          if (!aggregate || scenarioValues.length === 0) continue;
+          const aggregateValue = exactFraction(aggregate.value);
+          const scenarioExact = scenarioValues.map((result) => ({
+            scenarioId: result.scenarioId!,
+            value: exactFraction(result.value),
+          }));
+          const expectedAggregate = (() => {
+            if (objective.scenarioAggregation === 'NOMINAL')
+              return scenarioExact.find(
+                ({ scenarioId }) => scenarioId === nominalScenarioId,
+              )?.value;
+            if (objective.scenarioAggregation === 'WORST_CASE')
+              return scenarioExact.reduce<ExactFraction | undefined>(
+                (worst, item) => {
+                  if (!worst) return item.value;
+                  const comparison = compareExact(item.value, worst);
+                  return objective.direction === 'MINIMIZE'
+                    ? comparison > 0
+                      ? item.value
+                      : worst
+                    : comparison < 0
+                      ? item.value
+                      : worst;
+                },
+                undefined,
+              );
+            if (objective.scenarioAggregation === 'EXPECTED') {
+              const weighted = scenarioExact.flatMap((item) => {
+                const probability = scenarioProbability.get(item.scenarioId);
+                return probability === undefined
+                  ? []
+                  : [{ value: item.value, weight: probability }];
+              });
+              return weighted.length === scenarioExact.length
+                ? expectedExact(weighted)
+                : undefined;
+            }
+            return undefined;
+          })();
+          if (
+            expectedAggregate &&
+            !equalExact(aggregateValue, expectedAggregate)
+          )
+            context.addIssue({
+              code: 'custom',
+              path: ['outcome', 'actionOutcomes', index, 'objectiveResults'],
+              message:
+                'Aggregate objective values must equal their exact scenario aggregation.',
+            });
+        }
+      }
       if (
         actionOutcome.objectiveResults.some(({ objectiveId }) => {
           const objective = objectives.get(objectiveId);

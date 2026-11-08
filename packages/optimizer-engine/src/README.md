@@ -4,8 +4,8 @@
 | ----------------------------------- | ------------------------------------------------------------------------- |
 | `next-meal-candidates.ts`           | Complete next-meal census and source-backed classification                |
 | `next-meal-candidates.test.ts`      | Coverage, safety, inventory, and manifest fixtures                        |
-| `next-meal-ranking.ts`              | Exact, history-aware scoring and deterministic total order                |
-| `next-meal-ranking.test.ts`         | Window, completeness, portion, and ordering fixtures                      |
+| `next-meal-ranking.ts`              | Exact horizon, terminal-tail, scenario scoring and deterministic order    |
+| `next-meal-ranking.test.ts`         | Window, robustness, terminal, portion, and ordering fixtures              |
 | `next-meal-validation.ts`           | Independent audit and compact post-review result projection               |
 | `next-meal-validation.test.ts`      | Tampering, history, exclusion, and explanation fixtures                   |
 | `next-meal-temporal-policy.ts`      | Versioned temporal-rule contract and history assessment                   |
@@ -13,7 +13,7 @@
 | `next-meal-validity.ts`             | Frozen run expiry from time and temporal-window boundaries                |
 | `next-meal-validity.test.ts`        | Replay, day rollover, and elapsed-window expiry fixtures                  |
 | `planning-domain-model.ts`          | Solver-neutral State → Action → Constraint → Objective → Outcome contract |
-| `planning-domain-model.test.ts`     | Cross-reference, hierarchy, census, and publication invariants            |
+| `planning-domain-model.test.ts`     | Cross-reference, hierarchy, scenario, census, and publication invariants  |
 | `next-meal-domain-adapter.ts`       | Active next-meal engine projection into the solver-neutral decision chain |
 | `next-meal-domain-adapter.test.ts`  | Operational mapping, objective, and empty-action fixtures                 |
 | `next-meal-decision-policy.ts`      | Complete hard-constraint policy and active/deferred objective hierarchy   |

@@ -135,17 +135,24 @@ with incomplete evidence remain discoverable through their classification.
 The active `next-meal-hierarchical-robust-v1` policy scores source-backed
 temporal comparisons with known recorded-meal composition, evaluates each
 candidate as the first action of a multi-day continuation, and ranks against
-the least favorable configured schedule scenario. A short available history
-can enter the score through a policy-permitted provisional comparison; its
+the least favorable configured schedule scenario. The versioned uncertainty
+policy distinguishes one nominal schedule from explicit opportunity-loss
+stress cases. Every comparable result retains its exact per-scenario metrics,
+nominal scenario identity and worst-case scenario identity; aggregate robust
+scores must reproduce from that trace. The versioned terminal policy extends
+the internal simulation by one tail day,
+records worst-case terminal maximum and weighted gaps, and keeps every tail
+action private to the decision trace. A short available history can enter the
+score through a policy-permitted provisional comparison; its
 applied span and qualification remain frozen with the run. Each rule supplies its own UTC window,
 coverage, reference target, unit, weight, and exact accepted-meal observations.
 The input builder evaluates the full eligible rule set in the active release
 against comparable catalog and recorded-intake evidence. Foods with incomplete
 required composition retain their evidence-limited classification.
 For each supported portion, the engine first minimizes the largest normalized
-target distance, then the weighted combined distance, nominal-schedule
-distance, immediate distance, portion size, horizon repetition and stable
-identity.
+horizon distance, then the weighted horizon distance, terminal maximum and
+weighted distances, nominal-schedule distance, immediate distance, portion
+size, horizon repetition and stable identity.
 Exact rational arithmetic keeps comparisons deterministic. A `minimum`
 target has zero distance after it is met; a `preferred` target measures distance
 on either side. Verified hard limits already restrict supported portions. Equal

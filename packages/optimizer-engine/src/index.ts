@@ -24,6 +24,7 @@ export {
   type NextMealRankingRequest,
   type NextMealRankingResult,
   type NextMealRuleScore,
+  type NextMealScenarioScore,
 } from './next-meal-ranking.js';
 
 export {
@@ -85,6 +86,8 @@ export {
   NEXT_MEAL_HARD_CONSTRAINT_FAMILIES_V1,
   NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1,
   NEXT_MEAL_OBJECTIVE_HIERARCHY_VERSION_V1,
+  NEXT_MEAL_TERMINAL_VALUE_POLICY_VERSION_V1,
+  NEXT_MEAL_UNCERTAINTY_POLICY_VERSION_V1,
   nextMealObjectiveHierarchyV1,
 } from './next-meal-decision-policy.js';
 

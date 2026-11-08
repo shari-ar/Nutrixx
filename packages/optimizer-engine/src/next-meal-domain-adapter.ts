@@ -288,6 +288,18 @@ function stateFacts(request: NextMealRankingRequest) {
       revision: request.planningPolicy.objectiveHierarchyVersion,
       source: ENGINE_SOURCE,
     },
+    {
+      factType: 'uncertainty-policy',
+      factKey: `policy:${request.planningPolicy.uncertaintyPolicyVersion}`,
+      revision: request.planningPolicy.uncertaintyPolicyVersion,
+      source: ENGINE_SOURCE,
+    },
+    {
+      factType: 'terminal-value-policy',
+      factKey: `policy:${request.planningPolicy.terminalValuePolicyVersion}`,
+      revision: request.planningPolicy.terminalValuePolicyVersion,
+      source: ENGINE_SOURCE,
+    },
     ...request.acceptedMeals.map((meal) => ({
       factType: 'recorded-meal',
       factKey: `meal:${meal.mealId}`,
@@ -373,7 +385,14 @@ export function createNextMealPlanningDecisionChainV1(
     throw new TypeError(
       'The active domain adapter requires a complete catalog census.',
     );
-  const stateKey = `state:${context.subjectKey}:${request.candidates.requestedAt}`;
+  const stateKey = [
+    'state',
+    context.subjectKey,
+    request.candidates.requestedAt,
+    request.planningPolicy.policyVersion,
+    request.planningPolicy.uncertaintyPolicyVersion,
+    request.planningPolicy.terminalValuePolicyVersion,
+  ].join(':');
   const opportunityCount =
     request.planningPolicy.horizonDays *
     request.planningPolicy.opportunitiesPerDay;
@@ -434,11 +453,26 @@ export function createNextMealPlanningDecisionChainV1(
         policyVersion: request.planningPolicy.policyVersion,
         horizon: {
           mode: 'rolling',
+          uncertaintyPolicyVersion:
+            request.planningPolicy.uncertaintyPolicyVersion,
+          terminalValuePolicyVersion:
+            request.planningPolicy.terminalValuePolicyVersion,
           days: request.planningPolicy.horizonDays,
+          terminalTailDays: request.planningPolicy.terminalTailDays,
           opportunitiesPerDay: request.planningPolicy.opportunitiesPerDay,
           publishedActionCount: 1,
           scenarios: request.planningPolicy.robustScenarios.map((scenario) => ({
             scenarioId: scenario.scenarioId,
+            role: scenario.role,
+            perturbations:
+              scenario.missedFutureOpportunities === 0
+                ? []
+                : [
+                    {
+                      kind: 'future-opportunity-loss' as const,
+                      count: scenario.missedFutureOpportunities,
+                    },
+                  ],
             description: `${scenario.missedFutureOpportunities} future eating opportunities unavailable.`,
           })),
         },
@@ -470,6 +504,8 @@ export function createNextMealPlanningDecisionChainV1(
         const values = new Map<string, ExactRatio>([
           ['nutrition.robust-maximum-gap', row.maximumDistance],
           ['nutrition.robust-weighted-gap', row.weightedDistance],
+          ['nutrition.terminal-maximum-gap', row.terminalMaximumDistance],
+          ['nutrition.terminal-weighted-gap', row.terminalWeightedDistance],
           ['nutrition.nominal-maximum-gap', row.nominalMaximumDistance],
           ['nutrition.nominal-weighted-gap', row.nominalWeightedDistance],
           ['nutrition.immediate-maximum-gap', row.immediateMaximumDistance],
@@ -503,14 +539,77 @@ export function createNextMealPlanningDecisionChainV1(
               status: 'PASSED' as const,
               reasonCodes: [],
             })),
-          objectiveResults: NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1.map(
+          objectiveResults: NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1.flatMap(
             (objectiveId) => {
               const value = values.get(objectiveId);
               if (!value)
                 throw new TypeError(
                   `Active objective ${objectiveId} has no result value.`,
                 );
-              return { objectiveId, value };
+              const scenarioValues = (() => {
+                switch (objectiveId) {
+                  case 'nutrition.robust-maximum-gap':
+                    return row.scenarioScores.map((scenario) => ({
+                      objectiveId,
+                      scenarioId: scenario.scenarioId,
+                      value: scenario.maximumDistance,
+                    }));
+                  case 'nutrition.robust-weighted-gap':
+                    return row.scenarioScores.map((scenario) => ({
+                      objectiveId,
+                      scenarioId: scenario.scenarioId,
+                      value: scenario.weightedDistance,
+                    }));
+                  case 'nutrition.terminal-maximum-gap':
+                    return row.scenarioScores.map((scenario) => ({
+                      objectiveId,
+                      scenarioId: scenario.scenarioId,
+                      value: scenario.terminalMaximumDistance,
+                    }));
+                  case 'nutrition.terminal-weighted-gap':
+                    return row.scenarioScores.map((scenario) => ({
+                      objectiveId,
+                      scenarioId: scenario.scenarioId,
+                      value: scenario.terminalWeightedDistance,
+                    }));
+                  case 'nutrition.nominal-maximum-gap': {
+                    const nominal = row.scenarioScores.find(
+                      ({ scenarioId }) => scenarioId === row.nominalScenarioId,
+                    )!;
+                    return [
+                      {
+                        objectiveId,
+                        scenarioId: nominal.scenarioId,
+                        value: nominal.maximumDistance,
+                      },
+                    ];
+                  }
+                  case 'nutrition.nominal-weighted-gap': {
+                    const nominal = row.scenarioScores.find(
+                      ({ scenarioId }) => scenarioId === row.nominalScenarioId,
+                    )!;
+                    return [
+                      {
+                        objectiveId,
+                        scenarioId: nominal.scenarioId,
+                        value: nominal.weightedDistance,
+                      },
+                    ];
+                  }
+                  case 'context.variety-repetition':
+                    return row.scenarioScores.map((scenario) => ({
+                      objectiveId,
+                      scenarioId: scenario.scenarioId,
+                      value: {
+                        numerator: String(scenario.repetitionCount),
+                        denominator: '1',
+                      },
+                    }));
+                  default:
+                    return [];
+                }
+              })();
+              return [{ objectiveId, value }, ...scenarioValues];
             },
           ),
         };
