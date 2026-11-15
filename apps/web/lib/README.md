@@ -54,6 +54,14 @@ canonical, human-readable view without rewriting their immutable revisions.
 `food-component-presentation.ts` is the shared consumer-label boundary for
 Food and Recipe views; source identifiers remain available only inside explicit
 provenance disclosures.
+`nutrient-prominence.ts` defines the catalog-comparison policy behind the two
+dynamic Meal Detail highlights and nutrient food-ranking routes. It uses FDA
+Daily Values, preserves limiting nutrients as watch-outs, rejects tiny rare
+amounts, and separates stable food comparison from personalized planning.
+`nutrient-prominence-cache.ts` retains only a disposable index keyed by the
+active catalog manifest and policy version. `nutrient-prominence-client.ts`
+owns the cancellable worker boundary so full-catalog analysis never blocks the
+route UI.
 
 `usda-cooking.ts` exposes pinned USDA Release 6 nutrient-retention treatments,
 Release 2 meat/poultry weight yields, and a small, audited set of Handbook 102
@@ -102,6 +110,10 @@ same single-active-release rule and evicts a mismatched or invalid mapping.
 Disposable planning projections expire after seven days and are removed on
 their next read. Device-specific chunk hints expire after 30 days and are
 relearned from conservative measurements.
+`next-meal-evidence-report.ts` turns one independently validated candidate
+explanation into a local-only, versioned JSON audit report. Its RFC 8785
+canonical content is sealed with SHA-256; verification detects any later
+change to the decision, calculation, source, policy, window, or meal evidence.
 The client retains only bounded, non-sensitive classification and scoring
 chunk recommendations in origin-local storage. A first run starts at eight
 entries; later runs start at half the last measured recommendation and continue
@@ -127,6 +139,18 @@ cleanup and remains authoritative.
 `browser-outcome-feedback.ts` stores optional weight and transcribed lab
 observations as separate local user-context records. Its descriptive summaries
 stay outside the next-meal input and recorded-intake calculation paths.
+`browser-planning-core.ts` records each READY publication as a canonical
+feedback trial. Append-only selection, consumption, and supersession events
+feed an observation-only engine-version cohort report. Meal-ledger
+reconciliation restores a derived consumption link before reporting or
+replanning.
+The same atomic publication stores a canonical HiGHS MILP Shadow Solver
+comparison. The disposable planning worker loads the pinned same-origin
+WebAssembly asset, solves the binary lexicographic model, and terminates after
+publication. The active run retains a compact agreement summary, while the
+complete immutable report records engine and model identity, optimality,
+status, feasible-set, recommendation, order, top-k, and rank-delta evidence
+under primary-only publication authority.
 See the
 [Free next-meal contract](../../../docs/engines/next-meal-contract.md).
 `next-meal-acceptance-fixture.ts` pins the adult request and catalog digest

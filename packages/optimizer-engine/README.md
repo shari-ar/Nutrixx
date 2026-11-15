@@ -16,6 +16,16 @@ normative behavior.
 - Keep database and network access behind callers or injected adapters.
 - Keep hard constraints distinct from weighted objectives.
 - Preserve input, policy, engine, and solver versions for reproducible runs.
+- Persist a canonical replay artifact that freezes dynamic evidence, binds the
+  immutable candidate corpus by SHA-256, and verifies recalculated ranking and
+  Decision Chain digests without moving the artifact through UI messages.
+- Produce a complete versioned feasibility diagnosis for every result and pass
+  each solver-neutral Decision Chain through the separate decision checker.
+- Record recommendation trials and user outcomes as append-only evidence;
+  evaluate only version-matched cohorts and preserve explicit policy review.
+- Run every published ranking through the versioned HiGHS MILP shadow, retain
+  primary-only publication authority, and persist immutable execution and
+  divergence evidence.
 - Freeze one nominal scenario and explicit stress perturbations; retain exact
   per-scenario values behind every robust aggregate.
 - Evaluate a versioned terminal tail after the decision horizon while

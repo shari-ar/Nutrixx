@@ -5,7 +5,7 @@
 | Status        | Implemented local recorded-intake scope           |
 | Audience      | Nutrition science, data, engine, product, quality |
 | Owner         | Nutrixx Nutrition Science                         |
-| Last reviewed | 2026-10-11                                        |
+| Last reviewed | 2026-11-14                                        |
 
 ## Scope and identity
 
@@ -60,3 +60,49 @@ food editor provides a searchable list of component IDs and units for entering
 label or measured facts. The calculation rule revision invalidates previous
 27-component derived snapshots and rebuilds them from existing meal revisions;
 the authoritative meal and food records remain intact.
+
+### Meal nutrient signatures
+
+Meal Detail preserves four stable, linked highlights: energy, protein,
+carbohydrate, and total fat. It fills no more than two additional linked
+positions with a versioned, catalog-aware policy rather than fixed fiber and
+sodium cards:
+
+| Label                 | Qualification                                                               |
+| --------------------- | --------------------------------------------------------------------------- |
+| `Watch-out`           | A limiting nutrient reaches at least 20% of its FDA Daily Value in the meal |
+| `Strong contribution` | An encouraged nutrient reaches at least 20% of its FDA Daily Value          |
+| `Distinctive source`  | An encouraged nutrient reaches at least 10% DV and high sources are scarce  |
+
+Watch-outs receive selection priority, followed by positive candidates scored
+by meal contribution and catalog scarcity. Positive eligibility starts at 10%
+DV, keeping rare trace amounts outside labeled qualification. Available
+positive evidence fills the two smart positions, with sub-threshold signals
+shown without a label.
+This food-comparison policy is independent of personalized next-meal planning.
+The initial limiting set contains sodium and saturated fat; the encouraged set
+contains supported fiber, vitamin, and mineral Daily Values.
+
+Selecting a smart card opens an active-catalog ranking for that nutrient. Foods
+are ranked by percent FDA Daily Value per 100 g edible, the current normalized
+comparison basis. The route states that 100 g is a comparison unit rather than
+a personalized serving recommendation, exposes known-data coverage, and labels
+limiting-nutrient lists as watch-outs. A manifest- and policy-keyed disposable
+index is prepared in a Web Worker and remains derived data separate from
+canonical user data.
+
+Meal Detail derives the initial two smart cards immediately from the retained
+meal totals. The background catalog index then refines scarcity-sensitive
+ordering and labels in place, keeping populated cards visible throughout the
+calculation.
+
+Every nutrient card in the Meal Detail component browser links to the same
+catalog-ranking route. Components with an FDA Daily Value use the versioned
+reference threshold. Other components use a descending amount-per-100-g ranking
+and state the scope of that comparison. This gives every displayed component a
+consistent exploration path while keeping adequacy claims tied to components
+with an applicable reference.
+
+Policy thresholds and Daily Values cite the
+[FDA Daily Value reference](https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels),
+where 20% DV or more is defined as high and 5% DV or less as low.

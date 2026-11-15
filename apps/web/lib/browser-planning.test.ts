@@ -7,6 +7,10 @@ import {
   CANONICAL_RECORD_STORE,
   openIndexedDb,
 } from '@nutrixx/persistence-indexeddb';
+import {
+  solvePlanningHighsShadowV1,
+  type HighsShadowRuntimeV1,
+} from '@nutrixx/solver-highs';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,7 +28,37 @@ import type {
 
 const NOW = '2026-10-12T12:00:00.000Z';
 
-async function planningRecordTypes(): Promise<string[]> {
+const testHighsRuntime = {
+  version: {
+    major: 1,
+    minor: 15,
+    patch: 0,
+    string: '1.15.0-test',
+    gitHash: 'test',
+  },
+  solve: () => ({
+    Status: 'Optimal',
+    ObjectiveValue: 0,
+    Columns: { x0: { Primal: 1 } },
+    Rows: [],
+  }),
+} as unknown as HighsShadowRuntimeV1;
+
+const solveShadowForTest: ConstructorParameters<
+  typeof BrowserPlanningStore
+>[5] = (input) =>
+  solvePlanningHighsShadowV1({
+    ...input,
+    loadRuntime: async () => testHighsRuntime,
+  });
+
+interface StoredPlanningRecord {
+  readonly recordId: string;
+  readonly recordType: string;
+  readonly payload: Record<string, unknown>;
+}
+
+async function planningRecords(): Promise<StoredPlanningRecord[]> {
   const database = await openIndexedDb(indexedDB, LOCAL_USER_DATABASE_NAME);
   try {
     const transaction = database.transaction(
@@ -32,19 +66,21 @@ async function planningRecordTypes(): Promise<string[]> {
       'readonly',
     );
     const request = transaction.objectStore(CANONICAL_RECORD_STORE).getAll();
-    const records = await new Promise<{ recordType: string }[]>(
-      (resolve, reject) => {
-        request.onsuccess = () =>
-          resolve(request.result as { recordType: string }[]);
-        request.onerror = () => reject(request.error);
-      },
-    );
-    return records
-      .map((record) => record.recordType)
-      .filter((recordType) => recordType.startsWith('planning.'));
+    return await new Promise<StoredPlanningRecord[]>((resolve, reject) => {
+      request.onsuccess = () =>
+        resolve(request.result as StoredPlanningRecord[]);
+      request.onerror = () => reject(request.error);
+    });
   } finally {
     database.close();
   }
+}
+
+async function planningRecordTypes(): Promise<string[]> {
+  return (await planningRecords())
+    .map((record) => record.recordType)
+    .filter((recordType) => recordType.startsWith('planning.'))
+    .sort();
 }
 
 beforeEach(() => {
@@ -617,6 +653,7 @@ describe('browser next-meal planning', () => {
         }) as unknown as BrowserNutritionSnapshotV1,
     };
     let linkedIntention: string | undefined;
+    let linkedGrams = '0';
     let catalogRelease = 'fixture-release';
     const foods = {
       enumerateNextMealCatalog: async () => ({
@@ -635,11 +672,23 @@ describe('browser next-meal planning', () => {
                 state: 'recorded',
                 planningIntentionId: linkedIntention,
                 mealId: '00000000-0000-4000-8000-000000000010',
+                occurredAt: new Date().toISOString(),
+                recordedAt: new Date().toISOString(),
+                items: [
+                  {
+                    reference: food.reference,
+                    edibleGramWeight: linkedGrams,
+                  },
+                ],
               },
             ]
           : [],
-      saveMeal: async (input: { planningIntentionId?: string }) => {
+      saveMeal: async (input: {
+        planningIntentionId?: string;
+        items: readonly { gramWeight: string }[];
+      }) => {
         linkedIntention = input.planningIntentionId;
+        linkedGrams = input.items[0]!.gramWeight;
         return '00000000-0000-4000-8000-000000000010';
       },
     } as unknown as Pick<
@@ -656,6 +705,7 @@ describe('browser next-meal planning', () => {
       nutrition,
       foods,
       false,
+      solveShadowForTest,
     );
     const created = await planning.createRecommendation({ inventory: null });
     expect(created.status).toBe('READY');
@@ -685,6 +735,84 @@ describe('browser next-meal planning', () => {
     expect(ranked.run.decisionModel.decisionChainHash).toMatch(
       /^[0-9a-f]{64}$/,
     );
+    expect(ranked.run.shadowEvaluation).toMatchObject({
+      comparisonVersion: 'planning-shadow-comparison-v1',
+      solverVersion: 'next-meal-highs-milp-shadow-v1+highs-js-1.15.4',
+      engine: 'HIGHS',
+      engineVersion: '1.15.0-test',
+      modelVersion: 'planning-highs-binary-selection-v1',
+      outcome: 'MATCH',
+      severity: 'NONE',
+      recommendationAgreement: true,
+      completeOrderAgreement: true,
+    });
+    expect(ranked.run).not.toHaveProperty('replayArtifact');
+    const storedPlanning = await planningRecords();
+    const storedRun = storedPlanning.find(
+      (record) => record.recordType === 'planning.next-meal-run',
+    );
+    expect(storedRun?.payload).not.toHaveProperty('replayArtifact');
+    expect(storedRun?.payload['replayArtifactId']).toBe(
+      ranked.run.decisionModel.problemId,
+    );
+    expect(storedRun?.payload['feedbackTrialId']).toBe(
+      ranked.run.feedbackTrialId,
+    );
+    expect(
+      storedPlanning.find(
+        (record) => record.recordId === ranked.run!.feedbackTrialId,
+      )?.payload,
+    ).toMatchObject({
+      format: 'nutrixx.planning-feedback-trial',
+      feedbackVersion: 'planning-outcome-feedback-v1',
+      runId: ranked.run.runId,
+      recommended: { rank: 1 },
+    });
+    expect(
+      storedPlanning.find(
+        (record) =>
+          record.recordType === 'planning.next-meal-replay' &&
+          record.recordId === storedRun?.payload['replayArtifactId'],
+      )?.payload,
+    ).toMatchObject({
+      format: 'nutrixx.planning-replay-artifact',
+      schemaVersion: 1,
+      versions: {
+        replayArtifact: 'planning-replay-artifact-v1',
+        independentValidator: 'free-next-meal-independent-validator-v1',
+      },
+      expected: {
+        requestSha256: ranked.run.inputHash,
+        decisionChainSha256: ranked.run.decisionModel.decisionChainHash,
+      },
+    });
+    expect(
+      storedPlanning.find(
+        (record) =>
+          record.recordType === 'planning.next-meal-shadow-comparison' &&
+          record.recordId === ranked.run!.shadowEvaluation.comparisonId,
+      )?.payload,
+    ).toMatchObject({
+      format: 'nutrixx.planning-shadow-comparison',
+      comparisonVersion: 'planning-shadow-comparison-v1',
+      publicationAuthority: 'PRIMARY_ONLY',
+      shadowAffectsPublication: false,
+      outcome: 'MATCH',
+      primary: {
+        decisionChainSha256: ranked.run.decisionModel.decisionChainHash,
+      },
+      shadowExecution: {
+        modelKind: 'MILP',
+        engine: 'HIGHS',
+        engineVersion: '1.15.0-test',
+        status: 'OPTIMAL',
+        selectedActionId: expect.any(String),
+      },
+      metrics: {
+        recommendationAgreement: true,
+        completeOrderAgreement: true,
+      },
+    });
     expect(ranked.fresh).toBe(true);
     expect(ranked.run.validUntil).toBe('2026-10-12T12:15:00.000Z');
     await new BrowserOutcomeFeedbackStore().saveWeight({
@@ -713,7 +841,16 @@ describe('browser next-meal planning', () => {
     expect(refreshed.status).toBe('READY');
     if (refreshed.status !== 'READY') return;
     expect(refreshed.runId).not.toBe(created.runId);
-    expect(await planningRecordTypes()).toEqual(['planning.next-meal-run']);
+    expect(await planningRecordTypes()).toEqual([
+      'planning.next-meal-feedback-event',
+      'planning.next-meal-feedback-trial',
+      'planning.next-meal-feedback-trial',
+      'planning.next-meal-replay',
+      'planning.next-meal-replay',
+      'planning.next-meal-run',
+      'planning.next-meal-shadow-comparison',
+      'planning.next-meal-shadow-comparison',
+    ]);
     const replay = await planning.load();
     expect(replay.fresh).toBe(true);
     expect(replay.run?.result).toEqual(ranked.run?.result);
@@ -729,6 +866,19 @@ describe('browser next-meal planning', () => {
     expect((await planning.load()).loggedMealId).toBe(
       '00000000-0000-4000-8000-000000000010',
     );
+    expect((await planning.loadCalibrationReport()).cohorts[0]).toMatchObject({
+      trialCount: 2,
+      finalizedTrialCount: 2,
+      finalizedSelectedTrialCount: 1,
+      consumedTrialCount: 1,
+      selectionRate: { numerator: '1', denominator: '2' },
+      followThroughRate: { numerator: '1', denominator: '1' },
+      topRecommendationSelectionRate: {
+        numerator: '1',
+        denominator: '1',
+      },
+      meanConsumedPortionRatio: { numerator: '9', denominator: '10' },
+    });
     await expect(
       planning.select(refreshed.runId, candidateKey),
     ).rejects.toThrow('Refresh it');

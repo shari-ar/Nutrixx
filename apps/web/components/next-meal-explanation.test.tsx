@@ -19,6 +19,8 @@ import type {
 const ruleId = 'iron-current-day';
 const candidateKey =
   'food:fixture-release:00000000-0000-4000-8000-000000000001:1';
+const comparisonCandidateKey =
+  'food:fixture-release:00000000-0000-4000-8000-000000000002:1';
 const mealId = '00000000-0000-4000-8000-000000000010';
 const citation = {
   authority: 'National Academies',
@@ -32,11 +34,21 @@ const row = {
   rank: 1,
   score: { numerator: '1', denominator: '2' },
 } satisfies NextMealCompactRankingResultV1['ranked'][number];
+const comparisonRow = {
+  candidateKey: comparisonCandidateKey,
+  rank: 2,
+  score: { numerator: '3', denominator: '4' },
+} satisfies NextMealCompactRankingResultV1['ranked'][number];
 const explanation = {
   candidateKey,
   classification: 'COMPARABLE',
   displayName: 'Test food',
   reasonCodes: ['validated-comparable'],
+  rankReason: {
+    comparisonCandidateKey,
+    relation: 'AHEAD_OF',
+    decisiveObjectiveId: 'nutrition.robust-maximum-gap',
+  },
   comparisons: [
     {
       ruleId,
@@ -59,6 +71,18 @@ const summary = {
   candidateKey,
   classification: 'COMPARABLE',
   displayName: 'Test food',
+  reasonCodes: ['validated-comparable'],
+  rankReason: {
+    comparisonCandidateKey,
+    relation: 'AHEAD_OF',
+    decisiveObjectiveId: 'nutrition.robust-maximum-gap',
+  },
+  comparisonCount: 1,
+} satisfies NextMealDisplayExplanationV1;
+const comparisonSummary = {
+  candidateKey: comparisonCandidateKey,
+  classification: 'COMPARABLE',
+  displayName: 'Comparison food',
   reasonCodes: ['validated-comparable'],
   comparisonCount: 1,
 } satisfies NextMealDisplayExplanationV1;
@@ -92,6 +116,8 @@ function run(provisional = false): NextMealDisplayRunV1 {
               {
                 state: 'known',
                 nutrientId: 'nutrient.iron',
+                amountPer100EdibleGrams: '5',
+                unit: { system: 'ucum', code: 'mg' },
                 source: {
                   kind: 'dataset',
                   sourceId: 'fixture-food-data',
@@ -105,7 +131,8 @@ function run(provisional = false): NextMealDisplayRunV1 {
       },
       temporalRules: [{ ruleId, weight: 1 }],
     },
-    result: { ranked: [row] },
+    result: { ranked: [row, comparisonRow] },
+    explanations: [summary, comparisonSummary],
     temporalPolicy: {
       rules: [
         {
@@ -152,24 +179,75 @@ describe('next-meal explanation', () => {
     expect(
       screen.getByText(/logged everything you consumed/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Rank 1 of 1 comparable options/),
-    ).toHaveTextContent('combined target gap 0.5');
+    expect(screen.getByText('#1 of 2')).toBeInTheDocument();
+    expect(screen.getByText('3-day outlook')).toBeInTheDocument();
+    expect(screen.getByText('2 schedule scenarios')).toBeInTheDocument();
     expect(screen.queryByText(/Recorded 2 → projected 9 mg/)).toBeNull();
     expect(loadExplanation).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Why this rank?'));
     expect(
-      await screen.findByText(/Recorded 2 → projected 9 mg/),
-    ).toHaveTextContent('Relative target gap: 50%. Weight in combined gap: 1.');
-    expect(screen.getByText(/Applied window:/)).toHaveTextContent(
-      '2026-10-12 00:00:00.000 UTC',
-    );
+      await screen.findByText('Best overall fit for your next meal'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Decision summary')).toBeInTheDocument();
+    expect(screen.getByText('Comparable data')).toBeInTheDocument();
+    expect(screen.getByText('Declared limits checked')).toBeInTheDocument();
+    expect(screen.getByText('3-day simulation')).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: `Meal ${mealId}` }),
+      screen.getByText('Configured history available'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Gap −38.9 pts')).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', {
+        name: 'Before this meal: 11.1% of target',
+      }),
+    ).toHaveAttribute('aria-valuenow', '11');
+    expect(
+      screen.getByRole('progressbar', {
+        name: 'After this meal: 50% of target',
+      }),
+    ).toHaveAttribute('aria-valuenow', '50');
+    expect(screen.getByText(/iron remains 50% away/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /It ranked ahead of Comparison food because it produced a smaller worst-case nutrient gap\./,
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Technical evidence and sources'));
+    expect(screen.getByText('Audit trail')).toBeInTheDocument();
+    expect(screen.getByText('Combined gap').parentElement).toHaveTextContent(
+      '0.5',
+    );
+    fireEvent.click(await screen.findByText(/2 → 9 mg · 50% gap/));
+    expect(
+      screen.getByRole('button', { name: 'Recorded intake: 2 mg' }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Food composition: 5 mg / 100 g',
+      }),
+    );
+    expect(screen.getByText('Origin').parentElement).toHaveTextContent(
+      'fixture-food-data',
+    );
+    expect(screen.getByText('Recorded').parentElement).toHaveTextContent(
+      '2 mg',
+    );
+    expect(screen.getByText('After meal').parentElement).toHaveTextContent(
+      '9 mg',
+    );
+    expect(screen.getByText('2026-10-12 00:00:00.000 UTC')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Recorded meal 1' }),
     ).toHaveAttribute('href', `/meals/${mealId}`);
     expect(screen.getAllByRole('link', { name: 'Open source' })).toHaveLength(
       2,
     );
+    expect(
+      screen.getByRole('button', { name: 'Download audit report (.json)' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/created locally and includes an integrity seal/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Food composition:/)).toHaveTextContent(
       'fixture-food-data, version 1, record food-1',
     );
@@ -195,9 +273,14 @@ describe('next-meal explanation', () => {
     );
     expect(screen.getByText(/shorter recorded history/)).toBeInTheDocument();
     fireEvent.click(screen.getByText('Why this rank?'));
-    expect(await screen.findByText(/Short history:/)).toHaveTextContent(
+    fireEvent.click(await screen.findByText('Technical evidence and sources'));
+    fireEvent.click(await screen.findByText(/2 → 9 mg · 50% gap/));
+    expect(screen.getByText(/Tracking history is shorter/)).toHaveTextContent(
       '2026-10-11 00:00:00.000 UTC',
     );
+    expect(
+      screen.getByText('1 target still building history'),
+    ).toBeInTheDocument();
   });
 
   it('aborts an unfinished explanation worker when its result row unmounts', async () => {

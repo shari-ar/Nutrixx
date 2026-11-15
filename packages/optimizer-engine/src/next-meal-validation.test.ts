@@ -172,10 +172,26 @@ describe('independent next-meal review', () => {
     const review = reviewNextMealRankingV1(input, ranking);
     expect(review.status).toBe('APPROVED');
     if (review.status !== 'APPROVED') return;
+    expect(review.diagnosis).toMatchObject({
+      status: 'READY',
+      census: { complete: true, total: 2, processed: 2 },
+      conflictSet: {
+        reasonCodes: [],
+        coveredCandidateCount: 0,
+        complete: true,
+      },
+    });
     expect(review.explanations).toHaveLength(2);
     expect(review.explanations[0]).toMatchObject({
       candidateKey: nextMealSourceKey(input.candidates.entries[0]!.reference),
       rank: 1,
+      rankReason: {
+        comparisonCandidateKey: nextMealSourceKey(
+          input.candidates.entries[1]!.reference,
+        ),
+        relation: 'AHEAD_OF',
+        decisiveObjectiveId: 'nutrition.robust-maximum-gap',
+      },
       comparisons: [
         {
           ruleId: 'iron-rolling-days',
@@ -186,6 +202,16 @@ describe('independent next-meal review', () => {
           normalizedDistance: { numerator: '0', denominator: '1' },
         },
       ],
+    });
+    expect(review.explanations[1]).toMatchObject({
+      rank: 2,
+      rankReason: {
+        comparisonCandidateKey: nextMealSourceKey(
+          input.candidates.entries[0]!.reference,
+        ),
+        relation: 'BEHIND',
+        decisiveObjectiveId: 'nutrition.robust-maximum-gap',
+      },
     });
     expect(
       verifyNextMealExplanationsV1(input, ranking, review.explanations),
@@ -305,7 +331,7 @@ describe('independent next-meal review', () => {
       rankNextMealCandidatesV1(unknown),
     );
     expect(limited.status).toBe('APPROVED');
-    if (limited.status === 'APPROVED')
+    if (limited.status === 'APPROVED') {
       expect(
         limited.explanations.every(
           (item) =>
@@ -313,6 +339,15 @@ describe('independent next-meal review', () => {
             item.rank === undefined,
         ),
       ).toBe(true);
+      expect(limited.diagnosis).toMatchObject({
+        status: 'NEEDS_INPUT',
+        conflictSet: {
+          reasonCodes: ['history-evidence-unresolved:iron-rolling-days'],
+          coveredCandidateCount: 2,
+          complete: true,
+        },
+      });
+    }
   });
 
   it('checks recipe ingredient quantities under the personal inventory gate', () => {
@@ -364,11 +399,20 @@ describe('independent next-meal review', () => {
       rankNextMealCandidatesV1(missing),
     );
     expect(unavailable.status).toBe('APPROVED');
-    if (unavailable.status === 'APPROVED')
+    if (unavailable.status === 'APPROVED') {
       expect(unavailable.explanations[0]).toMatchObject({
         classification: 'UNAVAILABLE',
         reasonCodes: ['inventory-insufficient'],
       });
+      expect(unavailable.diagnosis).toMatchObject({
+        status: 'INFEASIBLE',
+        conflictSet: {
+          reasonCodes: ['inventory-insufficient'],
+          coveredCandidateCount: 1,
+          complete: true,
+        },
+      });
+    }
   });
 
   it('rejects incomplete manifests and malformed result shapes', () => {

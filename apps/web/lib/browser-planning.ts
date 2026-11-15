@@ -11,7 +11,10 @@ import type { NextMealIntentionV1 } from './browser-planning-core';
 import type { SaveMealInput } from './browser-stage-two';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
-import type { NextMealCandidateExplanationV1 } from '@nutrixx/optimizer-engine';
+import type {
+  NextMealCandidateExplanationV1,
+  PlanningCalibrationReportV1,
+} from '@nutrixx/optimizer-engine';
 
 export type {
   NextMealDisplayExplanationV1,
@@ -40,12 +43,14 @@ export class BrowserPlanningStore {
       typeof InProcessPlanningStore
     >[3] = new BrowserStageTwoStore(),
     private readonly runOffThread = true,
+    solveShadow?: ConstructorParameters<typeof InProcessPlanningStore>[4],
   ) {
     this.core = new InProcessPlanningStore(
       compute,
       browserOnboarding,
       browserNutrition,
       foods,
+      solveShadow,
     );
   }
 
@@ -140,6 +145,30 @@ export class BrowserPlanningStore {
     } finally {
       operation.release();
       if (this.loadController === controller) this.loadController = null;
+    }
+  }
+
+  public async loadCalibrationReport(
+    signal?: AbortSignal,
+  ): Promise<PlanningCalibrationReportV1> {
+    if (!this.runOffThread) {
+      signal?.throwIfAborted();
+      return this.core.loadCalibrationReport();
+    }
+    const operation = this.startWorkerOperation(signal);
+    try {
+      const profile = await this.browserOnboarding.load();
+      if (!profile) throw new TypeError('Complete the starting profile first.');
+      const completed = await prepareNextMealInWorker(
+        { kind: 'LOCAL_CALIBRATION', profile },
+        undefined,
+        operation.controller.signal,
+      );
+      if (completed.status !== 'CALIBRATION')
+        throw new TypeError('Planning calibration evidence could not open.');
+      return completed.report;
+    } finally {
+      operation.release();
     }
   }
 

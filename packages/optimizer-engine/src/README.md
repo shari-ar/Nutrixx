@@ -1,24 +1,34 @@
 # Optimizer engine source
 
-| File                                | Responsibility                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| `next-meal-candidates.ts`           | Complete next-meal census and source-backed classification                |
-| `next-meal-candidates.test.ts`      | Coverage, safety, inventory, and manifest fixtures                        |
-| `next-meal-ranking.ts`              | Exact horizon, terminal-tail, scenario scoring and deterministic order    |
-| `next-meal-ranking.test.ts`         | Window, robustness, terminal, portion, and ordering fixtures              |
-| `next-meal-validation.ts`           | Independent audit and compact post-review result projection               |
-| `next-meal-validation.test.ts`      | Tampering, history, exclusion, and explanation fixtures                   |
-| `next-meal-temporal-policy.ts`      | Versioned temporal-rule contract and history assessment                   |
-| `next-meal-temporal-policy.test.ts` | Provenance, missing data, and startup-history fixtures                    |
-| `next-meal-validity.ts`             | Frozen run expiry from time and temporal-window boundaries                |
-| `next-meal-validity.test.ts`        | Replay, day rollover, and elapsed-window expiry fixtures                  |
-| `planning-domain-model.ts`          | Solver-neutral State → Action → Constraint → Objective → Outcome contract |
-| `planning-domain-model.test.ts`     | Cross-reference, hierarchy, scenario, census, and publication invariants  |
-| `next-meal-domain-adapter.ts`       | Active next-meal engine projection into the solver-neutral decision chain |
-| `next-meal-domain-adapter.test.ts`  | Operational mapping, objective, and empty-action fixtures                 |
-| `next-meal-decision-policy.ts`      | Complete hard-constraint policy and active/deferred objective hierarchy   |
-| `next-meal-decision-policy.test.ts` | Policy order, activation, and non-fabrication fixtures                    |
-| `index.ts`                          | Public package surface                                                    |
+| File                                  | Responsibility                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `next-meal-candidates.ts`             | Complete next-meal census and source-backed classification                |
+| `next-meal-candidates.test.ts`        | Coverage, safety, inventory, and manifest fixtures                        |
+| `next-meal-ranking.ts`                | Exact horizon, terminal-tail, scenario scoring and deterministic order    |
+| `next-meal-ranking.test.ts`           | Window, robustness, terminal, portion, and ordering fixtures              |
+| `next-meal-validation.ts`             | Independent audit and compact post-review result projection               |
+| `next-meal-validation.test.ts`        | Tampering, history, exclusion, and explanation fixtures                   |
+| `next-meal-temporal-policy.ts`        | Versioned temporal-rule contract and history assessment                   |
+| `next-meal-temporal-policy.test.ts`   | Provenance, missing data, and startup-history fixtures                    |
+| `next-meal-validity.ts`               | Frozen run expiry from time and temporal-window boundaries                |
+| `next-meal-validity.test.ts`          | Replay, day rollover, and elapsed-window expiry fixtures                  |
+| `planning-domain-model.ts`            | Solver-neutral State → Action → Constraint → Objective → Outcome contract |
+| `planning-domain-model.test.ts`       | Cross-reference, hierarchy, scenario, census, and publication invariants  |
+| `next-meal-domain-adapter.ts`         | Active next-meal engine projection into the solver-neutral decision chain |
+| `next-meal-domain-adapter.test.ts`    | Operational mapping, objective, and empty-action fixtures                 |
+| `planning-replay-artifact.ts`         | Content-addressed replay receipt and deterministic reconstruction         |
+| `planning-replay-artifact.test.ts`    | Exact replay, corpus mutation, and artifact tampering fixtures            |
+| `next-meal-feasibility.ts`            | Complete census diagnosis and deterministic conflict-cover construction   |
+| `next-meal-feasibility.test.ts`       | Ready, missing-evidence, infeasibility, and empty-corpus fixtures         |
+| `planning-decision-validator.ts`      | Independent solver-neutral Decision Chain and diagnosis checker           |
+| `planning-decision-validator.test.ts` | Conflict coverage and validator-identity rejection fixtures               |
+| `planning-outcome-feedback.ts`        | Append-only trial lifecycle and exact version-bound calibration cohorts   |
+| `planning-outcome-feedback.test.ts`   | Lifecycle, cohort, ratio, and evidence-integrity fixtures                 |
+| `planning-shadow-solver.ts`           | Solver-neutral MILP execution evidence and canonical result comparison    |
+| `planning-shadow-solver.test.ts`      | Agreement, divergence, authority, and deterministic evidence fixtures     |
+| `next-meal-decision-policy.ts`        | Complete hard-constraint policy and active/deferred objective hierarchy   |
+| `next-meal-decision-policy.test.ts`   | Policy order, activation, and non-fabrication fixtures                    |
+| `index.ts`                            | Public package surface                                                    |
 
 The active Free planner ranks a complete classified local catalog for one next
 meal. Its result is independently validated before user presentation and

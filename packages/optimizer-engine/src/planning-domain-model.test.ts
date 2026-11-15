@@ -147,6 +147,37 @@ function chain(): PlanningDecisionChainV1 {
       stateKey,
       status: 'READY',
       censusComplete: true,
+      diagnosis: {
+        diagnosisVersion: 'fixture-diagnosis-v1',
+        status: 'READY',
+        census: {
+          complete: true,
+          total: 2,
+          processed: 2,
+          counts: {
+            COMPARABLE: 1,
+            EVIDENCE_LIMITED: 0,
+            UNAVAILABLE: 0,
+            EXCLUDED: 1,
+            REQUIRES_PREPARATION: 0,
+          },
+        },
+        findings: [
+          {
+            reasonCode: 'declared-exclusion',
+            classification: 'EXCLUDED',
+            resolution: 'REVIEW_RESTRICTIONS',
+            candidateCount: 1,
+            candidateKeys: ['food:fixture:food-2'],
+          },
+        ],
+        conflictSet: {
+          method: 'DETERMINISTIC_GREEDY_COVER',
+          reasonCodes: [],
+          coveredCandidateCount: 0,
+          complete: true,
+        },
+      },
       actionOutcomes: [
         {
           actionId: actionOne,
@@ -328,6 +359,19 @@ describe('planning domain model', () => {
     const value = chain();
     value.outcome.status = 'NEEDS_INPUT';
     expect(PlanningDecisionChainV1Schema.safeParse(value).success).toBe(false);
+  });
+
+  it('requires the feasibility proof to agree with the published outcome', () => {
+    const value = chain();
+    value.outcome.diagnosis.status = 'INFEASIBLE';
+    expect(PlanningDecisionChainV1Schema.safeParse(value).success).toBe(false);
+
+    const mismatchedCensus = chain();
+    mismatchedCensus.outcome.diagnosis.census.counts.COMPARABLE = 0;
+    mismatchedCensus.outcome.diagnosis.census.counts.EXCLUDED = 2;
+    expect(
+      PlanningDecisionChainV1Schema.safeParse(mismatchedCensus).success,
+    ).toBe(false);
   });
 
   it('keeps deferred objectives visible without fabricating outcome values', () => {

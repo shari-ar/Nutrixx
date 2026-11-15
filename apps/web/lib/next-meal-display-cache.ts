@@ -27,7 +27,10 @@ export type NextMealDisplayExplanationV1 = Omit<
   readonly comparisonCount: number;
 };
 
-export type NextMealDisplayRunV1 = Omit<NextMealRunV1, 'explanations'> & {
+export type NextMealDisplayRunV1 = Omit<
+  NextMealRunV1,
+  'explanations' | 'replayArtifact'
+> & {
   readonly explanations: readonly NextMealDisplayExplanationV1[];
 };
 
@@ -72,10 +75,11 @@ export function projectPlanningSnapshot(
   const nutrientIds = new Set(
     snapshot.run.input.temporalRules.map((rule) => rule.nutrientId),
   );
+  const { replayArtifact: _replayArtifact, ...displayRun } = snapshot.run;
   return {
     ...snapshot,
     run: {
-      ...snapshot.run,
+      ...displayRun,
       explanations: snapshot.run.explanations.map((entry) => {
         const existingCount =
           'comparisonCount' in entry ? entry.comparisonCount : undefined;

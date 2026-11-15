@@ -14,6 +14,10 @@ import {
   type NextMealCandidateDecision,
   type NextMealCandidateSource,
 } from './next-meal-candidates.js';
+import { diagnoseNextMealFeasibilityV1 } from './next-meal-feasibility.js';
+import { NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1 } from './next-meal-decision-policy.js';
+
+import type { PlanningFeasibilityDiagnosisV1 } from './planning-domain-model.js';
 
 export const NEXT_MEAL_VALIDATOR_VERSION_V1 =
   'free-next-meal-independent-validator-v1' as const;
@@ -206,6 +210,83 @@ function keyOrder(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+function exactRatio(value: {
+  numerator: string;
+  denominator: string;
+}): Rational {
+  return rational(BigInt(value.numerator), BigInt(value.denominator));
+}
+
+function objectiveOrder(
+  objectiveId: (typeof NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1)[number],
+  left: NextMealRankedCandidate,
+  right: NextMealRankedCandidate,
+): number {
+  switch (objectiveId) {
+    case 'nutrition.robust-maximum-gap':
+      return order(
+        exactRatio(left.maximumDistance),
+        exactRatio(right.maximumDistance),
+      );
+    case 'nutrition.robust-weighted-gap':
+      return order(
+        exactRatio(left.weightedDistance),
+        exactRatio(right.weightedDistance),
+      );
+    case 'nutrition.terminal-maximum-gap':
+      return order(
+        exactRatio(left.terminalMaximumDistance),
+        exactRatio(right.terminalMaximumDistance),
+      );
+    case 'nutrition.terminal-weighted-gap':
+      return order(
+        exactRatio(left.terminalWeightedDistance),
+        exactRatio(right.terminalWeightedDistance),
+      );
+    case 'nutrition.nominal-maximum-gap':
+      return order(
+        exactRatio(left.nominalMaximumDistance),
+        exactRatio(right.nominalMaximumDistance),
+      );
+    case 'nutrition.nominal-weighted-gap':
+      return order(
+        exactRatio(left.nominalWeightedDistance),
+        exactRatio(right.nominalWeightedDistance),
+      );
+    case 'nutrition.immediate-maximum-gap':
+      return order(
+        exactRatio(left.immediateMaximumDistance),
+        exactRatio(right.immediateMaximumDistance),
+      );
+    case 'nutrition.immediate-weighted-gap':
+      return order(
+        exactRatio(left.immediateWeightedDistance),
+        exactRatio(right.immediateWeightedDistance),
+      );
+    case 'practicality.portion-size':
+      return order(amount(left.edibleGrams), amount(right.edibleGrams));
+    case 'context.variety-repetition':
+      return left.repetitionCount - right.repetitionCount;
+    case 'stability.deterministic-identity':
+      return (
+        keyOrder(left.candidateKey, right.candidateKey) ||
+        keyOrder(left.portionId, right.portionId)
+      );
+  }
+  throw new TypeError(`Active objective ${objectiveId} has no comparator.`);
+}
+
+function decisiveObjective(
+  better: NextMealRankedCandidate,
+  worse: NextMealRankedCandidate,
+): (typeof NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1)[number] {
+  return (
+    NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1.find(
+      (objectiveId) => objectiveOrder(objectiveId, better, worse) !== 0,
+    ) ?? 'stability.deterministic-identity'
+  );
+}
+
 function matchedStock(
   candidate: NextMealCandidateSource,
   request: CandidateRequest,
@@ -377,6 +458,11 @@ export interface NextMealCandidateExplanationV1 {
   readonly rank?: number;
   readonly portionId?: string;
   readonly edibleGrams?: string;
+  readonly rankReason?: {
+    readonly comparisonCandidateKey: string;
+    readonly relation: 'AHEAD_OF' | 'BEHIND';
+    readonly decisiveObjectiveId: (typeof NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1)[number];
+  };
   readonly comparisons?: readonly {
     readonly ruleId: string;
     readonly nutrientId: string;
@@ -401,6 +487,7 @@ export type NextMealRankingReviewV1 =
       readonly explanationVersion: typeof NEXT_MEAL_EXPLANATION_VERSION_V1;
       readonly ranking: NextMealRankingResult;
       readonly explanations: readonly NextMealCandidateExplanationV1[];
+      readonly diagnosis: PlanningFeasibilityDiagnosisV1;
     }
   | { readonly status: 'REJECTED'; readonly reasonCodes: readonly string[] };
 
@@ -463,8 +550,12 @@ export function reviewNextMealRankingV1(
     reasons.push('classification-mismatch');
   if (reasons.length) return { status: 'REJECTED', reasonCodes: reasons };
   const explanations: NextMealCandidateExplanationV1[] = [
-    ...expected.ranked.map((row): NextMealCandidateExplanationV1 => {
+    ...expected.ranked.map((row, index): NextMealCandidateExplanationV1 => {
       const candidate = sourceByKey.get(row.candidateKey)!;
+      const compared =
+        row.rank === 1 ? expected.ranked[1] : expected.ranked[index - 1];
+      const better = row.rank === 1 ? row : compared;
+      const worse = row.rank === 1 ? compared : row;
       return {
         candidateKey: row.candidateKey,
         classification: 'COMPARABLE',
@@ -481,6 +572,16 @@ export function reviewNextMealRankingV1(
         rank: row.rank,
         portionId: row.portionId,
         edibleGrams: row.edibleGrams,
+        ...(compared && better && worse
+          ? {
+              rankReason: {
+                comparisonCandidateKey: compared.candidateKey,
+                relation:
+                  row.rank === 1 ? ('AHEAD_OF' as const) : ('BEHIND' as const),
+                decisiveObjectiveId: decisiveObjective(better, worse),
+              },
+            }
+          : {}),
         comparisons: row.ruleScores.map((score) => {
           const rule = rules.find((item) => item.ruleId === score.ruleId)!;
           return {
@@ -523,6 +624,7 @@ export function reviewNextMealRankingV1(
     explanationVersion: NEXT_MEAL_EXPLANATION_VERSION_V1,
     ranking,
     explanations,
+    diagnosis: diagnoseNextMealFeasibilityV1(ranking),
   };
 }
 

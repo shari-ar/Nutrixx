@@ -4,7 +4,11 @@ import type {
 } from './browser-planning-core';
 import type { NextMealDisplaySnapshotV1 } from './next-meal-display-cache';
 import type { DeclaredInventoryItemV1 } from './next-meal-input';
-import type { NextMealCandidateExplanationV1 } from '@nutrixx/optimizer-engine';
+import type {
+  NextMealCandidateExplanationV1,
+  PlanningCalibrationReportV1,
+  PlanningFeasibilityDiagnosisV1,
+} from '@nutrixx/optimizer-engine';
 import type { StartingProfileV1 } from '@nutrixx/user-context';
 
 export type NextMealPreparationRequestV1 =
@@ -15,6 +19,7 @@ export type NextMealPreparationRequestV1 =
       readonly rankingChunkHints?: NextMealRankingChunkHintsV1;
     }
   | { readonly kind: 'LOCAL_LOAD'; readonly profile: StartingProfileV1 }
+  | { readonly kind: 'LOCAL_CALIBRATION'; readonly profile: StartingProfileV1 }
   | {
       readonly kind: 'LOCAL_EXPLANATION';
       readonly profile: StartingProfileV1;
@@ -36,6 +41,7 @@ export interface NextMealPreparationProgressV1 {
     | 'ranking-catalog'
     | 'classifying-catalog'
     | 'scoring-catalog'
+    | 'solving-shadow-milp'
     | 'saving-recommendation'
     | 'validating-selection'
     | 'saving-selection'
@@ -54,11 +60,21 @@ export type NextMealPreparationResultV1 =
         | {
             readonly status: 'NEEDS_INPUT';
             readonly reasonCodes: readonly string[];
+            readonly diagnosis?: PlanningFeasibilityDiagnosisV1;
+          }
+        | {
+            readonly status: 'INFEASIBLE';
+            readonly reasonCodes: readonly string[];
+            readonly diagnosis: PlanningFeasibilityDiagnosisV1;
           };
     }
   | {
       readonly status: 'SNAPSHOT';
       readonly snapshot: NextMealDisplaySnapshotV1;
+    }
+  | {
+      readonly status: 'CALIBRATION';
+      readonly report: PlanningCalibrationReportV1;
     }
   | {
       readonly status: 'EXPLANATION';

@@ -18,6 +18,7 @@ Small, cross-platform automation used by contributors and CI.
 | `install-git-hooks.mjs`                 | Installs Husky only in eligible local Git checkouts; skips CI and production contexts                                                                     |
 | `pre-push-gate.mjs`                     | Runs a change-scoped local quality gate and promotes platform-sensitive pushes to the complete repository gate                                            |
 | `run-with-node-env.mjs`                 | Runs a command with an explicit, cross-platform Node environment                                                                                          |
+| `copy-highs-wasm.mjs`                   | Copies the lockfile-pinned HiGHS WebAssembly runtime into the generated Web delivery boundary before development and production builds                    |
 | `data-quality-radar.mjs`                | Audits the installed food catalog and creates an internal, local HTML and JSON quality dashboard                                                          |
 | `render-reference-work-queue.mjs`       | Renders the internal food-composition coverage queue with searchable, paginated details                                                                   |
 | `render-food-identity-review.mjs`       | Renders the separate nonblocking list of ambiguous source-food identities                                                                                 |

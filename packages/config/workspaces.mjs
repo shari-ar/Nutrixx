@@ -19,6 +19,7 @@ const testBuild = [
   'user-context',
   'nutrition-engine',
   'optimizer-engine',
+  'solver-highs',
 ];
 
 export const workspaceGroups = Object.freeze({
@@ -28,6 +29,7 @@ export const workspaceGroups = Object.freeze({
     'food-knowledge',
     'nutrition-engine',
     'optimizer-engine',
+    'solver-highs',
   ]),
   agentCuration: Object.freeze([
     'canonical-schema',
@@ -48,6 +50,7 @@ export const workspaceGroups = Object.freeze({
     'user-context',
     'nutrition-engine',
     'optimizer-engine',
+    'solver-highs',
   ]),
   dataQuality: Object.freeze(dataQuality),
   persistenceContract: Object.freeze(['canonical-schema', 'persistence']),

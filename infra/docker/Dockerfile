@@ -25,6 +25,7 @@ COPY packages/persistence-indexeddb/package.json packages/persistence-indexeddb/
 COPY packages/persistence-postgresql/package.json packages/persistence-postgresql/package.json
 COPY packages/recipe-knowledge/package.json packages/recipe-knowledge/package.json
 COPY packages/reference-quality/package.json packages/reference-quality/package.json
+COPY packages/solver-highs/package.json packages/solver-highs/package.json
 COPY packages/user-context/package.json packages/user-context/package.json
 
 FROM base AS dependencies

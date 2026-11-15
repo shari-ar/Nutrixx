@@ -16,7 +16,10 @@ import {
 import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
 import type { DeclaredInventoryItemV1 } from '@/lib/next-meal-input';
 
-import type { NextMealCandidateExplanationV1 } from '@nutrixx/optimizer-engine';
+import type {
+  NextMealCandidateExplanationV1,
+  PlanningCalibrationReportV1,
+} from '@nutrixx/optimizer-engine';
 
 const PAGE_SIZE = 30;
 
@@ -38,6 +41,14 @@ function inputGuidance(reasonCodes: readonly string[]): string {
       'The recorded meals or local catalog lack enough comparable nutrient evidence for a ranked recommendation.',
     'inventory-source-changed':
       'An available ingredient changed. Select it again from the current catalog.',
+    'inventory-insufficient':
+      'The declared inventory cannot produce a feasible next meal. Update the available ingredients or search the full catalog.',
+    'edible-portion-unresolved':
+      'Preparation or edible-portion evidence must be resolved before these foods can be ranked.',
+    'candidate-corpus-empty':
+      'Install an eligible offline food catalog before requesting a recommendation.',
+    'continuation-search-infeasible':
+      'The current facts leave no validated continuation path. Review the recorded intake, inventory, and restrictions.',
   };
   return reasonCodes
     .map((code) => guidance[code] ?? code.replaceAll('-', ' '))
@@ -47,7 +58,11 @@ function inputGuidance(reasonCodes: readonly string[]): string {
 function inputDestination(
   reasonCodes: readonly string[],
 ): 'nutrition' | 'dashboard' | null {
-  if (reasonCodes.includes('local-catalog-required')) return 'dashboard';
+  if (
+    reasonCodes.includes('local-catalog-required') ||
+    reasonCodes.includes('candidate-corpus-empty')
+  )
+    return 'dashboard';
   return reasonCodes.some(
     (code) =>
       code === 'nutrition-market-required' ||
@@ -55,6 +70,28 @@ function inputDestination(
   )
     ? 'nutrition'
     : null;
+}
+
+function percent(
+  ratio: { readonly numerator: string; readonly denominator: string } | null,
+): string {
+  if (!ratio) return 'Collecting';
+  return `${Math.round((Number(ratio.numerator) / Number(ratio.denominator)) * 100)}%`;
+}
+
+function EvidenceMetric({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-separator bg-background/60 p-3">
+      <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-1 text-lg font-semibold">{value}</dd>
+    </div>
+  );
 }
 
 export function PlanningWorkspace() {
@@ -69,6 +106,8 @@ export function PlanningWorkspace() {
   const [snapshot, setSnapshot] = useState<LocalPlanningSnapshotV1 | null>(
     null,
   );
+  const [calibration, setCalibration] =
+    useState<PlanningCalibrationReportV1 | null>(null);
   const [inventoryOnly, setInventoryOnly] = useState(false);
   const [inventory, setInventory] = useState<DeclaredInventoryItemV1[]>([]);
   const [pagination, setPagination] = useState<{
@@ -102,6 +141,12 @@ export function PlanningWorkspace() {
             'The saved recommendation could not be opened. Review Storage Settings.',
           );
       });
+    void planning
+      .loadCalibrationReport()
+      .then((report) => {
+        if (active) setCalibration(report);
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
       activeOperation.current?.abort();
@@ -128,9 +173,11 @@ export function PlanningWorkspace() {
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState === 'visible')
-        void planning
-          .load()
-          .then(setSnapshot)
+        void Promise.all([planning.load(), planning.loadCalibrationReport()])
+          .then(([value, report]) => {
+            setSnapshot(value);
+            setCalibration(report);
+          })
           .catch(() => {
             setError('The saved recommendation could not be opened.');
           });
@@ -157,7 +204,14 @@ export function PlanningWorkspace() {
     try {
       await action(controller.signal);
       controller.signal.throwIfAborted();
-      if (refreshSnapshot) setSnapshot(await planning.load(controller.signal));
+      if (refreshSnapshot) {
+        const [value, report] = await Promise.all([
+          planning.load(controller.signal),
+          planning.loadCalibrationReport(controller.signal),
+        ]);
+        setSnapshot(value);
+        setCalibration(report);
+      }
     } catch (failure) {
       if (failure instanceof Error && failure.name === 'AbortError') {
         setPlanningProgress('Operation canceled.');
@@ -213,6 +267,7 @@ export function PlanningWorkspace() {
   const selected = ranked.find(
     (row) => row.candidateKey === snapshot?.intention?.candidateKey,
   );
+  const activeCalibration = calibration?.cohorts.at(-1) ?? null;
 
   function changePage(kind: 'ranked' | 'unranked', pageIndex: number): void {
     setPagination((current) => {
@@ -320,7 +375,9 @@ export function PlanningWorkspace() {
               setPlanningProgress(
                 result.status === 'READY'
                   ? 'Ranking ready. Review the ordered foods below.'
-                  : 'More information is needed before ranking can continue.',
+                  : result.status === 'INFEASIBLE'
+                    ? 'No feasible next meal exists under the current hard constraints.'
+                    : 'More information is needed before ranking can continue.',
               );
               setPagination({ runId: null, ranked: 0, unranked: 0 });
             }).catch(() => setError('Local planning is unavailable.'));
@@ -622,6 +679,100 @@ export function PlanningWorkspace() {
           </Link>
         </p>
       ) : null}
+      {run ? (
+        <section
+          aria-labelledby="planning-shadow-heading"
+          className="rounded-[2rem] border border-separator bg-surface p-6 sm:p-8"
+        >
+          <p className="text-sm font-semibold uppercase tracking-wider text-accent">
+            Independent comparison
+          </p>
+          <h2
+            className="mt-2 text-xl font-semibold"
+            id="planning-shadow-heading"
+          >
+            Shadow solver review
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+            A separate HiGHS mixed-integer model solved the next-action choice
+            and reconstructed the complete hierarchy. The primary solver
+            retained exclusive publication authority.
+          </p>
+          <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(
+              [
+                [
+                  'Solver',
+                  `${run.shadowEvaluation.engine} ${run.shadowEvaluation.engineVersion}`,
+                ],
+                ['Review', run.shadowEvaluation.outcome.replaceAll('_', ' ')],
+                [
+                  'Top recommendation',
+                  run.shadowEvaluation.recommendationAgreement
+                    ? 'Agreement'
+                    : 'Divergence',
+                ],
+                [
+                  'Complete order',
+                  run.shadowEvaluation.completeOrderAgreement
+                    ? 'Agreement'
+                    : 'Review required',
+                ],
+              ] as const
+            ).map(([label, value]) => (
+              <EvidenceMetric key={label} label={label} value={value} />
+            ))}
+          </dl>
+        </section>
+      ) : null}
+      <section
+        aria-labelledby="planning-calibration-heading"
+        className="rounded-[2rem] border border-separator bg-surface p-6 sm:p-8"
+      >
+        <p className="text-sm font-semibold uppercase tracking-wider text-accent">
+          Outcome evidence
+        </p>
+        <h2
+          className="mt-2 text-xl font-semibold"
+          id="planning-calibration-heading"
+        >
+          Planning feedback calibration
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+          Nutrixx links each recommendation to selection and recorded
+          consumption. Metrics stay separated by engine and policy version. They
+          provide evaluation evidence and never change planning policy
+          automatically.
+        </p>
+        {activeCalibration ? (
+          <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {(
+              [
+                ['Trials', String(activeCalibration.trialCount)],
+                [
+                  'Finalized',
+                  `${activeCalibration.finalizedTrialCount}/${activeCalibration.requiredFinalizedTrials}`,
+                ],
+                ['Selection rate', percent(activeCalibration.selectionRate)],
+                [
+                  'Follow-through',
+                  percent(activeCalibration.followThroughRate),
+                ],
+                [
+                  'Top choice selected',
+                  percent(activeCalibration.topRecommendationSelectionRate),
+                ],
+              ] as const
+            ).map(([label, value]) => (
+              <EvidenceMetric key={label} label={label} value={value} />
+            ))}
+          </dl>
+        ) : (
+          <p className="mt-4 text-sm text-muted">
+            Your first completed planning trial will start this report.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

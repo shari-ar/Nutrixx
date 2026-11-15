@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { MealDetail } from './meal-detail';
@@ -69,7 +69,22 @@ describe('meal detail', () => {
     render(
       <MealDetail
         mealId={meal.mealId}
-        store={{ mealHistory: async () => [meal] }}
+        store={{
+          mealHistory: async () => [meal],
+          mealSignatureNutrients: async () => [
+            {
+              componentId: 'nutrient.vitc',
+              accessCode: 'VITC',
+              slug: 'vitc',
+              name: 'Vitamin C',
+              amount: '25',
+              unit: 'mg',
+              percentDailyValue: 27.8,
+              label: 'Strong contribution',
+              basis: '27.8% of the FDA Daily Value in this recorded meal',
+            },
+          ],
+        }}
       />,
     );
 
@@ -86,5 +101,54 @@ describe('meal detail', () => {
     expect(
       screen.getByText(/1 technical source observation/),
     ).toBeInTheDocument();
+    expect(await screen.findByText('Strong contribution')).toBeInTheDocument();
+    expect(screen.getByText('Vitamin C')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'See foods notable for Vitamin C' }),
+    ).toHaveAttribute('href', '/nutrients/vitc');
+    expect(
+      screen.getAllByRole('link', { name: 'See foods notable for Protein' }),
+    ).toHaveLength(2);
+    expect(
+      screen.getByText(/Smart labels compare this meal with FDA Daily Values/),
+    ).toBeInTheDocument();
+  });
+
+  it('shows populated smart cards while catalog refinement is pending', async () => {
+    const pendingMeal: MealRevisionV1 = {
+      ...meal,
+      nutrition: [
+        ...(meal.nutrition ?? []),
+        {
+          state: 'known',
+          nutrientId: 'nutrient.vitamin-c',
+          amount: '25',
+          unit: { system: 'ucum', code: 'mg' },
+        },
+        {
+          state: 'known',
+          nutrientId: 'food-component.vitk',
+          amount: '3',
+          unit: { system: 'ucum', code: 'ug' },
+        },
+      ],
+    };
+    const { container } = render(
+      <MealDetail
+        mealId={pendingMeal.mealId}
+        store={{
+          mealHistory: async () => [pendingMeal],
+          mealSignatureNutrients: async () =>
+            new Promise<readonly never[]>(() => undefined),
+        }}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getAllByText('Vitamin C')).toHaveLength(2),
+    );
+    expect(screen.getAllByText('25 mg')).toHaveLength(2);
+    expect(screen.getAllByText('Vitamin K')).toHaveLength(2);
+    expect(container.querySelector('.animate-pulse')).not.toBeInTheDocument();
   });
 });

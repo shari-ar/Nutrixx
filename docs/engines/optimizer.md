@@ -5,7 +5,7 @@
 | Status        | Active normative design                           |
 | Audience      | Optimization, nutrition science, product, quality |
 | Owner         | Nutrixx Optimization Engineering                  |
-| Last reviewed | 2026-11-07                                        |
+| Last reviewed | 2026-11-11                                        |
 
 ## Contract
 
@@ -153,9 +153,27 @@ replay, the exact accepted result and validation evidence are retained.
 
 ## Independent validation
 
-The post-solve validator is implemented separately from objective construction.
-It recomputes amounts and verifies hard constraints, eligibility, food/recipe
-revisions, unit consistency, serving bounds, and plan totals.
+The post-solve boundary uses two independent checks. Ranking review
+reconstructs candidate classification from frozen facts and verifies the exact
+ranked and unranked result. A separate solver-neutral Decision Chain checker
+verifies validator identity, diagnosis version, classification coverage and
+complete conflict coverage.
+
+Each run receives a versioned feasibility diagnosis with a complete census,
+grouped findings, candidate identities, recovery actions and a deterministic
+greedy conflict cover. READY, NEEDS_INPUT and INFEASIBLE therefore carry an
+auditable proof aligned with the published outcome. The full contract lives in
+[planning validation and feasibility diagnosis](planning-validation.md).
+
+## Shadow solver comparison
+
+Every READY publication produces a second validated Decision Chain through the
+versioned HiGHS MILP shadow. The comparison classifies state, feasibility,
+recommendation, complete-order and top-k agreement and persists exact rank
+deltas plus optimal execution evidence. The primary solver retains exclusive
+publication authority. See
+[planning shadow mode](planning-shadow-mode.md) for the active model and solver
+boundary.
 
 After prediction and explanation generation, a separate claims validator checks
 that every number and material claim resolves to validated typed output, that
@@ -169,8 +187,8 @@ and safely recomputed or returned as NEEDS_INPUT; publication uses current,
 validated results. Cache reads and user substitutions pass the same validation and freshness
 gates.
 
-A failed validation quarantines the result, records diagnostics, emits an
-operational signal, and shows no plan.
+A validation rejection keeps the candidate result behind the publication
+boundary, records diagnostics and emits an operational signal.
 
 ## Explanation
 
@@ -194,3 +212,9 @@ diagnostics, target deviation, stability, diversity, cultural/catalog coverage,
 latency p50/p95, optimality gap, explanation fidelity, user acceptance and
 correction rates, and subgroup analysis. See
 [verification and evaluation](../quality/verification-and-evaluation.md).
+
+The active local loop records each READY publication as a version-bound trial
+and links subsequent selection and consumption through append-only events.
+[Planning outcome feedback](planning-feedback.md) defines lifecycle projection,
+exact cohort metrics and the reviewed boundary between observation evidence and
+policy change.

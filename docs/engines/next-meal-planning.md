@@ -5,7 +5,7 @@
 | Status        | Normative target design                                      |
 | Audience      | Product, nutrition science, optimization, data, web, quality |
 | Owner         | Nutrixx Optimization Engineering                             |
-| Last reviewed | 2026-11-07                                                   |
+| Last reviewed | 2026-11-11                                                   |
 
 ## Product promise
 
@@ -35,6 +35,7 @@ flowchart LR
   R --> F[Simulate feasible continuation paths]
   F --> V[Independent validation]
   V --> O[Ranked options for the next meal]
+  V --> X[Shadow comparison evidence]
   O --> U[User chooses and records actual intake]
   U --> H
 ```
@@ -81,6 +82,11 @@ answers: “If this is the next meal, can the remaining horizon still be
 completed well?” Only the first action is exposed for commitment. The entire
 problem is solved again after consumption, correction, time passage, activity
 change, profile change or catalog change.
+
+Every published decision also runs through
+[planning shadow mode](planning-shadow-mode.md). The primary solver remains the
+exclusive publication authority while the shadow path independently
+reconstructs and compares the complete decision order.
 
 ## Evidence model
 
@@ -349,6 +355,21 @@ Why ranked above the next option?
 Generative AI may verbalize this validated trace. Every reason, number and
 medical-scope statement originates in typed engine evidence.
 
+The web presentation uses progressive disclosure. The first layer shows rank,
+horizon, scenario count and evaluated targets. The second layer shows up to
+three before/after target comparisons, a four-step decision path, the exact
+active objective that decided the position against the adjacent option, the
+largest remaining gap and the configured-history status. Raw windows, included
+meals, policy facts and citations remain available in an optional
+technical-evidence layer. That layer presents an audit summary first, then one
+collapsed evidence dossier per nutrient with calculation values, the exact
+time window and included meals, citations, application limits and raw audit
+identifiers. Every displayed number also exposes an interactive provenance
+graph from source inputs through deterministic transformations to the ranking
+outcome. A user can download the same evidence as a local-only, versioned JSON
+report sealed over RFC 8785 canonical content with SHA-256; editing any sealed
+decision or evidence value makes integrity verification fail.
+
 ## Freshness and replanning
 
 A recommendation becomes stale when any fact capable of changing eligibility,
@@ -398,6 +419,30 @@ expiry and invalidation evidence
 Equivalent frozen inputs and versions produce the same published order. A
 faster cache, index, worker count or pagination strategy may change execution
 cost while preserving decision semantics.
+
+The active local workflow persists each `planning-replay-artifact-v1` once as
+an immutable canonical replay record and references it from the active run. It
+freezes the complete dynamic request, binds the immutable candidate corpus by
+identity and SHA-256, and records expected hashes for the request, full ranking
+and solver-neutral Decision Chain. Historical replay records remain after
+replanning. Replay resolves the exact corpus, reruns ranking and independent
+validation, rebuilds the Decision Chain and returns a typed match or mismatch.
+The artifact remains outside the disposable display cache and UI Worker
+messages. See
+[Planning decision replay](planning-replay.md).
+
+Publication also requires a versioned
+[feasibility diagnosis](planning-validation.md). The diagnosis proves complete
+candidate coverage, groups each blocker by exact reason and provides a
+deterministic conflict cover. READY publishes the ranking. NEEDS_INPUT and
+INFEASIBLE return structured recovery evidence directly to the planning UI.
+
+Every published READY result also opens an immutable
+[planning feedback trial](planning-feedback.md). Selection, consumption,
+replacement and expiry project into a version-matched lifecycle. Exact cohort
+metrics measure selection, follow-through, rank usefulness and portion
+alignment. Calibration remains observation evidence; reviewed policy releases
+retain authority over engine behavior.
 
 ## Evaluation and release gates
 
@@ -451,6 +496,9 @@ exact policy, catalog, device envelope, latency and memory.
 ## Related specifications
 
 - [Planning domain model](planning-domain-model.md)
+- [Planning decision replay](planning-replay.md)
+- [Planning validation and feasibility diagnosis](planning-validation.md)
+- [Planning outcome feedback and calibration](planning-feedback.md)
 - [Free next-meal recommendation contract](next-meal-contract.md)
 - [Optimizer and recommendation engine](optimizer.md)
 - [Nutrition foundation and calculation policy](../nutrition-model/foundation.md)

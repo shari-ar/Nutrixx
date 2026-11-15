@@ -7,6 +7,7 @@ const planning = vi.hoisted(() => ({
   cancelActiveWorkers: vi.fn(),
   createRecommendation: vi.fn(),
   load: vi.fn(),
+  loadCalibrationReport: vi.fn(),
   logAsEaten: vi.fn(),
   recommendationIsPending: true,
   receivedSignals: [] as AbortSignal[],
@@ -41,6 +42,10 @@ vi.mock('@/lib/browser-planning', () => ({
       });
     }
 
+    public loadCalibrationReport() {
+      return planning.loadCalibrationReport();
+    }
+
     public cancelActiveWorkers() {
       planning.cancelActiveWorkers();
     }
@@ -65,6 +70,13 @@ function selectedSnapshot() {
     run: {
       runId: 'fixture-run',
       validUntil: new Date(Date.now() + 60_000).toISOString(),
+      shadowEvaluation: {
+        engine: 'HIGHS',
+        engineVersion: '1.15.0',
+        outcome: 'MATCH',
+        recommendationAgreement: true,
+        completeOrderAgreement: true,
+      },
       input: {
         planningPolicy: {
           horizonDays: 3,
@@ -120,6 +132,9 @@ describe('planning workspace cancellation', () => {
       intention: null,
       loggedMealId: null,
     });
+    planning.loadCalibrationReport.mockResolvedValue({
+      cohorts: [],
+    });
     planning.cancelActiveWorkers.mockClear();
     planning.createRecommendation.mockClear();
     planning.receivedSignals.length = 0;
@@ -138,6 +153,9 @@ describe('planning workspace cancellation', () => {
   it('recalculates immediately after the actual meal is recorded', async () => {
     planning.recommendationIsPending = false;
     planning.load.mockResolvedValue(selectedSnapshot());
+    planning.loadCalibrationReport.mockResolvedValue({
+      cohorts: [],
+    });
     planning.createRecommendation.mockClear();
     planning.logAsEaten.mockClear();
     render(<PlanningWorkspace />);
@@ -154,5 +172,8 @@ describe('planning workspace cancellation', () => {
     expect(
       await screen.findByText(/Your next recommendation is ready\./),
     ).toBeInTheDocument();
+    expect(screen.getByText('Shadow solver review')).toBeInTheDocument();
+    expect(screen.getByText('HIGHS 1.15.0')).toBeInTheDocument();
+    expect(screen.getAllByText('Agreement')).toHaveLength(2);
   });
 });

@@ -4,10 +4,12 @@ import {
   type NextMealRankingRequest,
   type NextMealRankingResult,
 } from './next-meal-ranking.js';
+import { NextMealRankingResultSchema } from './next-meal-validation.js';
+import { diagnoseNextMealFeasibilityV1 } from './next-meal-feasibility.js';
 import {
-  NEXT_MEAL_VALIDATOR_VERSION_V1,
-  NextMealRankingResultSchema,
-} from './next-meal-validation.js';
+  PLANNING_DECISION_VALIDATOR_VERSION_V1,
+  validatePlanningDecisionChainV1,
+} from './planning-decision-validator.js';
 import {
   NEXT_MEAL_ACTIVE_OBJECTIVE_IDS_V1,
   NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
@@ -15,7 +17,6 @@ import {
 } from './next-meal-decision-policy.js';
 import {
   PLANNING_DOMAIN_MODEL_VERSION_V1,
-  PlanningDecisionChainV1Schema,
   type PlanningActionV1,
   type PlanningConstraintV1,
   type PlanningDecisionChainV1,
@@ -440,6 +441,7 @@ export function createNextMealPlanningDecisionChainV1(
   });
   const constraints = constraintDefinitions(request, actions);
   const reasons = completenessReasons(request, ranking);
+  const diagnosis = diagnoseNextMealFeasibilityV1(ranking);
   const chain: PlanningDecisionChainV1 = {
     problem: {
       modelVersion: PLANNING_DOMAIN_MODEL_VERSION_V1,
@@ -491,14 +493,9 @@ export function createNextMealPlanningDecisionChainV1(
       runId: context.runId,
       problemId: context.problemId,
       stateKey,
-      status:
-        ranking.ranked.length > 0
-          ? 'READY'
-          : ranking.counts.EVIDENCE_LIMITED > 0 ||
-              ranking.counts.REQUIRES_PREPARATION > 0
-            ? 'NEEDS_INPUT'
-            : 'INFEASIBLE',
+      status: diagnosis.status,
       censusComplete: true,
+      diagnosis,
       actionOutcomes: ranking.ranked.map((row) => {
         const id = actionId(row.candidateKey, row.portionId);
         const values = new Map<string, ExactRatio>([
@@ -622,9 +619,14 @@ export function createNextMealPlanningDecisionChainV1(
             ),
           }
         : {}),
-      validatorVersion: NEXT_MEAL_VALIDATOR_VERSION_V1,
+      validatorVersion: PLANNING_DECISION_VALIDATOR_VERSION_V1,
       validatedAt: context.validatedAt,
     },
   };
-  return PlanningDecisionChainV1Schema.parse(chain);
+  const validation = validatePlanningDecisionChainV1(chain);
+  if (validation.status !== 'APPROVED')
+    throw new TypeError(
+      `Planning decision validation failed: ${validation.reasonCodes.join(', ')}.`,
+    );
+  return validation.chain;
 }

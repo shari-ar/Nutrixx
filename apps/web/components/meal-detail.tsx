@@ -2,26 +2,30 @@
 
 import { FOOD_COMPONENTS_V1 } from '@nutrixx/nutrition-engine';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { BrowserStageTwoStore } from '@/lib/browser-stage-two';
 import {
   presentMealNutritionV1,
   type MealNutritionPresentationRowV1,
 } from '@/lib/meal-nutrition-presentation';
+import {
+  nutrientSlugV1,
+  selectMealSignatureNutrientsV1,
+  type MealSignatureNutrientV1,
+} from '@/lib/nutrient-prominence';
+import { loadMealSignatureNutrientsV1 } from '@/lib/nutrient-prominence-client';
 
 import type { MealRevisionV1 } from '@nutrixx/consumption';
 
-type MealHistoryStore = Pick<BrowserStageTwoStore, 'mealHistory'>;
+interface MealDetailStore extends Pick<BrowserStageTwoStore, 'mealHistory'> {
+  readonly mealSignatureNutrients: (
+    rows: readonly MealNutritionPresentationRowV1[],
+    signal?: AbortSignal,
+  ) => Promise<readonly MealSignatureNutrientV1[]>;
+}
 
-const featuredAccessCodes = new Set([
-  'ENERC_KCAL',
-  'PROCNT',
-  'CHOCDF',
-  'FAT',
-  'FIBTG',
-  'NA',
-]);
+const featuredAccessCodes = new Set(['ENERC_KCAL', 'PROCNT', 'CHOCDF', 'FAT']);
 
 function NutrientValue({
   nutrient,
@@ -43,9 +47,54 @@ function NutrientValue({
 
   return (
     <div className="rounded-xl bg-background/60 p-4">
-      <dt className="font-medium">{nutrient.name}</dt>
-      <dd className="mt-1 font-semibold">{value}</dd>
-      <dd className="mt-1 text-xs text-muted">{evidence}</dd>
+      <Link
+        aria-label={`See foods notable for ${nutrient.name}`}
+        className="group block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        href={`/nutrients/${nutrientSlugV1(nutrient.componentId, nutrient.accessCode)}`}
+      >
+        <dt className="font-medium group-hover:text-accent">{nutrient.name}</dt>
+        <dd className="mt-1 font-semibold">{value}</dd>
+        <dd className="mt-1 text-xs text-muted">{evidence}</dd>
+      </Link>
+    </div>
+  );
+}
+
+function SignatureNutrientValue({
+  nutrient,
+}: {
+  nutrient: MealSignatureNutrientV1;
+}) {
+  const labelClassName =
+    nutrient.label === 'Watch-out'
+      ? 'bg-warning/10 text-warning'
+      : nutrient.label === 'Distinctive source'
+        ? 'bg-accent/10 text-accent'
+        : 'bg-success/10 text-success';
+  return (
+    <div className="rounded-xl bg-background/60 p-4">
+      <Link
+        aria-label={`See foods notable for ${nutrient.name}`}
+        className="group block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        href={`/nutrients/${nutrient.slug}`}
+      >
+        {nutrient.label ? (
+          <span
+            className={`inline-flex rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-wider ${labelClassName}`}
+          >
+            {nutrient.label}
+          </span>
+        ) : null}
+        <dt
+          className={`${nutrient.label ? 'mt-3 ' : ''}font-medium group-hover:text-accent`}
+        >
+          {nutrient.name}
+        </dt>
+        <dd className="mt-1 font-semibold">
+          {nutrient.amount} {nutrient.unit}
+        </dd>
+        <dd className="mt-1 text-xs text-muted">{nutrient.basis}</dd>
+      </Link>
     </div>
   );
 }
@@ -55,17 +104,40 @@ export function MealDetail({
   store,
 }: {
   mealId: string;
-  store?: MealHistoryStore;
+  store?: Partial<MealDetailStore> & Pick<MealDetailStore, 'mealHistory'>;
 }) {
-  const [runtime] = useState<MealHistoryStore>(
+  const [runtime] = useState<MealDetailStore>(
     () =>
-      store ?? {
-        mealHistory: (id) => new BrowserStageTwoStore().mealHistory(id),
-      },
+      ({
+        mealHistory:
+          store?.mealHistory ??
+          ((id) => new BrowserStageTwoStore().mealHistory(id)),
+        mealSignatureNutrients:
+          store?.mealSignatureNutrients ?? loadMealSignatureNutrientsV1,
+      }) satisfies MealDetailStore,
   );
+  const [signatureRefinement, setSignatureRefinement] = useState<{
+    readonly key: string;
+    readonly highlights: readonly MealSignatureNutrientV1[];
+  } | null>(null);
   const [history, setHistory] = useState<readonly MealRevisionV1[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const currentHistory = history.at(-1);
+  const signatureKey = currentHistory
+    ? `${currentHistory.mealId}:${currentHistory.revision}`
+    : null;
+  const immediateSignatureNutrients = useMemo(() => {
+    const current = history.at(-1);
+    if (!current?.nutrition || current.nutrition.length === 0) return [];
+    return selectMealSignatureNutrientsV1(
+      presentMealNutritionV1(current.nutrition).rows,
+    );
+  }, [history]);
+  const signatureNutrients =
+    signatureRefinement?.key === signatureKey
+      ? signatureRefinement.highlights
+      : immediateSignatureNutrients;
 
   useEffect(() => {
     let active = true;
@@ -84,6 +156,28 @@ export function MealDetail({
       active = false;
     };
   }, [mealId, runtime]);
+
+  useEffect(() => {
+    const current = history.at(-1);
+    if (!current?.nutrition || current.nutrition.length === 0) return;
+    const rows = presentMealNutritionV1(current.nutrition).rows;
+    const immediateHighlights = selectMealSignatureNutrientsV1(rows);
+    const refinementKey = `${current.mealId}:${current.revision}`;
+    const controller = new AbortController();
+    void runtime
+      .mealSignatureNutrients(rows, controller.signal)
+      .then((refinedHighlights) => {
+        setSignatureRefinement({
+          key: refinementKey,
+          highlights:
+            refinedHighlights.length > 0
+              ? refinedHighlights
+              : immediateHighlights,
+        });
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [history, runtime]);
 
   if (loading)
     return (
@@ -186,12 +280,25 @@ export function MealDetail({
               meal. Recognized source observations are normalized to the Nutrixx
               food-component register before presentation.
             </p>
-            {featuredNutrition.length > 0 ? (
+            {featuredNutrition.length > 0 || signatureNutrients.length > 0 ? (
               <div className="mt-5">
                 <h3 className="font-semibold">Nutrition highlights</h3>
+                <p className="mt-2 max-w-3xl text-xs leading-5 text-muted">
+                  Smart labels compare this meal with FDA Daily Values and the
+                  active catalog: Strong means a high contribution, Distinctive
+                  means useful and uncommon, and Watch-out marks a high limiting
+                  nutrient. Unlabeled cards show the strongest remaining
+                  signals. Select any card to explore its notable foods.
+                </p>
                 <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {featuredNutrition.map((nutrient) => (
                     <NutrientValue
+                      key={nutrient.componentId}
+                      nutrient={nutrient}
+                    />
+                  ))}
+                  {signatureNutrients.map((nutrient) => (
+                    <SignatureNutrientValue
                       key={nutrient.componentId}
                       nutrient={nutrient}
                     />

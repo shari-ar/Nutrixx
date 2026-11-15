@@ -37,6 +37,7 @@ report.*.json
 .tmp/
 apps/web/public/catalog/*.json
 apps/web/public/catalog/*.json.gz
+apps/web/public/solver-assets/*.wasm
 
 # Tooling and deployment
 .pnp

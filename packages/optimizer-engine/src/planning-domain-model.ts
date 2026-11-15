@@ -465,6 +465,153 @@ const PlanningObjectiveResultV1Schema = z.strictObject({
   scenarioId: CanonicalCodeSchema.optional(),
 });
 
+const PlanningClassificationCountsV1Schema = z.strictObject({
+  COMPARABLE: z.int().nonnegative(),
+  EVIDENCE_LIMITED: z.int().nonnegative(),
+  UNAVAILABLE: z.int().nonnegative(),
+  EXCLUDED: z.int().nonnegative(),
+  REQUIRES_PREPARATION: z.int().nonnegative(),
+});
+
+const PlanningReasonCodeV1Schema = z
+  .string()
+  .regex(/^[a-z][a-z0-9]*(?:[.:-][a-z0-9]+)*$/);
+
+const PlanningFeasibilityFindingV1Schema = z
+  .strictObject({
+    reasonCode: PlanningReasonCodeV1Schema,
+    classification: z.enum([
+      'EVIDENCE_LIMITED',
+      'UNAVAILABLE',
+      'EXCLUDED',
+      'REQUIRES_PREPARATION',
+    ]),
+    resolution: z.enum([
+      'COMPLETE_HISTORY',
+      'CURATE_REFERENCE_DATA',
+      'RESOLVE_PREPARATION',
+      'UPDATE_INVENTORY',
+      'REVIEW_RESTRICTIONS',
+      'REVIEW_HARD_LIMIT',
+      'EXPAND_SEARCH',
+      'INSTALL_CANDIDATE_CORPUS',
+    ]),
+    candidateCount: z.int().nonnegative(),
+    candidateKeys: z.array(PlanningKeySchema),
+  })
+  .superRefine((finding, context) => {
+    const sorted = [...finding.candidateKeys].sort();
+    if (
+      finding.candidateCount !== finding.candidateKeys.length ||
+      new Set(finding.candidateKeys).size !== finding.candidateKeys.length ||
+      finding.candidateKeys.some((key, index) => key !== sorted[index])
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['candidateKeys'],
+        message: 'Finding candidate identities must be complete and sorted.',
+      });
+  });
+
+export const PlanningFeasibilityDiagnosisV1Schema = z
+  .strictObject({
+    diagnosisVersion: z.string().min(1).max(200),
+    status: z.enum(['READY', 'NEEDS_INPUT', 'INFEASIBLE']),
+    census: z.strictObject({
+      complete: z.literal(true),
+      total: z.int().nonnegative(),
+      processed: z.int().nonnegative(),
+      counts: PlanningClassificationCountsV1Schema,
+    }),
+    findings: z.array(PlanningFeasibilityFindingV1Schema),
+    conflictSet: z.strictObject({
+      method: z.literal('DETERMINISTIC_GREEDY_COVER'),
+      reasonCodes: z.array(PlanningReasonCodeV1Schema),
+      coveredCandidateCount: z.int().nonnegative(),
+      complete: z.boolean(),
+    }),
+  })
+  .superRefine((diagnosis, context) => {
+    const counted = Object.values(diagnosis.census.counts).reduce(
+      (total, count) => total + count,
+      0,
+    );
+    const expectedStatus =
+      diagnosis.census.counts.COMPARABLE > 0
+        ? 'READY'
+        : diagnosis.census.total === 0 ||
+            diagnosis.census.counts.EVIDENCE_LIMITED > 0 ||
+            diagnosis.census.counts.REQUIRES_PREPARATION > 0
+          ? 'NEEDS_INPUT'
+          : 'INFEASIBLE';
+    if (
+      diagnosis.census.processed !== diagnosis.census.total ||
+      counted !== diagnosis.census.total
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['census'],
+        message: 'A feasibility diagnosis requires a complete census.',
+      });
+    if (diagnosis.status !== expectedStatus)
+      context.addIssue({
+        code: 'custom',
+        path: ['status'],
+        message: 'Diagnosis status must follow the complete census.',
+      });
+    if (
+      new Set(diagnosis.findings.map(({ reasonCode }) => reasonCode)).size !==
+      diagnosis.findings.length
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['findings'],
+        message: 'Feasibility findings require unique reason codes.',
+      });
+    const findingReasons = new Set(
+      diagnosis.findings.map(({ reasonCode }) => reasonCode),
+    );
+    if (
+      new Set(diagnosis.conflictSet.reasonCodes).size !==
+        diagnosis.conflictSet.reasonCodes.length ||
+      diagnosis.conflictSet.reasonCodes.some(
+        (reasonCode) => !findingReasons.has(reasonCode),
+      )
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['conflictSet', 'reasonCodes'],
+        message: 'Conflict reasons must reference unique findings.',
+      });
+    if (
+      diagnosis.status === 'READY' &&
+      (diagnosis.conflictSet.reasonCodes.length > 0 ||
+        diagnosis.conflictSet.coveredCandidateCount !== 0 ||
+        !diagnosis.conflictSet.complete)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['conflictSet'],
+        message: 'A ready decision has an empty complete conflict set.',
+      });
+    if (
+      diagnosis.status !== 'READY' &&
+      (!diagnosis.conflictSet.complete ||
+        diagnosis.conflictSet.coveredCandidateCount !==
+          diagnosis.census.total ||
+        diagnosis.conflictSet.reasonCodes.length === 0)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['conflictSet'],
+        message: 'A blocked decision needs a complete conflict explanation.',
+      });
+  });
+
+export type PlanningFeasibilityDiagnosisV1 = z.infer<
+  typeof PlanningFeasibilityDiagnosisV1Schema
+>;
+
 export const PlanningActionOutcomeV1Schema = z
   .strictObject({
     actionId: PlanningKeySchema,
@@ -526,6 +673,7 @@ export const PlanningOutcomeV1Schema = z.strictObject({
     'FAILED',
   ]),
   censusComplete: z.boolean(),
+  diagnosis: PlanningFeasibilityDiagnosisV1Schema,
   actionOutcomes: z.array(PlanningActionOutcomeV1Schema),
   recommendedActionId: PlanningKeySchema.optional(),
   validatorVersion: z.string().min(1).max(200),
@@ -759,6 +907,19 @@ export const PlanningDecisionChainV1Schema = z
             'Scenario objective results must reference declared scenarios.',
         });
     }
+    const feasibleCount = outcome.actionOutcomes.filter(
+      ({ classification }) => classification === 'FEASIBLE',
+    ).length;
+    if (
+      outcome.status !== outcome.diagnosis.status ||
+      outcome.censusComplete !== outcome.diagnosis.census.complete ||
+      feasibleCount !== outcome.diagnosis.census.counts.COMPARABLE
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['outcome', 'diagnosis'],
+        message: 'Outcome status and feasibility proof must agree.',
+      });
     if (
       outcome.censusComplete &&
       outcomeActions.size !== problem.actions.length

@@ -1,6 +1,10 @@
 # Browser workers
 
 This directory contains browser-only background computations.
+`nutrient-prominence.worker.ts` builds or reuses the active-catalog nutrient
+prominence index and returns only two meal signature cards or one bounded food
+ranking. Its disposable client terminates the worker after success, failure,
+cancellation, or timeout.
 `next-meal-preparation.worker.ts` opens local IndexedDB, prepares the active
 catalog and nutrition context, ranks and independently reviews the next meal,
 and saves the validated run. The UI receives only its compact outcome. The

@@ -13,6 +13,7 @@ export {
 } from './next-meal-candidates.js';
 
 export {
+  DEFAULT_NEXT_MEAL_PLANNING_POLICY_V1,
   NEXT_MEAL_RANKING_POLICY_VERSION_V1,
   NextMealRankingRequestSchema,
   rankNextMealCandidatesChunkedV1,
@@ -69,6 +70,7 @@ export {
   PlanningProblemV1Schema,
   PlanningActionOutcomeV1Schema,
   PlanningOutcomeV1Schema,
+  PlanningFeasibilityDiagnosisV1Schema,
   PlanningDecisionChainV1Schema,
   type PlanningExactValueV1,
   type PlanningStateV1,
@@ -78,8 +80,21 @@ export {
   type PlanningProblemV1,
   type PlanningActionOutcomeV1,
   type PlanningOutcomeV1,
+  type PlanningFeasibilityDiagnosisV1,
   type PlanningDecisionChainV1,
 } from './planning-domain-model.js';
+
+export {
+  NEXT_MEAL_FEASIBILITY_DIAGNOSIS_VERSION_V1,
+  diagnoseNextMealFeasibilityV1,
+} from './next-meal-feasibility.js';
+
+export {
+  PLANNING_DECISION_VALIDATOR_VERSION_V1,
+  validatePlanningDecisionChainV1,
+  type PlanningDecisionValidationReasonV1,
+  type PlanningDecisionValidationV1,
+} from './planning-decision-validator.js';
 
 export {
   NEXT_MEAL_HARD_CONSTRAINT_POLICY_VERSION_V1,
@@ -96,3 +111,39 @@ export {
   createNextMealPlanningDecisionChainV1,
   type NextMealDomainAdapterContextV1,
 } from './next-meal-domain-adapter.js';
+
+export {
+  PLANNING_REPLAY_ARTIFACT_VERSION_V1,
+  PlanningReplayArtifactV1Schema,
+  createPlanningReplayArtifactV1,
+  replayPlanningDecisionV1,
+  type PlanningReplayArtifactV1,
+  type PlanningReplayDigestV1,
+  type PlanningReplayMismatchReasonV1,
+  type PlanningReplayResultV1,
+} from './planning-replay-artifact.js';
+
+export {
+  PLANNING_OUTCOME_FEEDBACK_VERSION_V1,
+  PLANNING_CALIBRATION_VERSION_V1,
+  PLANNING_CALIBRATION_MIN_FINALIZED_TRIALS_V1,
+  PlanningFeedbackTrialV1Schema,
+  PlanningFeedbackEventV1Schema,
+  PlanningCalibrationCohortV1Schema,
+  PlanningCalibrationReportV1Schema,
+  buildPlanningCalibrationReportV1,
+  type PlanningFeedbackTrialV1,
+  type PlanningFeedbackEventV1,
+  type PlanningCalibrationCohortV1,
+  type PlanningCalibrationReportV1,
+} from './planning-outcome-feedback.js';
+
+export {
+  PLANNING_SHADOW_COMPARISON_VERSION_V1,
+  PlanningShadowComparisonV1Schema,
+  PlanningShadowExecutionV1Schema,
+  comparePlanningShadowSolversV1,
+  type PlanningShadowComparisonV1,
+  type PlanningShadowDigestV1,
+  type PlanningShadowExecutionV1,
+} from './planning-shadow-solver.js';

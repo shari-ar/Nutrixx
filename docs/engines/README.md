@@ -5,7 +5,7 @@
 | Status        | Target-state index                              |
 | Audience      | Engine, application, quality, nutrition science |
 | Owner         | Nutrixx Domain Engineering                      |
-| Last reviewed | 2026-10-12                                      |
+| Last reviewed | 2026-11-11                                      |
 
 | Document                                                | Purpose                                                       |
 | ------------------------------------------------------- | ------------------------------------------------------------- |
@@ -13,6 +13,10 @@
 | [Daily nutrition state](daily-nutrition-state.md)       | Intake aggregation and target comparison                      |
 | [Next-meal planning](next-meal-planning.md)             | Normative doctrine: history, rolling horizon, one next action |
 | [Planning domain model](planning-domain-model.md)       | State → Action → Constraint → Objective → Outcome contract    |
+| [Planning decision replay](planning-replay.md)          | Canonical artifact and deterministic decision reconstruction  |
+| [Planning validation](planning-validation.md)           | Independent checks and structured infeasibility diagnosis     |
+| [Planning feedback](planning-feedback.md)               | Outcome event stream and version-bound calibration cohorts    |
+| [Planning shadow mode](planning-shadow-mode.md)         | Primary-only publication with independent decision comparison |
 | [Optimizer](optimizer.md)                               | Feasibility, objectives, prediction, validation, explanation  |
 | [Free next-meal contract](next-meal-contract.md)        | Typed local boundary, ranking, outcomes and replay            |
 | [AI-assisted capture](ai-assisted-capture.md)           | Safe hosted and user-enabled local draft generation           |

@@ -5,7 +5,7 @@
 | Status        | Active internal contract                             |
 | Audience      | Optimization, nutrition science, web, data, quality  |
 | Owner         | Nutrixx Optimization Engineering                     |
-| Last reviewed | 2026-11-08                                           |
+| Last reviewed | 2026-11-11                                           |
 | Code          | `@nutrixx/optimizer-engine/planning-domain-model-v1` |
 
 ## Purpose
@@ -20,9 +20,10 @@ flowchart LR
   O --> R[Outcome<br/>validated census and recommendation]
 ```
 
-The contract separates domain meaning from search strategy. A bounded local
-portfolio, a future MILP or CP-SAT solver, and a shadow solver can consume the
-same problem and produce outcomes under the same validation rules.
+The contract separates domain meaning from search strategy. The bounded local
+portfolio and the active HiGHS MILP shadow consume the same problem and produce
+outcomes under the same validation rules. Additional MILP or CP-SAT adapters
+can join through this boundary.
 
 ## State
 
@@ -192,11 +193,36 @@ classification census and state completeness evidence. A complete census with
 zero executable actions produces a typed `NEEDS_INPUT` or `INFEASIBLE`
 outcome. The browser stores the model version, adapter version, problem
 identity, state identity and canonical Decision Chain hash with the
-recommendation run.
+recommendation run. The run references a separate immutable
+[Planning replay artifact](planning-replay.md): dynamic input evidence is
+frozen directly, while the large immutable candidate corpus is bound by exact
+identity and content digest. Replay records remain after the active run is
+replaced. Replay recalculates and independently validates the ranking before
+recreating this Decision Chain.
+
+[Planning shadow mode](planning-shadow-mode.md) builds and validates a second
+Decision Chain, then compares state, feasibility, recommendation and complete
+order while the primary chain retains exclusive publication authority.
+
+Every outcome carries a versioned feasibility diagnosis. Its complete census,
+grouped findings and deterministic conflict cover explain READY, NEEDS_INPUT
+or INFEASIBLE through exact candidate identities. A separate Decision Chain
+checker verifies classification coverage, conflict coverage and validator
+identity before the adapter returns the chain. See
+[Planning validation and feasibility diagnosis](planning-validation.md).
+
+A published READY outcome starts a separate append-only
+[feedback trial](planning-feedback.md). The trial binds observed selection and
+consumption to the exact run, problem, state and engine versions while keeping
+behavioral calibration outside the authoritative Decision Chain.
 
 ## Related specifications
 
 - [Next-meal planning](next-meal-planning.md)
+- [Planning decision replay](planning-replay.md)
+- [Planning validation and feasibility diagnosis](planning-validation.md)
+- [Planning outcome feedback and calibration](planning-feedback.md)
+- [Planning shadow mode](planning-shadow-mode.md)
 - [Optimizer and recommendation engine](optimizer.md)
 - [Free next-meal contract](next-meal-contract.md)
 - [Verification and evaluation](../quality/verification-and-evaluation.md)

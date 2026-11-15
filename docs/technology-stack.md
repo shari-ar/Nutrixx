@@ -5,7 +5,7 @@
 | Status        | Current implementation inventory                    |
 | Audience      | Engineering, architecture, security, and operations |
 | Owner         | Nutrixx Engineering                                 |
-| Last reviewed | 2026-10-30                                          |
+| Last reviewed | 2026-11-12                                          |
 
 This catalog lists only technologies that Nutrixx selects and invokes directly
 in committed application code, configuration, automation, or documentation.
@@ -30,6 +30,7 @@ truth; the lockfile remains the reproducible-installation source of truth.
 | PostCSS      | 8.5.28                      | CSS transformation pipeline                     | `apps/web/postcss.config.mjs`                    |
 | next-themes  | 0.4.6                       | User-selectable light, dark, and system themes  | `apps/web/package.json`                          |
 | clsx         | 2.1.1                       | Conditional component class composition         | `apps/web/package.json`                          |
+| highs-js     | 1.15.4                      | HiGHS WebAssembly MILP Shadow Solver adapter    | `packages/solver-highs/package.json`             |
 
 ## Contracts, build, and quality
 
@@ -103,6 +104,7 @@ the parent technology.
 | Knip                  | 6.44.0          | [npm package](https://www.npmjs.com/package/knip)                                |
 | jscpd                 | 5.4.2           | [npm package](https://www.npmjs.com/package/jscpd)                               |
 | Gitleaks              | 8.30.1          | [GitHub releases](https://github.com/gitleaks/gitleaks/releases)                 |
+| highs-js              | 1.15.4          | [highs-js releases](https://github.com/lovasoa/highs-js/releases)                |
 
 ## Maintenance rule
 

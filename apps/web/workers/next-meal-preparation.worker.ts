@@ -95,6 +95,13 @@ async function prepare(
               stage: 'ranking-catalog',
               message: 'Ranking the local catalog for your next meal…',
             });
+          else if (stage === 'solving-shadow-milp')
+            report({
+              status: 'PROGRESS',
+              stage: 'solving-shadow-milp',
+              message:
+                'Running the independent HiGHS mixed-integer shadow model…',
+            });
           else
             report({
               status: 'PROGRESS',
@@ -125,6 +132,11 @@ async function prepare(
     },
     foods,
   );
+  if (request.kind === 'LOCAL_CALIBRATION')
+    return {
+      status: 'CALIBRATION',
+      report: await planning.loadCalibrationReport(),
+    };
   if (request.kind === 'LOCAL_EXPLANATION')
     return {
       status: 'EXPLANATION',
@@ -229,7 +241,7 @@ async function prepare(
       sequence === (await repository.latestTransactionSequence()) &&
       activeReleaseId === (await foods.activeCatalogRelease())
     ) {
-      const projected = projectPlanningSnapshot(cached);
+      const projected = cached;
       const run = projected.run;
       try {
         await savePlanningView(indexedDB, {
