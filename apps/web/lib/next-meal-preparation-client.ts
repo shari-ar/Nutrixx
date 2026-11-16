@@ -199,6 +199,10 @@ function cancellationError(): Error {
   return error;
 }
 
+// Catalog preparation is deliberately local. Five minutes leaves slower
+// devices enough headroom while still releasing a stalled worker deterministically.
+const LOCAL_PREPARATION_TIMEOUT_MS = 300_000;
+
 /** Runs one bounded operation per worker so large catalog graphs are released immediately. */
 export function prepareNextMealInWorker(
   request: NextMealPreparationRequestV1,
@@ -227,8 +231,8 @@ export function prepareNextMealInWorker(
         finish(() => reject(new TypeError(message)));
       const abort = () => finish(() => reject(cancellationError()));
       const timer = setTimeout(
-        () => fail('Local preparation exceeded its 90-second limit.'),
-        90_000,
+        () => fail('Local preparation exceeded its 5-minute limit.'),
+        LOCAL_PREPARATION_TIMEOUT_MS,
       );
       signal?.addEventListener('abort', abort, { once: true });
       worker.onmessage = (

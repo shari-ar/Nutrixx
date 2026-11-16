@@ -130,6 +130,13 @@ function fixtureManifest(payload = fixturePayload()) {
           licenseId: 'CC0-1.0',
           homepage: 'https://fdc.nal.usda.gov/',
         },
+        {
+          provider: 'nutrixx-curated',
+          dataset: 'agent-curation',
+          sourceRelease: SOURCE_RELEASE,
+          licenseId: 'CC0-1.0',
+          homepage: 'https://nutrixx.example/',
+        },
       ],
       quality: {
         sourceEntries: 2,
@@ -425,12 +432,20 @@ describe('Food Knowledge foundation', () => {
 
     const repository = new CachedFoodKnowledgeRepositoryV1(cache);
     const catalog = await repository.loadActiveCatalog();
-    expect(catalog.search('apple')).toMatchObject([
-      {
-        matchedDescription: { value: 'Apple, raw' },
-        match: 'prefix',
-      },
-    ]);
+    expect(catalog.search('e', { limit: 5 })).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          matchedDescription: expect.objectContaining({ value: 'Apple, raw' }),
+          match: 'contains',
+        }),
+        expect.objectContaining({
+          matchedDescription: expect.objectContaining({
+            value: 'Rice, white, cooked',
+          }),
+          match: 'contains',
+        }),
+      ]),
+    );
     await cache.close();
   });
 });

@@ -14,7 +14,10 @@ import {
   type FoodPortionV1,
   type FoodV1,
 } from './model.js';
-import { compareFoodSourcePriorityV1 } from './identity.js';
+import {
+  compareFoodSourcePriorityV1,
+  NUTRIXX_FALLBACK_PROVIDER_V1,
+} from './identity.js';
 
 export interface CreateFoodCatalogReleaseV1Options {
   readonly manifest: FoodCatalogManifestV1;
@@ -296,7 +299,17 @@ export class CachedFoodKnowledgeRepositoryV1
     }
     return new FoodCatalogIndexV1(
       release.payload,
-      manifest.sourceDatasets.map(({ provider }) => provider),
+      // A manifest lists datasets, while source priority is defined per
+      // provider. One provider can legitimately publish several datasets
+      // (for example, USDA Foundation and SR Legacy), so normalize this
+      // boundary before the priority policy validates the order.
+      [
+        ...new Set(
+          manifest.sourceDatasets
+            .map(({ provider }) => provider)
+            .filter((provider) => provider !== NUTRIXX_FALLBACK_PROVIDER_V1),
+        ),
+      ],
     );
   }
 }
